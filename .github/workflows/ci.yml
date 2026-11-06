@@ -1,0 +1,77 @@
+name: CI
+
+# Run on every push to main, and on every pull request.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend   # every "run:" happens inside backend/
+
+    # A real PostgreSQL for the integration tests.
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: cortex_test      # created automatically
+        ports:
+          - 5432:5432
+        # Wait until Postgres accepts connections before running steps.
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      # tests/conftest.py reads this to find the test database.
+      TEST_DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/cortex_test
+
+    steps:
+      - uses: actions/checkout@v5          # get your code
+
+      - uses: astral-sh/setup-uv@v6        # install uv (it also installs Python 3.13)
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --locked              # fails if uv.lock is out of date
+
+      - name: Lint
+        run: uv run ruff check app tests
+
+      - name: Check formatting
+        run: uv run ruff format --check app tests
+
+      - name: Type check
+        run: uv run mypy app
+
+      - name: Tests
+        run: uv run pytest -q
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 26                 # match your `node -v` major version
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci                        # exact versions from package-lock.json
+
+      - name: Build
+        run: npx ng build
