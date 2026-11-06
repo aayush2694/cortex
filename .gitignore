@@ -1,0 +1,21 @@
+# OS / editor
+.DS_Store
+.idea/
+
+# Secrets: never commit real environment files
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node / Angular
+node_modules/
+dist/
+.angular/

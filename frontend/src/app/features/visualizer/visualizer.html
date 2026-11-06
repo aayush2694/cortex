@@ -1,0 +1,137 @@
+<div class="page wide">
+  <nav class="algos" aria-label="Algorithms">
+    @for (a of list(); track a.key) {
+      <a [routerLink]="['/visualizer', a.key]" [class.on]="a.key === selected()?.key">{{ a.title }}</a>
+    } @empty {
+      @for (i of [1, 2, 3, 4, 5]; track i) {
+        <span class="skeleton chip"></span>
+      }
+    }
+  </nav>
+
+  @if (selected(); as algo) {
+    <header class="page-head">
+      <div>
+        <div class="title-row">
+          <h1>{{ algo.title }}</h1>
+          <span class="pill mono">{{ algo.complexity }}</span>
+        </div>
+        <p>{{ algo.description }}</p>
+      </div>
+      <div class="head-actions">
+        <a class="btn" [routerLink]="['/topics', algo.topic_id]"><i class="ti ti-book-2"></i>Topic</a>
+        <a class="btn" routerLink="/tutor" [queryParams]="{ topic: algo.topic_id }">
+          <i class="ti ti-message-circle"></i>Ask tutor
+        </a>
+      </div>
+    </header>
+
+    <div class="workspace">
+      <section class="stage card">
+        @if (trace.error()) {
+          <div class="problem">
+            <i class="ti ti-alert-triangle" aria-hidden="true"></i>
+            <p>{{ errorText() }}</p>
+            <button class="btn" (click)="resetInput()">Use the example</button>
+          </div>
+        } @else if (frame(); as f) {
+          <div class="view">
+            @switch (algo.view) {
+              @case ('array') {
+                <app-array-view [frame]="f" [boxes]="algo.key === 'binary_search'" />
+              }
+              @case ('grid') {
+                <app-grid-view [frame]="f" [input]="$any(traceInput())" (toggleWall)="toggleWall($event)" />
+              }
+              @case ('graph') {
+                <app-graph-view [frame]="f" [input]="$any(traceInput())" />
+              }
+            }
+          </div>
+
+          <div class="narration" aria-live="polite">
+            <span class="pill action {{ f.action }}">{{ label(f.action) }}</span>
+            <p>{{ f.message }}</p>
+          </div>
+
+          <div class="controls">
+            <button class="btn icon" (click)="restart()" aria-label="Restart (R)"><i class="ti ti-player-skip-back"></i></button>
+            <button class="btn icon" (click)="step(-1); playing.set(false)" aria-label="Previous step (Left arrow)"><i class="ti ti-chevron-left"></i></button>
+            <button class="btn primary icon play" (click)="togglePlay()" [attr.aria-label]="playing() ? 'Pause (Space)' : 'Play (Space)'">
+              <i class="ti" [class.ti-player-pause]="playing()" [class.ti-player-play]="!playing()"></i>
+            </button>
+            <button class="btn icon" (click)="step(1); playing.set(false)" aria-label="Next step (Right arrow)"><i class="ti ti-chevron-right"></i></button>
+            <input
+              class="scrub"
+              type="range"
+              min="0"
+              [max]="frames().length - 1"
+              [value]="index()"
+              (input)="seek($any($event.target).value)"
+              aria-label="Step"
+            />
+            <span class="faint mono step">{{ index() + 1 }}/{{ frames().length }}</span>
+            <button class="btn ghost speed mono" (click)="cycleSpeed()" aria-label="Change speed">{{ speed() }}×</button>
+          </div>
+        } @else {
+          <div class="skeleton" style="height: 300px"></div>
+        }
+      </section>
+
+      <div class="side">
+        @if (frame(); as f) {
+          <app-code-panel [source]="algo.source" [line]="f.line" />
+          <div class="card stats">
+            @for (c of counters(); track c[0]) {
+              <div><span class="faint">{{ label(c[0]) }}</span><strong class="mono">{{ c[1] }}</strong></div>
+            } @empty {
+              <div><span class="faint">steps</span><strong class="mono">{{ index() + 1 }}</strong></div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="below">
+      @if (algo.view === 'array') {
+        <section class="card editor">
+          <h2>Your input</h2>
+          <div class="fields">
+            <input
+              class="input grow mono"
+              [value]="arrayText()"
+              (input)="arrayText.set($any($event.target).value)"
+              (keydown.enter)="applyArray()"
+              aria-label="Numbers, separated by commas"
+              placeholder="38, 27, 43, 3"
+            />
+            @if (algo.key === 'binary_search') {
+              <input
+                class="input target mono"
+                [value]="targetText()"
+                (input)="targetText.set($any($event.target).value)"
+                (keydown.enter)="applyArray()"
+                aria-label="Number to find"
+                placeholder="target"
+              />
+            }
+            <button class="btn primary" (click)="applyArray()">Run</button>
+            <button class="btn" (click)="shuffle()"><i class="ti ti-arrows-shuffle"></i>Random</button>
+            <button class="btn ghost" (click)="resetInput()">Reset</button>
+          </div>
+          @if (inputError()) {
+            <p class="error">{{ inputError() }}</p>
+          }
+        </section>
+      }
+      <section class="card keys">
+        <h2>Shortcuts</h2>
+        <div class="faint">
+          <span><kbd>Space</kbd> play / pause</span>
+          <span><kbd>←</kbd> <kbd>→</kbd> step</span>
+          <span><kbd>R</kbd> restart</span>
+        </div>
+      </section>
+    </div>
+  }
+</div>

@@ -1,0 +1,433 @@
+# Cortex topic catalogue — the knowledge map.
+#
+# Each topic:
+#   id:          unique slug (used in URLs)
+#   track:       dsa | languages | frameworks | ai | system-design
+#   title:       display name
+#   summary:     one or two sentences
+#   difficulty:  1 (easy) .. 5 (hard)
+#   phase:       roadmap phase where its interactive content ships
+#   visualizer:  (optional) algorithm key from the DSA visualizer
+#   requires:    (optional) list of prerequisite topic ids
+#   resources:   (optional) links to official docs: [{label, url}]
+#
+# The backend checks this file on startup: unknown ids or cycles stop the app.
+
+topics:
+  # ---------------- DSA ----------------
+  - id: big-o
+    track: dsa
+    title: Big-O Notation
+    summary: How to describe the time and memory an algorithm needs as input grows.
+    difficulty: 1
+    phase: 1
+
+  - id: arrays
+    track: dsa
+    title: Arrays
+    summary: Contiguous memory, indexing in O(1), and the cost of inserting in the middle.
+    difficulty: 1
+    phase: 1
+    requires: [big-o]
+
+  - id: recursion
+    track: dsa
+    title: Recursion
+    summary: Solving a problem by solving smaller copies of itself; base cases and the call stack.
+    difficulty: 2
+    phase: 1
+    requires: [big-o]
+
+  - id: bubble-sort
+    track: dsa
+    title: Bubble Sort
+    summary: Repeatedly swap neighbours that are out of order until the array is sorted.
+    difficulty: 1
+    phase: 1
+    visualizer: bubble_sort
+    requires: [arrays]
+
+  - id: insertion-sort
+    track: dsa
+    title: Insertion Sort
+    summary: Grow a sorted prefix one item at a time by inserting each item into place.
+    difficulty: 1
+    phase: 1
+    visualizer: insertion_sort
+    requires: [arrays]
+
+  - id: merge-sort
+    track: dsa
+    title: Merge Sort
+    summary: Split in half, sort each half, merge the two sorted halves. Always O(n log n).
+    difficulty: 2
+    phase: 1
+    visualizer: merge_sort
+    requires: [arrays, recursion]
+
+  - id: quick-sort
+    track: dsa
+    title: Quick Sort
+    summary: Pick a pivot, partition smaller items left and larger right, recurse on each side.
+    difficulty: 3
+    phase: 1
+    visualizer: quick_sort
+    requires: [arrays, recursion]
+
+  - id: binary-search
+    track: dsa
+    title: Binary Search
+    summary: Find an item in a sorted array by halving the search range each step. O(log n).
+    difficulty: 2
+    phase: 1
+    visualizer: binary_search
+    requires: [arrays]
+
+  - id: two-pointers
+    track: dsa
+    title: Two Pointers
+    summary: Move two indices through an array to solve pair and window problems in O(n).
+    difficulty: 2
+    phase: 3
+    requires: [arrays]
+
+  - id: hash-maps
+    track: dsa
+    title: Hash Maps
+    summary: Key-value lookup in average O(1) using hashing; collisions and load factor.
+    difficulty: 2
+    phase: 3
+    requires: [arrays]
+
+  - id: stacks-queues
+    track: dsa
+    title: Stacks & Queues
+    summary: Last-in-first-out and first-in-first-out containers, and where each one shows up.
+    difficulty: 1
+    phase: 3
+    requires: [arrays]
+
+  - id: trees
+    track: dsa
+    title: Trees
+    summary: Hierarchical data; traversals (pre, in, post, level order) and tree height.
+    difficulty: 2
+    phase: 3
+    requires: [recursion]
+
+  - id: heaps
+    track: dsa
+    title: Heaps & Priority Queues
+    summary: A tree that always gives you the smallest (or largest) item in O(log n).
+    difficulty: 3
+    phase: 3
+    requires: [trees]
+
+  - id: graphs
+    track: dsa
+    title: Graphs
+    summary: Nodes and edges; adjacency lists vs matrices; directed, weighted and cyclic graphs.
+    difficulty: 3
+    phase: 1
+    requires: [stacks-queues, hash-maps]
+
+  - id: bfs
+    track: dsa
+    title: Breadth-First Search
+    summary: Explore a graph level by level with a queue; finds shortest paths in unweighted graphs.
+    difficulty: 3
+    phase: 1
+    visualizer: bfs_grid
+    requires: [graphs]
+
+  - id: dijkstra
+    track: dsa
+    title: Dijkstra's Algorithm
+    summary: Shortest paths in a graph with non-negative weights, using a priority queue.
+    difficulty: 4
+    phase: 1
+    visualizer: dijkstra
+    requires: [bfs, heaps]
+
+  - id: dynamic-programming
+    track: dsa
+    title: Dynamic Programming
+    summary: Break a problem into overlapping subproblems and reuse their answers.
+    difficulty: 4
+    phase: 3
+    requires: [recursion, hash-maps]
+
+  # ---------------- Languages ----------------
+  - id: python-basics
+    track: languages
+    title: Python Fundamentals
+    summary: Types, control flow, functions, comprehensions and the standard library.
+    difficulty: 1
+    phase: 3
+
+  - id: python-advanced
+    track: languages
+    title: Advanced Python
+    summary: Generators, decorators, context managers, typing and async/await.
+    difficulty: 3
+    phase: 3
+    requires: [python-basics]
+
+  - id: typescript-basics
+    track: languages
+    title: TypeScript Fundamentals
+    summary: JavaScript with types; interfaces, generics and how the compiler helps you.
+    difficulty: 2
+    phase: 3
+
+  - id: concurrency
+    track: languages
+    title: Concurrency Models
+    summary: Threads, processes, async event loops, and when each one is the right tool.
+    difficulty: 4
+    phase: 3
+    requires: [python-advanced]
+
+  # ---------------- Frameworks: Django ----------------
+  - id: django-basics
+    track: frameworks
+    title: Django Fundamentals
+    summary: Projects and apps, settings, manage.py, and how a request flows through URLs, views and templates.
+    difficulty: 2
+    phase: 3
+    requires: [python-basics]
+    resources:
+      - { label: Django at a glance, url: "https://docs.djangoproject.com/en/stable/intro/overview/" }
+      - { label: "Tutorial, part 1", url: "https://docs.djangoproject.com/en/stable/intro/tutorial01/" }
+      - { label: Settings, url: "https://docs.djangoproject.com/en/stable/topics/settings/" }
+
+  - id: django-urls-views
+    track: frameworks
+    title: URLs & Views
+    summary: Map URLs to views, write function-based and class-based views, and return responses.
+    difficulty: 2
+    phase: 3
+    requires: [django-basics]
+    resources:
+      - { label: URL dispatcher, url: "https://docs.djangoproject.com/en/stable/topics/http/urls/" }
+      - { label: Writing views, url: "https://docs.djangoproject.com/en/stable/topics/http/views/" }
+      - { label: Class-based views, url: "https://docs.djangoproject.com/en/stable/topics/class-based-views/" }
+
+  - id: django-models-orm
+    track: frameworks
+    title: Models & the ORM
+    summary: Define your data as Python classes and query it with QuerySets instead of writing raw SQL.
+    difficulty: 3
+    phase: 3
+    requires: [django-basics]
+    resources:
+      - { label: Models, url: "https://docs.djangoproject.com/en/stable/topics/db/models/" }
+      - { label: Making queries, url: "https://docs.djangoproject.com/en/stable/topics/db/queries/" }
+      - { label: QuerySet API reference, url: "https://docs.djangoproject.com/en/stable/ref/models/querysets/" }
+
+  - id: django-migrations
+    track: frameworks
+    title: Migrations
+    summary: How Django turns model changes into versioned schema changes, and how to apply them safely.
+    difficulty: 2
+    phase: 3
+    requires: [django-models-orm]
+    resources:
+      - { label: Migrations, url: "https://docs.djangoproject.com/en/stable/topics/migrations/" }
+
+  - id: django-templates
+    track: frameworks
+    title: Templates
+    summary: Render HTML with the template language - variables, tags, filters and template inheritance.
+    difficulty: 1
+    phase: 3
+    requires: [django-urls-views]
+    resources:
+      - { label: Templates, url: "https://docs.djangoproject.com/en/stable/topics/templates/" }
+
+  - id: django-forms
+    track: frameworks
+    title: Forms & Validation
+    summary: Collect and validate user input with Forms and ModelForms, including CSRF protection.
+    difficulty: 2
+    phase: 3
+    requires: [django-templates, django-models-orm]
+    resources:
+      - { label: Working with forms, url: "https://docs.djangoproject.com/en/stable/topics/forms/" }
+      - { label: Forms from models, url: "https://docs.djangoproject.com/en/stable/topics/forms/modelforms/" }
+
+  - id: django-admin
+    track: frameworks
+    title: The Admin Site
+    summary: Get a ready-made back office for your models, then customise its lists, filters and forms.
+    difficulty: 1
+    phase: 3
+    requires: [django-models-orm]
+    resources:
+      - { label: The Django admin site, url: "https://docs.djangoproject.com/en/stable/ref/contrib/admin/" }
+      - { label: "Tutorial, part 7", url: "https://docs.djangoproject.com/en/stable/intro/tutorial07/" }
+
+  - id: django-auth
+    track: frameworks
+    title: Authentication & Permissions
+    summary: Users, login and logout, password storage, groups, and permission checks in views.
+    difficulty: 3
+    phase: 3
+    requires: [django-urls-views, django-models-orm]
+    resources:
+      - { label: User authentication, url: "https://docs.djangoproject.com/en/stable/topics/auth/" }
+      - { label: Using the auth system, url: "https://docs.djangoproject.com/en/stable/topics/auth/default/" }
+
+  - id: django-query-optimization
+    track: frameworks
+    title: ORM Performance
+    summary: Find and fix N+1 queries with select_related and prefetch_related, indexes, and only() / defer().
+    difficulty: 4
+    phase: 3
+    requires: [django-models-orm, databases]
+    resources:
+      - { label: Database access optimization, url: "https://docs.djangoproject.com/en/stable/topics/db/optimization/" }
+      - { label: QuerySet API reference, url: "https://docs.djangoproject.com/en/stable/ref/models/querysets/" }
+
+  - id: django-rest-framework
+    track: frameworks
+    title: Django REST Framework
+    summary: Build JSON APIs with serializers, viewsets and routers, plus API authentication and permissions.
+    difficulty: 3
+    phase: 3
+    requires: [django-urls-views, django-models-orm]
+    resources:
+      - { label: DRF quickstart, url: "https://www.django-rest-framework.org/tutorial/quickstart/" }
+      - { label: Serializers, url: "https://www.django-rest-framework.org/api-guide/serializers/" }
+      - { label: ViewSets, url: "https://www.django-rest-framework.org/api-guide/viewsets/" }
+
+  - id: django-testing
+    track: frameworks
+    title: Testing Django Apps
+    summary: Write fast, reliable tests with TestCase, the test client and fixtures.
+    difficulty: 2
+    phase: 3
+    requires: [django-urls-views]
+    resources:
+      - { label: Testing in Django, url: "https://docs.djangoproject.com/en/stable/topics/testing/" }
+      - { label: Testing tools, url: "https://docs.djangoproject.com/en/stable/topics/testing/tools/" }
+
+  - id: django-async-tasks
+    track: frameworks
+    title: Caching, Async & Background Jobs
+    summary: Speed Django up with the cache framework and async views, and move slow work to Celery workers.
+    difficulty: 4
+    phase: 3
+    requires: [django-urls-views, caching, message-queues]
+    resources:
+      - { label: Cache framework, url: "https://docs.djangoproject.com/en/stable/topics/cache/" }
+      - { label: Asynchronous support, url: "https://docs.djangoproject.com/en/stable/topics/async/" }
+      - { label: Celery with Django, url: "https://docs.celeryq.dev/en/stable/django/first-steps-with-django.html" }
+
+  - id: django-deployment
+    track: frameworks
+    title: Deploying Django
+    summary: Production settings, static files, WSGI and ASGI servers, and the security checklist.
+    difficulty: 3
+    phase: 3
+    requires: [django-testing, django-auth]
+    resources:
+      - { label: How to deploy Django, url: "https://docs.djangoproject.com/en/stable/howto/deployment/" }
+      - { label: Deployment checklist, url: "https://docs.djangoproject.com/en/stable/howto/deployment/checklist/" }
+      - { label: Security in Django, url: "https://docs.djangoproject.com/en/stable/topics/security/" }
+
+  # ---------------- AI ----------------
+  - id: ml-basics
+    track: ai
+    title: Machine Learning Basics
+    summary: Training vs inference, loss functions, overfitting and evaluation.
+    difficulty: 2
+    phase: 5
+
+  - id: embeddings
+    track: ai
+    title: Embeddings
+    summary: Turning text into vectors so that similar meanings end up close together.
+    difficulty: 3
+    phase: 5
+    requires: [ml-basics]
+
+  - id: transformers
+    track: ai
+    title: Transformers & Attention
+    summary: How attention lets every token look at every other token; the core of modern LLMs.
+    difficulty: 4
+    phase: 5
+    requires: [embeddings]
+
+  - id: prompting
+    track: ai
+    title: Prompt Engineering
+    summary: Writing clear instructions, giving examples, and structuring outputs from LLMs.
+    difficulty: 2
+    phase: 5
+    requires: [ml-basics]
+
+  - id: rag
+    track: ai
+    title: Retrieval-Augmented Generation
+    summary: Retrieve relevant documents and give them to the model so it answers from your data.
+    difficulty: 3
+    phase: 5
+    requires: [embeddings, prompting]
+
+  - id: ai-agents
+    track: ai
+    title: AI Agents & Tool Use
+    summary: Letting models call tools in a loop to complete multi-step tasks.
+    difficulty: 4
+    phase: 5
+    requires: [prompting]
+
+  # ---------------- System design ----------------
+  - id: sd-fundamentals
+    track: system-design
+    title: System Design Fundamentals
+    summary: Latency vs throughput, availability, and how to approach a design interview.
+    difficulty: 2
+    phase: 3
+
+  - id: load-balancing
+    track: system-design
+    title: Load Balancing
+    summary: Spreading traffic across servers; round robin, least connections, health checks.
+    difficulty: 2
+    phase: 3
+    requires: [sd-fundamentals]
+
+  - id: caching
+    track: system-design
+    title: Caching
+    summary: Keeping hot data close; cache-aside, write-through, eviction policies like LRU.
+    difficulty: 3
+    phase: 3
+    requires: [sd-fundamentals, hash-maps]
+
+  - id: databases
+    track: system-design
+    title: Databases & Indexing
+    summary: SQL vs NoSQL, indexes, transactions, replication and sharding.
+    difficulty: 3
+    phase: 3
+    requires: [sd-fundamentals]
+
+  - id: message-queues
+    track: system-design
+    title: Message Queues
+    summary: Decoupling services with queues and streams; at-least-once delivery and retries.
+    difficulty: 3
+    phase: 3
+    requires: [sd-fundamentals, stacks-queues]
+
+  - id: distributed-systems
+    track: system-design
+    title: Distributed Systems
+    summary: Consistency models, CAP, consensus and what happens when the network fails.
+    difficulty: 5
+    phase: 3
+    requires: [databases, message-queues]
