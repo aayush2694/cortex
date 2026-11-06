@@ -1,5 +1,7 @@
 # Cortex
 
+[![CI](https://github.com/aayush2694/cortex/actions/workflows/ci.yml/badge.svg)](https://github.com/aayush2694/cortex/actions/workflows/ci.yml)
+
 An interactive learning platform for switching jobs in tech: DSA, programming languages,
 frameworks (Django), AI and system design. Every concept is something you can play with, and
 an AI tutor knows what you've learned.
