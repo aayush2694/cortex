@@ -56,7 +56,7 @@ const R = 22;
       }
       rect {
         fill: var(--surface);
-        stroke: var(--border-strong);
+        stroke: var(--tone-4);
       }
       text {
         fill: var(--text-2);
@@ -64,15 +64,19 @@ const R = 22;
         text-anchor: middle;
       }
       &.tree line {
-        stroke: color-mix(in srgb, var(--ok) 70%, transparent);
-        stroke-width: 3;
+        stroke: var(--tone-3);
+        stroke-width: 3.5;
       }
       &.lit line {
-        stroke: var(--warn);
+        stroke: var(--tone-1);
         stroke-width: 3;
+        stroke-dasharray: 6 4;
       }
       &.lit rect {
-        stroke: var(--warn);
+        stroke: var(--tone-1);
+      }
+      &.lit text {
+        fill: var(--text);
       }
     }
     .node {
@@ -93,12 +97,12 @@ const R = 22;
         text-anchor: middle;
       }
       &.done circle {
-        fill: var(--ok-soft);
-        stroke: var(--ok);
+        fill: var(--tone-3);
+        stroke: var(--tone-3);
       }
       &.current circle {
-        fill: var(--accent);
-        stroke: var(--accent);
+        fill: var(--tone-1);
+        stroke: var(--tone-1);
       }
       &.current .name {
         fill: var(--on-accent);

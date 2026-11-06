@@ -43,5 +43,10 @@ export const routes: Routes = [
     title: 'Roadmap · Cortex',
     loadComponent: () => import('./features/roadmap/roadmap').then((m) => m.Roadmap),
   },
+  {
+    path: 'settings',
+    title: 'Settings · Cortex',
+    loadComponent: () => import('./features/settings/settings').then((m) => m.Settings),
+  },
   { path: '**', redirectTo: '' },
 ];

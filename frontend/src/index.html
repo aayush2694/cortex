@@ -1,18 +1,20 @@
 <!doctype html>
-<html lang="en" data-theme="midnight">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="utf-8">
   <title>Cortex</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Cortex: learn DSA, AI and system design by playing with them.">
+  <meta name="description" content="Cortex: learn DSA, Django, AI and system design by playing with them.">
+  <meta name="color-scheme" content="dark light">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <script>
-    // Apply the saved theme before Angular boots, so the page never flashes the wrong colours.
-    try { var t = localStorage.getItem('cortex.theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+    // Apply the saved appearance before Angular boots, so the page never flashes the wrong mode.
+    try {
+      var a = localStorage.getItem('cortex.appearance') || 'auto';
+      if (a === 'auto') a = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+      document.documentElement.dataset.theme = a;
+    } catch (e) {}
   </script>
 </head>
 <body>

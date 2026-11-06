@@ -47,8 +47,9 @@ const key = (c: Cell | null | undefined) => (c ? `${c[0]},${c[1]}` : '');
       aspect-ratio: 1;
       border: 0;
       padding: 0;
-      border-radius: 4px;
-      background: var(--raised);
+      border-radius: 5px;
+      background: transparent;
+      box-shadow: inset 0 0 0 1px var(--tone-5);
       color: var(--on-accent);
       cursor: pointer;
       display: grid;
@@ -58,25 +59,33 @@ const key = (c: Cell | null | undefined) => (c ? `${c[0]},${c[1]}` : '');
       &:hover {
         outline: 1px solid var(--border-strong);
       }
+      /* Brightness scale: path brightest, then current, queue, visited; walls are hatched. */
       &.wall {
-        background: var(--text-3);
+        background: repeating-linear-gradient(
+          45deg,
+          var(--tone-3) 0 2px,
+          transparent 2px 5px
+        );
+        box-shadow: inset 0 0 0 1px var(--tone-3);
       }
       &.visited {
-        background: color-mix(in srgb, var(--accent) 28%, var(--raised));
+        background: var(--tone-4);
       }
       &.frontier {
-        background: color-mix(in srgb, var(--warn) 60%, var(--raised));
+        background: var(--tone-3);
       }
       &.current {
-        background: var(--warn);
-        transform: scale(1.08);
+        background: var(--tone-2);
+        transform: scale(1.1);
       }
       &.path {
-        background: var(--ok);
+        background: var(--tone-1);
       }
       &.start,
       &.end {
-        background: var(--accent);
+        background: var(--tone-1);
+        color: var(--on-accent);
+        box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--tone-1);
       }
     }
     .hint {

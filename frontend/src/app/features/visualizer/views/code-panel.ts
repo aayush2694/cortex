@@ -16,7 +16,6 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
       display: flex;
       flex-direction: column;
       background: var(--surface);
-      border: 1px solid var(--border);
       border-radius: var(--radius-lg);
       overflow: hidden;
       min-width: 0;
@@ -25,7 +24,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
       display: flex;
       justify-content: space-between;
       padding: 10px 14px;
-      border-bottom: 1px solid var(--border);
+      border-bottom: 0.5px solid var(--separator);
     }
     pre {
       margin: 0;
@@ -40,8 +39,8 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
       border-left: 3px solid transparent;
       transition: background-color 0.12s, color 0.12s;
       &.on {
-        background: var(--accent-soft);
-        border-left-color: var(--accent);
+        background: var(--selected);
+        border-left-color: var(--text);
         color: var(--text);
       }
     }

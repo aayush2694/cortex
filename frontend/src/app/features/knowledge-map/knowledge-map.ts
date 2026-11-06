@@ -3,12 +3,14 @@ import { Router } from '@angular/router';
 
 import { TRACK_LABELS, Track } from '../../core/api/models';
 import { LearningStore } from '../../core/learning-store';
+import { StatusDot } from '../../shared/status-dot';
 import { NODE_H, NODE_W, layoutGraph } from './layout';
 
 type Filter = Track | 'all';
 
 @Component({
   selector: 'app-knowledge-map',
+  imports: [StatusDot],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page wide">
@@ -18,13 +20,13 @@ type Filter = Track | 'all';
           <p>Lines point from what to learn first to what it unlocks. Click a topic to open it.</p>
         </div>
         <div class="legend">
-          <span><i class="sw ok"></i>Known</span>
-          <span><i class="sw warn"></i>Learning</span>
-          <span><i class="sw"></i>Not started</span>
+          <span><app-status-dot status="confident" />Known</span>
+          <span><app-status-dot status="learning" />Learning</span>
+          <span><app-status-dot status="not_started" />Not started</span>
         </div>
       </header>
 
-      <div class="filters" role="tablist" aria-label="Filter by track">
+      <div class="filters segmented" role="tablist" aria-label="Filter by track">
         @for (f of filters; track f.value) {
           <button
             role="tab"
@@ -78,8 +80,14 @@ type Filter = Track | 'all';
                 (click)="open(n.topic.id)"
                 (keydown.enter)="open(n.topic.id)"
               >
-                <rect [attr.width]="nodeW" [attr.height]="nodeH" rx="9" />
-                <circle cx="16" [attr.cy]="nodeH / 2" r="4" class="status" />
+                <rect [attr.width]="nodeW" [attr.height]="nodeH" rx="10" />
+                <!-- Status by shape: ● known, ◐ learning, ○ not started -->
+                <circle cx="16" [attr.cy]="nodeH / 2" r="4.5" class="status-ring" />
+                @if (tone(n.topic.id) === 'ok') {
+                  <circle cx="16" [attr.cy]="nodeH / 2" r="4.5" class="status-fill" />
+                } @else if (tone(n.topic.id) === 'warn') {
+                  <path [attr.d]="halfDot(16, nodeH / 2, 4.5)" class="status-fill" />
+                }
                 <title>{{ n.topic.title }}</title>
                 <text x="28" [attr.y]="nodeH / 2 + 4.5">{{ short(n.topic.title) }}</text>
                 @if (n.topic.visualizer) {
@@ -104,55 +112,22 @@ type Filter = Track | 'all';
     .legend {
       display: flex;
       gap: 16px;
-      font-size: 12.5px;
+      font-size: 13px;
       color: var(--text-2);
       span {
         display: inline-flex;
         align-items: center;
-        gap: 6px;
-      }
-    }
-    .sw {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--border-strong);
-      &.ok {
-        background: var(--ok);
-      }
-      &.warn {
-        background: var(--warn);
+        gap: 7px;
       }
     }
     .filters {
-      display: flex;
-      gap: 6px;
-      margin-bottom: 12px;
-      flex-wrap: wrap;
-      button {
-        height: 30px;
-        padding: 0 12px;
-        border-radius: 999px;
-        border: 1px solid var(--border);
-        background: transparent;
-        color: var(--text-2);
-        font: 500 12.5px var(--font);
-        cursor: pointer;
-        &:hover {
-          color: var(--text);
-        }
-        &.on {
-          background: var(--accent-soft);
-          border-color: transparent;
-          color: var(--accent-text);
-        }
-      }
+      margin-bottom: 14px;
     }
     .canvas {
       overflow: auto;
       padding: 8px;
       background:
-        radial-gradient(circle, var(--border) 1px, transparent 1px) 0 0 / 22px 22px,
+        radial-gradient(circle, var(--raised) 1px, transparent 1px) 0 0 / 22px 22px,
         var(--surface);
     }
     svg {
@@ -165,7 +140,7 @@ type Filter = Track | 'all';
       stroke-width: 1.4;
       transition: stroke 0.15s, opacity 0.15s;
       &.lit {
-        stroke: var(--accent);
+        stroke: var(--text);
         stroke-width: 2;
       }
       &.dim {
@@ -178,11 +153,11 @@ type Filter = Track | 'all';
     .node {
       cursor: pointer;
       outline: none;
-      transition: opacity 0.15s;
+      transition: opacity 0.2s;
       > rect {
         fill: var(--raised);
-        stroke: var(--border-strong);
-        stroke-width: 1;
+        stroke: transparent;
+        stroke-width: 1.5;
         transition: stroke 0.15s, fill 0.15s;
       }
       text {
@@ -190,28 +165,27 @@ type Filter = Track | 'all';
         font: 500 12.5px var(--font);
       }
       .viz-mark rect {
-        fill: var(--accent-text);
+        fill: var(--text-2);
         stroke: none;
       }
-      .status {
-        fill: var(--text-3);
+      .status-ring {
+        fill: none;
+        stroke: var(--text-3);
+        stroke-width: 1.5;
       }
-      &.ok .status {
-        fill: var(--ok);
+      .status-fill {
+        fill: var(--text);
       }
-      &.warn .status {
-        fill: var(--warn);
-      }
-      &.ok > rect {
-        stroke: color-mix(in srgb, var(--ok) 45%, var(--border-strong));
+      &.ok .status-ring,
+      &.warn .status-ring {
+        stroke: var(--text);
       }
       &.lit > rect,
       &:focus-visible > rect {
-        stroke: var(--accent);
-        fill: var(--hover);
+        stroke: var(--text);
       }
       &.dim {
-        opacity: 0.25;
+        opacity: 0.22;
       }
     }
   `,
@@ -264,6 +238,11 @@ export class KnowledgeMapPage {
   /** Keep labels inside their box; the full title shows on hover. */
   protected short(title: string): string {
     return title.length > 24 ? `${title.slice(0, 23).trimEnd()}…` : title;
+  }
+
+  /** Left half of a circle, for the "learning" state. */
+  protected halfDot(cx: number, cy: number, r: number): string {
+    return `M${cx},${cy - r} A${r},${r} 0 0 0 ${cx},${cy + r} Z`;
   }
 
   protected tone(id: string): string {

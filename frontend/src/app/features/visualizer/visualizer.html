@@ -1,5 +1,5 @@
 <div class="page wide">
-  <nav class="algos" aria-label="Algorithms">
+  <nav class="algos segmented" aria-label="Algorithms">
     @for (a of list(); track a.key) {
       <a [routerLink]="['/visualizer', a.key]" [class.on]="a.key === selected()?.key">{{ a.title }}</a>
     } @empty {

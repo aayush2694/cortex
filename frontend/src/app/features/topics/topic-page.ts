@@ -13,36 +13,27 @@ import { RouterLink } from '@angular/router';
 import { Api, errorMessage } from '../../core/api/api';
 import { Status, TRACK_LABELS } from '../../core/api/models';
 import { LearningStore } from '../../core/learning-store';
+import { StatusDot } from '../../shared/status-dot';
 
-const STATUSES: { value: Status; label: string; icon: string }[] = [
-  { value: 'not_started', label: 'Not started', icon: 'ti-circle' },
-  { value: 'learning', label: 'Learning', icon: 'ti-progress' },
-  { value: 'confident', label: 'I know this', icon: 'ti-circle-check' },
+const STATUSES: { value: Status; label: string }[] = [
+  { value: 'not_started', label: 'Not started' },
+  { value: 'learning', label: 'Learning' },
+  { value: 'confident', label: 'I know this' },
 ];
 
 @Component({
   selector: 'app-topic-page',
-  imports: [RouterLink],
+  imports: [RouterLink, StatusDot],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page narrow">
-      <a routerLink="/map" class="back faint"><i class="ti ti-arrow-left"></i> Knowledge map</a>
+      <a routerLink="/map" class="back"><i class="ti ti-chevron-left"></i>Knowledge map</a>
 
       @if (topic.error()) {
         <div class="card"><h2>Topic not found</h2><p class="muted">It may have been renamed.</p></div>
       } @else if (topic.value(); as t) {
         <header class="head">
-          <div class="meta">
-            <span class="pill">{{ trackLabel[t.track] }}</span>
-            <span class="pill" [attr.aria-label]="'Difficulty ' + t.difficulty + ' of 5'">
-              @for (d of [1, 2, 3, 4, 5]; track d) {
-                <span class="dot" [class.on]="d <= t.difficulty"></span>
-              }
-            </span>
-            @if (mastery() > 0) {
-              <span class="pill accent">{{ masteryPercent() }}% mastery</span>
-            }
-          </div>
+          <div class="eyebrow">{{ trackLabel[t.track] }} · {{ difficultyLabel(t.difficulty) }}</div>
           <h1>{{ t.title }}</h1>
           <p class="summary">{{ t.summary }}</p>
           <div class="actions">
@@ -57,233 +48,174 @@ const STATUSES: { value: Status; label: string; icon: string }[] = [
           </div>
         </header>
 
-        <section class="card">
-          <h2>How well do you know it?</h2>
+        <span class="group-label">Your progress</span>
+        <div class="card progress">
           <div class="segmented" role="radiogroup" aria-label="Your status">
             @for (s of statuses; track s.value) {
               <button
                 role="radio"
                 [attr.aria-checked]="status() === s.value"
-                [class.selected]="status() === s.value"
+                [class.on]="status() === s.value"
                 [disabled]="saving()"
                 (click)="setStatus(s.value)"
               >
-                <i class="ti {{ s.icon }}" aria-hidden="true"></i>{{ s.label }}
+                <app-status-dot [status]="s.value" />{{ s.label }}
               </button>
             }
           </div>
+          <div class="mastery">
+            <span class="label">Mastery</span>
+            <span class="meter"><span [style.width.%]="masteryPercent()"></span></span>
+            <span class="mono">{{ masteryPercent() }}%</span>
+          </div>
           @if (saveError()) {
-            <p class="error">{{ saveError() }}</p>
+            <p class="error"><i class="ti ti-alert-circle"></i> {{ saveError() }}</p>
           }
-        </section>
+        </div>
 
         @if (t.resources.length) {
-          <section class="card">
-            <h2>Official docs</h2>
-            <div class="docs">
-              @for (r of t.resources; track r.url) {
-                <a class="doc" [href]="r.url" target="_blank" rel="noopener noreferrer">
-                  <i class="ti ti-book" aria-hidden="true"></i>
-                  <span class="doc-text">
-                    <span>{{ r.label }}</span>
-                    <span class="faint">{{ host(r.url) }}</span>
-                  </span>
-                  <i class="ti ti-external-link" aria-hidden="true"></i>
-                  <span class="sr-only">(opens in a new tab)</span>
-                </a>
-              }
-            </div>
-          </section>
+          <span class="group-label">Official docs</span>
+          <div class="list">
+            @for (r of t.resources; track r.url) {
+              <a class="list-row" [href]="r.url" target="_blank" rel="noopener noreferrer">
+                <span class="tile"><i class="ti ti-book" aria-hidden="true"></i></span>
+                <span class="row-main">
+                  <span>{{ r.label }}</span>
+                  <span class="faint">{{ host(r.url) }}</span>
+                </span>
+                <i class="ti ti-arrow-up-right chev" aria-hidden="true"></i>
+                <span class="sr-only">(opens in a new tab)</span>
+              </a>
+            }
+          </div>
         }
 
         <div class="relations">
-          <section class="card">
-            <h2>Learn first</h2>
-            @for (r of t.requires; track r.id) {
-              <a class="rel" [routerLink]="['/topics', r.id]">
-                <span class="tone {{ toneOf(r.id) }}"></span>{{ r.title }}
-                <i class="ti ti-chevron-right"></i>
-              </a>
-            } @empty {
-              <p class="muted">Nothing. This is a starting point.</p>
-            }
-          </section>
-          <section class="card">
-            <h2>Unlocks</h2>
-            @for (r of t.unlocks; track r.id) {
-              <a class="rel" [routerLink]="['/topics', r.id]">
-                <span class="tone {{ toneOf(r.id) }}"></span>{{ r.title }}
-                <i class="ti ti-chevron-right"></i>
-              </a>
-            } @empty {
-              <p class="muted">Nothing yet. More topics are coming.</p>
-            }
-          </section>
+          <div>
+            <span class="group-label">Learn first</span>
+            <div class="list">
+              @for (r of t.requires; track r.id) {
+                <a class="list-row compact" [routerLink]="['/topics', r.id]">
+                  <app-status-dot [status]="statusOf(r.id)" />
+                  <span class="row-main"><span>{{ r.title }}</span></span>
+                  <i class="ti ti-chevron-right chev" aria-hidden="true"></i>
+                </a>
+              } @empty {
+                <div class="list-row compact"><span class="muted">Nothing. This is a starting point.</span></div>
+              }
+            </div>
+          </div>
+          <div>
+            <span class="group-label">Unlocks</span>
+            <div class="list">
+              @for (r of t.unlocks; track r.id) {
+                <a class="list-row compact" [routerLink]="['/topics', r.id]">
+                  <app-status-dot [status]="statusOf(r.id)" />
+                  <span class="row-main"><span>{{ r.title }}</span></span>
+                  <i class="ti ti-chevron-right chev" aria-hidden="true"></i>
+                </a>
+              } @empty {
+                <div class="list-row compact"><span class="muted">Nothing yet. More topics are coming.</span></div>
+              }
+            </div>
+          </div>
         </div>
       } @else {
-        <div class="skeleton" style="height: 220px"></div>
+        <div class="skeleton" style="height: 260px"></div>
       }
     </div>
   `,
   styles: `
     .narrow {
-      max-width: 820px;
+      max-width: 800px;
     }
     .back {
       display: inline-flex;
       align-items: center;
-      gap: 4px;
-      margin-bottom: 20px;
+      gap: 2px;
+      margin: 0 0 18px -4px;
+      font-size: 14px;
+      color: var(--text-2);
       &:hover {
         color: var(--text);
       }
     }
     .head {
-      margin-bottom: 24px;
+      margin-bottom: 28px;
     }
-    .meta {
-      display: flex;
-      gap: 6px;
-      margin-bottom: 12px;
-    }
-    .dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--border-strong);
-      &.on {
-        background: var(--text-2);
-      }
+    .eyebrow {
+      font-size: 13px;
+      color: var(--text-2);
+      margin-bottom: 4px;
     }
     h1 {
-      font-size: 28px;
+      font-size: 36px;
     }
     .summary {
-      font-size: 15px;
+      font-size: 17px;
+      line-height: 1.45;
       color: var(--text-2);
-      margin: 8px 0 18px;
-      max-width: 60ch;
+      margin: 10px 0 20px;
+      max-width: 58ch;
     }
     .actions {
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
     }
-    section {
-      margin-bottom: 12px;
-      h2 {
-        margin-bottom: 12px;
+    .group-label {
+      margin-top: 24px;
+    }
+    .progress {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      app-status-dot {
+        margin-right: 2px;
       }
     }
-    .segmented {
-      display: inline-flex;
-      padding: 3px;
-      gap: 3px;
-      border-radius: 10px;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      flex-wrap: wrap;
-      button {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        height: 32px;
-        padding: 0 14px;
-        border: 0;
-        border-radius: 7px;
-        background: transparent;
-        color: var(--text-2);
-        font: 500 13px var(--font);
-        cursor: pointer;
-        &:hover {
-          color: var(--text);
-        }
-        &.selected {
-          background: var(--raised);
-          color: var(--text);
-          i {
-            color: var(--accent);
-          }
-        }
+    .mastery {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 12px;
+    }
+    .meter {
+      height: 4px;
+      border-radius: 2px;
+      background: var(--raised);
+      overflow: hidden;
+      span {
+        display: block;
+        height: 100%;
+        background: var(--text);
+        transition: width 0.6s var(--ease);
       }
     }
     .error {
-      color: var(--bad);
       font-size: 13px;
-      margin-top: 8px;
-    }
-    .docs {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 8px;
-    }
-    .doc {
+      color: var(--text);
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 10px 12px;
-      border-radius: var(--radius);
-      border: 1px solid var(--border);
-      color: var(--text);
-      transition: border-color 0.15s, background-color 0.15s;
-      > i:first-child {
-        font-size: 18px;
-        color: var(--accent);
-      }
-      > i:last-of-type {
-        color: var(--text-3);
-      }
-      &:hover {
-        border-color: var(--accent);
-        background: var(--hover);
-      }
-    }
-    .doc-text {
-      flex: 1;
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-      span:first-child {
-        font-weight: 500;
-        font-size: 13.5px;
-      }
+      gap: 6px;
     }
     .relations {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 12px;
+      gap: 16px;
     }
-    .rel {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 8px 10px;
-      margin: 0 -10px;
-      border-radius: var(--radius);
-      color: var(--text);
-      i {
-        margin-left: auto;
-        color: var(--text-3);
-      }
-      &:hover {
-        background: var(--hover);
-      }
-    }
-    .tone {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--border-strong);
-      &.ok {
-        background: var(--ok);
-      }
-      &.warn {
-        background: var(--warn);
+    .list-row.compact {
+      min-height: 44px;
+      &::after {
+        left: 40px;
       }
     }
     @media (max-width: 640px) {
       .relations {
         grid-template-columns: 1fr;
+      }
+      h1 {
+        font-size: 30px;
       }
     }
   `,
@@ -302,9 +234,10 @@ export class TopicPage {
   protected readonly saving = signal(false);
   protected readonly saveError = signal('');
 
-  protected readonly status = computed(() => this.store.progressOf(this.id())?.status ?? 'not_started');
-  protected readonly mastery = computed(() => this.store.progressOf(this.id())?.mastery ?? 0);
-  protected readonly masteryPercent = computed(() => Math.round(this.mastery() * 100));
+  protected readonly status = computed(() => this.statusOf(this.id()));
+  protected readonly masteryPercent = computed(() =>
+    Math.round((this.store.progressOf(this.id())?.mastery ?? 0) * 100),
+  );
 
   constructor() {
     // Keep the browser tab title in sync with the topic.
@@ -314,17 +247,20 @@ export class TopicPage {
     });
   }
 
+  protected statusOf(topicId: string): Status {
+    return this.store.progressOf(topicId)?.status ?? 'not_started';
+  }
+
+  protected difficultyLabel(d: number): string {
+    return ['', 'Beginner', 'Easy', 'Intermediate', 'Advanced', 'Expert'][d] ?? '';
+  }
+
   protected host(url: string): string {
     try {
       return new URL(url).hostname.replace(/^www\./, '');
     } catch {
       return url;
     }
-  }
-
-  protected toneOf(topicId: string): string {
-    const s = this.store.progressOf(topicId)?.status;
-    return s === 'confident' ? 'ok' : s === 'learning' ? 'warn' : '';
   }
 
   protected async setStatus(status: Status): Promise<void> {

@@ -12,7 +12,7 @@ import { ThemePicker } from './theme-picker';
     </button>
     <button class="search" (click)="openSearch.emit()">
       <i class="ti ti-search" aria-hidden="true"></i>
-      <span>Search topics, pages, themes</span>
+      <span>Search</span>
       <kbd>⌘K</kbd>
     </button>
     <div class="spacer"></div>
@@ -23,35 +23,36 @@ import { ThemePicker } from './theme-picker';
       position: sticky;
       top: 0;
       z-index: 10;
-      height: 56px;
+      height: 52px;
       display: flex;
       align-items: center;
       gap: 12px;
       padding: 0 24px;
-      border-bottom: 1px solid var(--border);
-      background: color-mix(in srgb, var(--bg) 85%, transparent);
-      backdrop-filter: blur(8px);
+      border-bottom: 0.5px solid var(--separator);
+      background: var(--material);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
     }
     .search {
       display: flex;
       align-items: center;
       gap: 10px;
       width: min(360px, 100%);
-      height: 34px;
-      padding: 0 8px 0 12px;
-      border-radius: var(--radius);
-      border: 1px solid var(--border);
-      background: var(--surface);
-      color: var(--text-3);
-      font: 13px var(--font);
+      height: 32px;
+      padding: 0 8px 0 10px;
+      border-radius: 9px;
+      border: 0;
+      background: var(--raised);
+      color: var(--text-2);
+      font: 13.5px var(--font);
       cursor: pointer;
-      transition: border-color 0.15s;
+      transition: filter 0.15s;
       span {
         flex: 1;
         text-align: left;
       }
       &:hover {
-        border-color: var(--border-strong);
+        filter: brightness(1.1);
       }
     }
     .spacer {

@@ -86,7 +86,7 @@ const PHASES: Phase[] = [
             <div class="card">
               <div class="top">
                 <h2>Phase {{ p.n }} · {{ p.name }}</h2>
-                <span class="pill" [class.ok]="p.status === 'done'" [class.accent]="p.status === 'active'">
+                <span class="pill" [class.strong]="p.status === 'done'" [class.outline]="p.status === 'active'">
                   {{ p.status === 'done' ? 'Done' : p.status === 'active' ? 'In progress' : 'Planned' }}
                 </span>
               </div>
@@ -118,7 +118,7 @@ const PHASES: Phase[] = [
         top: 8px;
         bottom: 8px;
         width: 2px;
-        background: var(--border);
+        background: var(--raised);
       }
     }
     .phase {
@@ -145,16 +145,16 @@ const PHASES: Phase[] = [
       font: 600 13px var(--font);
     }
     .done .node {
-      border-color: var(--ok);
-      background: var(--ok);
+      border-color: var(--text);
+      background: var(--text);
       color: var(--bg);
     }
     .active .node {
-      border-color: var(--accent);
-      color: var(--accent-text);
+      border-color: var(--text);
+      color: var(--text);
     }
     .active .card {
-      border-color: var(--accent);
+      box-shadow: inset 0 0 0 1.5px var(--text);
     }
     .top {
       display: flex;

@@ -48,6 +48,12 @@ const ACTION_TONE: Record<string, Tone> = {
       @if (state()['key'] !== undefined && state()['key'] !== null) {
         <p class="aside muted">Holding <strong>key = {{ state()['key'] }}</strong></p>
       }
+      <div class="legend faint">
+        <span><i class="sw cmp"></i>Active</span>
+        <span><i class="sw pivot"></i>Pivot</span>
+        <span><i class="sw done"></i>In final place</span>
+        <span><i class="sw out"></i>Out of range</span>
+      </div>
     }
   `,
   styles: `
@@ -73,7 +79,7 @@ const ACTION_TONE: Record<string, Tone> = {
     }
     .bar {
       width: 100%;
-      border-radius: 5px 5px 2px 2px;
+      border-radius: 6px;
       background: var(--bar);
       transition: height 0.25s var(--ease), background-color 0.15s, opacity 0.15s;
     }
@@ -81,24 +87,22 @@ const ACTION_TONE: Record<string, Tone> = {
       font: 500 11px var(--mono);
       color: var(--text-2);
     }
-    .cmp {
-      background: var(--warn) !important;
-    }
-    .act {
-      background: var(--bad) !important;
+    /* Monochrome states: brightness and outline instead of colour. */
+    .cmp,
+    .act,
+    .found {
+      background: var(--tone-1) !important;
+      color: var(--on-accent) !important;
     }
     .done {
-      background: var(--ok) !important;
-    }
-    .found {
-      background: var(--ok) !important;
-      color: var(--bg) !important;
+      background: var(--tone-3) !important;
     }
     .pivot {
-      background: var(--accent) !important;
+      background: transparent !important;
+      box-shadow: inset 0 0 0 2px var(--tone-1);
     }
     .out {
-      opacity: 0.3;
+      opacity: 0.25;
     }
     .boxes {
       display: flex;
@@ -119,13 +123,13 @@ const ACTION_TONE: Record<string, Tone> = {
       height: 46px;
       display: grid;
       place-items: center;
-      border-radius: 8px;
-      border: 1px solid var(--border-strong);
+      border-radius: 10px;
+      border: 0;
       background: var(--raised);
       font: 500 14px var(--mono);
       transition: background-color 0.15s, opacity 0.15s;
-      &.cmp {
-        color: var(--bg);
+      &.found {
+        box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px var(--tone-1);
       }
     }
     .ptrs {
@@ -139,8 +143,26 @@ const ACTION_TONE: Record<string, Tone> = {
       color: var(--text-2);
       text-align: center;
       &.accent {
-        color: var(--accent-text);
+        color: var(--text);
+        font-weight: 700;
       }
+    }
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 14px;
+      span {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+    }
+    .sw {
+      width: 11px;
+      height: 11px;
+      border-radius: 3px;
+      background: var(--bar);
     }
     .aside {
       margin-top: 12px;

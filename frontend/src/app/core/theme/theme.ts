@@ -1,54 +1,74 @@
-import { DOCUMENT, Injectable, effect, inject, signal } from '@angular/core';
+import { DOCUMENT, DestroyRef, Injectable, computed, effect, inject, signal } from '@angular/core';
 
-export interface ThemeOption {
-  id: ThemeId;
+export type Appearance = 'light' | 'dark' | 'auto';
+export type Mode = 'light' | 'dark';
+
+export interface AppearanceOption {
+  id: Appearance;
   name: string;
+  icon: string;
   description: string;
-  swatch: [bg: string, accent: string];
 }
 
-export type ThemeId = 'midnight' | 'graphite' | 'ocean' | 'ember' | 'daylight';
-
-export const THEMES: readonly ThemeOption[] = [
-  { id: 'midnight', name: 'Midnight', description: 'Deep black with indigo', swatch: ['#0b0d10', '#7c8cff'] },
-  { id: 'graphite', name: 'Graphite', description: 'Neutral grey with teal', swatch: ['#0e0e0f', '#2dd4bf'] },
-  { id: 'ocean', name: 'Ocean', description: 'Navy with sky blue', swatch: ['#080d18', '#38bdf8'] },
-  { id: 'ember', name: 'Ember', description: 'Warm dark with coral', swatch: ['#0f0c0a', '#ff7a59'] },
-  { id: 'daylight', name: 'Daylight', description: 'Light, for bright rooms', swatch: ['#f6f6f4', '#4f5bd5'] },
+export const APPEARANCES: readonly AppearanceOption[] = [
+  { id: 'light', name: 'Light', icon: 'ti-sun', description: 'Soft white and grey' },
+  { id: 'dark', name: 'Dark', icon: 'ti-moon', description: 'Pure black, easy on the eyes' },
+  { id: 'auto', name: 'Auto', icon: 'ti-device-desktop', description: 'Follows your system' },
 ];
 
-const STORAGE_KEY = 'cortex.theme';
+const STORAGE_KEY = 'cortex.appearance';
 
-/** Holds the current theme and applies it to <html data-theme="...">. */
+/** Light / Dark / Auto, like macOS. Applies the resolved mode to <html data-theme="...">. */
 @Injectable({ providedIn: 'root' })
 export class ThemeService {
   private readonly document = inject(DOCUMENT);
 
-  readonly current = signal<ThemeId>(this.load());
+  readonly appearance = signal<Appearance>(this.load());
+  private readonly systemPrefersLight = signal(this.query()?.matches ?? false);
+
+  /** The mode actually shown: Auto resolves to the system setting. */
+  readonly mode = computed<Mode>(() => {
+    const a = this.appearance();
+    if (a === 'auto') return this.systemPrefersLight() ? 'light' : 'dark';
+    return a;
+  });
 
   constructor() {
+    // Keep Auto in sync when the system switches between light and dark.
+    const mq = this.query();
+    if (mq) {
+      const onChange = (e: MediaQueryListEvent) => this.systemPrefersLight.set(e.matches);
+      mq.addEventListener('change', onChange);
+      inject(DestroyRef).onDestroy(() => mq.removeEventListener('change', onChange));
+    }
+
     effect(() => {
-      const id = this.current();
-      this.document.documentElement.dataset['theme'] = id;
+      this.document.documentElement.dataset['theme'] = this.mode();
+    });
+    effect(() => {
       try {
-        localStorage.setItem(STORAGE_KEY, id);
+        localStorage.setItem(STORAGE_KEY, this.appearance());
       } catch {
-        // Private mode or blocked storage: the theme still works for this visit.
+        // Private mode or blocked storage: the choice still applies for this visit.
       }
     });
   }
 
-  set(id: ThemeId): void {
-    this.current.set(id);
+  set(appearance: Appearance): void {
+    this.appearance.set(appearance);
   }
 
-  private load(): ThemeId {
+  private query(): MediaQueryList | null {
+    return typeof matchMedia === 'function' ? matchMedia('(prefers-color-scheme: light)') : null;
+  }
+
+  private load(): Appearance {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      if (THEMES.some((t) => t.id === saved)) return saved as ThemeId;
+      if (saved === 'light' || saved === 'dark' || saved === 'auto') return saved;
     } catch {
       // ignore
     }
-    return 'midnight';
+    return 'auto';
   }
 }

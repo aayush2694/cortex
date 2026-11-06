@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 
-import { NAV_ITEMS } from './nav';
+import { NAV_SECTIONS } from './nav';
 
 @Component({
   selector: 'app-sidebar',
@@ -14,94 +14,98 @@ import { NAV_ITEMS } from './nav';
       <span>Cortex</span>
     </a>
     <nav aria-label="Main">
-      @for (item of items; track item.path) {
-        <a
-          class="nav-item"
-          [routerLink]="item.path"
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{ exact: !!item.exact }"
-          (click)="navigate.emit()"
-        >
-          <i class="ti {{ item.icon }}" aria-hidden="true"></i>
-          {{ item.label }}
-        </a>
+      @for (section of sections; track section.title) {
+        <div class="section">{{ section.title }}</div>
+        @for (item of section.items; track item.path) {
+          <a
+            class="nav-item"
+            [routerLink]="item.path"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: !!item.exact }"
+            (click)="navigate.emit()"
+          >
+            <i class="ti {{ item.icon }}" aria-hidden="true"></i>
+            {{ item.label }}
+          </a>
+        }
       }
     </nav>
-    <div class="foot faint">Phase 1 · v0.1</div>
   `,
   styles: `
     :host {
-      width: 220px;
+      width: 232px;
       flex-shrink: 0;
       position: sticky;
       top: 0;
       height: 100vh;
       display: flex;
       flex-direction: column;
-      padding: 16px 12px;
-      border-right: 1px solid var(--border);
-      background: var(--bg);
+      padding: 18px 10px;
+      background: var(--sidebar);
+      border-right: 0.5px solid var(--separator);
       z-index: 20;
     }
     .brand {
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 4px 8px 20px;
-      color: var(--text);
-      font-weight: 600;
-      font-size: 15px;
+      padding: 2px 10px 14px;
+      font: 600 16px var(--font-display);
+      letter-spacing: -0.02em;
     }
     .logo {
-      width: 26px;
-      height: 26px;
-      border-radius: 7px;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
       display: grid;
       place-items: center;
       background: var(--accent);
       color: var(--on-accent);
-      font-size: 16px;
+      font-size: 17px;
     }
     nav {
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 1px;
+    }
+    .section {
+      padding: 14px 10px 5px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--text-3);
     }
     .nav-item {
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 8px 10px;
-      border-radius: var(--radius);
-      color: var(--text-2);
-      font-weight: 500;
+      height: 32px;
+      padding: 0 10px;
+      border-radius: 8px;
+      color: var(--text);
       font-size: 13.5px;
-      transition: background-color 0.15s, color 0.15s;
+      transition: background-color 0.15s;
       i {
-        font-size: 18px;
+        font-size: 17px;
+        color: var(--text-2);
       }
       &:hover {
         background: var(--hover);
-        color: var(--text);
       }
       &.active {
-        background: var(--raised);
-        color: var(--text);
+        background: var(--accent);
+        color: var(--on-accent);
+        font-weight: 500;
         i {
-          color: var(--accent);
+          color: var(--on-accent);
         }
       }
-    }
-    .foot {
-      margin-top: auto;
-      padding: 0 10px;
     }
     @media (max-width: 900px) {
       :host {
         position: fixed;
         left: 0;
         transform: translateX(-100%);
-        transition: transform 0.2s var(--ease);
+        transition: transform 0.35s var(--ease);
         box-shadow: var(--shadow);
       }
       :host(.open) {
@@ -113,5 +117,5 @@ import { NAV_ITEMS } from './nav';
 export class Sidebar {
   readonly open = input(false);
   readonly navigate = output();
-  protected readonly items = NAV_ITEMS;
+  protected readonly sections = NAV_SECTIONS;
 }

@@ -13,12 +13,12 @@ import { Router } from '@angular/router';
 
 import { Api } from '../core/api/api';
 import { TRACK_LABELS } from '../core/api/models';
-import { THEMES, ThemeService } from '../core/theme/theme';
+import { APPEARANCES, ThemeService } from '../core/theme/theme';
 import { NAV_ITEMS } from './nav';
 
 interface Command {
   id: string;
-  group: 'Pages' | 'Topics' | 'Themes';
+  group: 'Pages' | 'Topics' | 'Appearance';
   label: string;
   hint: string;
   icon: string;
@@ -39,7 +39,7 @@ interface Command {
           [value]="query()"
           (input)="setQuery($any($event.target).value)"
           (keydown)="onKey($event)"
-          placeholder="Search topics, pages, themes"
+          placeholder="Search topics, pages and settings"
           aria-label="Search"
         />
         <kbd>esc</kbd>
@@ -84,7 +84,7 @@ interface Command {
     .backdrop {
       position: absolute;
       inset: 0;
-      background: rgb(0 0 0 / 0.45);
+      background: rgb(0 0 0 / 0.35);
       animation: fade 0.12s;
     }
     .panel {
@@ -93,9 +93,11 @@ interface Command {
       max-height: 70vh;
       display: flex;
       flex-direction: column;
-      border-radius: 14px;
-      border: 1px solid var(--border-strong);
-      background: var(--surface);
+      border-radius: 16px;
+      border: 0;
+      background: var(--material);
+      backdrop-filter: saturate(180%) blur(30px);
+      -webkit-backdrop-filter: saturate(180%) blur(30px);
       box-shadow: var(--shadow);
       overflow: hidden;
       animation: rise 0.16s var(--ease);
@@ -148,9 +150,11 @@ interface Command {
         font-size: 17px;
       }
       &.active {
-        background: var(--hover);
-        i {
-          color: var(--accent);
+        background: var(--accent);
+        color: var(--on-accent);
+        i,
+        .faint {
+          color: var(--on-accent);
         }
       }
     }
@@ -208,13 +212,13 @@ export class CommandPalette {
       icon: t.visualizer ? 'ti-chart-bar' : 'ti-book-2',
       run: () => this.router.navigate(['/topics', t.id]),
     }));
-    const themes: Command[] = THEMES.map((t) => ({
-      id: `theme:${t.id}`,
-      group: 'Themes',
-      label: `${t.name} theme`,
-      hint: t.description,
-      icon: 'ti-palette',
-      run: () => this.theme.set(t.id),
+    const themes: Command[] = APPEARANCES.map((a) => ({
+      id: `appearance:${a.id}`,
+      group: 'Appearance',
+      label: `${a.name} appearance`,
+      hint: a.description,
+      icon: a.icon,
+      run: () => this.theme.set(a.id),
     }));
     return [...pages, ...topics, ...themes];
   });
