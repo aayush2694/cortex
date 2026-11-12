@@ -2,7 +2,7 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from app.modules.visualizer.tracer import View
+from app.modules.visualizer.tracer import Kind, View
 
 
 class AlgorithmOut(BaseModel):
@@ -10,6 +10,7 @@ class AlgorithmOut(BaseModel):
     title: str
     topic_id: str
     view: View
+    kind: Kind
     description: str
     complexity: str
     source: list[str]

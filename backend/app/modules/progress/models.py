@@ -25,6 +25,19 @@ class Progress(Base):
     last_activity_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
+class SolvedProblem(Base):
+    """A LeetCode practice problem you've marked as solved."""
+
+    __tablename__ = "solved_problems"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    slug: Mapped[str] = mapped_column(String(120), primary_key=True)
+    topic_id: Mapped[str] = mapped_column(ForeignKey("topics.id", ondelete="CASCADE"))
+    solved_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
 class ActivityEvent(Base):
     """Append-only log of everything you did. Mastery can always be recomputed from it."""
 

@@ -14,6 +14,11 @@ export const routes: Routes = [
       import('./features/knowledge-map/knowledge-map').then((m) => m.KnowledgeMapPage),
   },
   {
+    path: 'patterns',
+    title: 'Patterns · Cortex',
+    loadComponent: () => import('./features/patterns/patterns').then((m) => m.Patterns),
+  },
+  {
     path: 'topics/:id',
     title: 'Topic · Cortex',
     loadComponent: () => import('./features/topics/topic-page').then((m) => m.TopicPage),

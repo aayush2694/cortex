@@ -11,9 +11,10 @@ import { Title } from '@angular/platform-browser';
 import { RouterLink } from '@angular/router';
 
 import { Api, errorMessage } from '../../core/api/api';
-import { Status, TRACK_LABELS } from '../../core/api/models';
+import { Problem, Status, TRACK_LABELS, leetcodeUrl } from '../../core/api/models';
 import { LearningStore } from '../../core/learning-store';
 import { StatusDot } from '../../shared/status-dot';
+import { TracePlayer } from '../visualizer/player/trace-player';
 
 const STATUSES: { value: Status; label: string }[] = [
   { value: 'not_started', label: 'Not started' },
@@ -23,7 +24,7 @@ const STATUSES: { value: Status; label: string }[] = [
 
 @Component({
   selector: 'app-topic-page',
-  imports: [RouterLink, StatusDot],
+  imports: [RouterLink, StatusDot, TracePlayer],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page narrow">
@@ -47,6 +48,79 @@ const STATUSES: { value: Status; label: string }[] = [
             </a>
           </div>
         </header>
+
+        @if (t.pattern; as pat) {
+          <span class="group-label first">Watch it work · {{ pat.walkthrough }}</span>
+          @if (algorithmFor(t.visualizer); as algo) {
+            <app-trace-player [algorithm]="algo" layout="compact" (completed)="onWalkthroughDone()" />
+          } @else {
+            <div class="skeleton" style="height: 300px"></div>
+          }
+
+          <div class="pattern-cols">
+            <div>
+              <span class="group-label">When to use it</span>
+              <ul class="list signals">
+                @for (s of pat.signals; track s) {
+                  <li class="list-row compact"><i class="ti ti-check sig" aria-hidden="true"></i><span class="row-main"><span>{{ s }}</span></span></li>
+                }
+              </ul>
+            </div>
+            <div>
+              <span class="group-label row-label">
+                Template
+                <button class="btn ghost copy" (click)="copy(pat.template)">
+                  <i class="ti" [class.ti-copy]="!copied()" [class.ti-check]="copied()"></i>{{ copied() ? 'Copied' : 'Copy' }}
+                </button>
+              </span>
+              <pre class="card template"><code>{{ pat.template }}</code></pre>
+            </div>
+          </div>
+        }
+
+        @if (t.concepts.length) {
+          <span class="group-label" [class.first]="!t.pattern">Key ideas</span>
+          <ol class="list ideas">
+            @for (c of t.concepts; track $index) {
+              <li class="list-row idea">
+                <span class="num" aria-hidden="true">{{ $index + 1 }}</span>
+                <span class="row-main"><span>{{ c }}</span></span>
+              </li>
+            }
+          </ol>
+        }
+
+        @if (t.pattern; as pat) {
+          <span class="group-label">
+            Practice on LeetCode · {{ solvedIn(pat.problems) }} of {{ pat.problems.length }} solved
+          </span>
+          <div class="list problems">
+            @for (p of pat.problems; track p.slug) {
+              @let done = store.solved().has(p.slug);
+              <div class="list-row problem" [class.solved]="done">
+                <button
+                  class="tick"
+                  [attr.aria-pressed]="done"
+                  [attr.aria-label]="(done ? 'Mark as not solved: ' : 'Mark as solved: ') + p.title"
+                  (click)="toggleSolved(t.id, p.slug, !done)"
+                >
+                  <i class="ti" [class.ti-circle-check]="done" [class.ti-circle]="!done"></i>
+                </button>
+                <a class="row-main link" [href]="leetcode(p.slug)" target="_blank" rel="noopener noreferrer">
+                  <span>{{ p.title }}</span>
+                  <span class="sr-only">(opens LeetCode in a new tab)</span>
+                </a>
+                <span class="pill diff" [class.strong]="p.difficulty === 'hard'" [class.outline]="p.difficulty === 'medium'">{{ p.difficulty }}</span>
+                <a class="open" [href]="leetcode(p.slug)" target="_blank" rel="noopener noreferrer" [attr.aria-label]="'Open ' + p.title + ' on LeetCode'">
+                  <i class="ti ti-arrow-up-right chev" aria-hidden="true"></i>
+                </a>
+              </div>
+            }
+          </div>
+          @if (solveError()) {
+            <p class="error"><i class="ti ti-alert-circle"></i> {{ solveError() }}</p>
+          }
+        }
 
         <span class="group-label">Your progress</span>
         <div class="card progress">
@@ -74,7 +148,7 @@ const STATUSES: { value: Status; label: string }[] = [
         </div>
 
         @if (t.resources.length) {
-          <span class="group-label">Official docs</span>
+          <span class="group-label">Docs & references</span>
           <div class="list">
             @for (r of t.resources; track r.url) {
               <a class="list-row" [href]="r.url" target="_blank" rel="noopener noreferrer">
@@ -166,6 +240,135 @@ const STATUSES: { value: Status; label: string }[] = [
     .group-label {
       margin-top: 24px;
     }
+    .group-label.first {
+      margin-top: 0;
+    }
+    .pattern-cols {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 16px;
+    }
+    .signals {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      .sig {
+        color: var(--text-2);
+        font-size: 16px;
+      }
+      .list-row::after {
+        left: 44px;
+      }
+    }
+    .row-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      .copy {
+        height: 26px;
+        font-size: 12.5px;
+      }
+    }
+    .template {
+      margin: 0;
+      padding: 14px 16px;
+      overflow-x: auto;
+      line-height: 1.7;
+      color: var(--text);
+    }
+    .problem {
+      gap: 10px;
+      &::after {
+        left: 52px;
+      }
+      &.solved .link span:first-child {
+        color: var(--text-2);
+        text-decoration: line-through;
+        text-decoration-color: var(--text-3);
+      }
+    }
+    .tick {
+      width: 30px;
+      height: 30px;
+      display: grid;
+      place-items: center;
+      border: 0;
+      border-radius: 50%;
+      background: transparent;
+      color: var(--text-3);
+      font-size: 20px;
+      cursor: pointer;
+      transition:
+        color 0.2s,
+        transform 0.25s var(--ease);
+      &:hover {
+        color: var(--text);
+      }
+      &:active {
+        transform: scale(0.85);
+      }
+      &[aria-pressed='true'] {
+        color: var(--text);
+        animation: pop 0.35s var(--ease);
+      }
+    }
+    @keyframes pop {
+      50% {
+        transform: scale(1.25);
+      }
+    }
+    .link {
+      color: var(--text);
+      &:hover span:first-child {
+        text-decoration: underline;
+        text-underline-offset: 3px;
+      }
+    }
+    .diff {
+      text-transform: capitalize;
+    }
+    .open {
+      display: grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      &:hover {
+        background: var(--hover);
+      }
+    }
+    .ideas {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .idea {
+      align-items: flex-start;
+      padding-top: 12px;
+      padding-bottom: 12px;
+      &:hover {
+        background: transparent;
+      }
+      &::after {
+        left: 52px;
+      }
+      .row-main span {
+        font-size: 15px;
+        line-height: 1.5;
+      }
+    }
+    .num {
+      width: 24px;
+      height: 24px;
+      flex-shrink: 0;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--raised);
+      font: 600 12px var(--font);
+      color: var(--text-2);
+      margin-top: 1px;
+    }
     .progress {
       display: flex;
       flex-direction: column;
@@ -211,7 +414,8 @@ const STATUSES: { value: Status; label: string }[] = [
       }
     }
     @media (max-width: 640px) {
-      .relations {
+      .relations,
+      .pattern-cols {
         grid-template-columns: 1fr;
       }
       h1 {
@@ -245,6 +449,45 @@ export class TopicPage {
       const title = this.topic.value()?.title;
       if (title) this.titleService.setTitle(`${title} · Cortex`);
     });
+  }
+
+  protected readonly copied = signal(false);
+  protected readonly solveError = signal('');
+
+  protected algorithmFor(key: string | null) {
+    return key ? this.store.algorithmByKey().get(key) : undefined;
+  }
+
+  protected leetcode(slug: string): string {
+    return leetcodeUrl(slug);
+  }
+
+  protected solvedIn(problems: Problem[]): number {
+    const solved = this.store.solved();
+    return problems.filter((p) => solved.has(p.slug)).length;
+  }
+
+  protected async toggleSolved(topicId: string, slug: string, solved: boolean): Promise<void> {
+    this.solveError.set('');
+    try {
+      await this.store.setSolved(topicId, slug, solved);
+    } catch (err) {
+      this.solveError.set(errorMessage(err, "Couldn't save that. Try again."));
+    }
+  }
+
+  protected onWalkthroughDone(): void {
+    this.store.markVisualizerDone(this.id()).catch(() => {});
+  }
+
+  protected async copy(text: string): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(text);
+      this.copied.set(true);
+      setTimeout(() => this.copied.set(false), 1500);
+    } catch {
+      // Clipboard blocked: nothing to do, the code is still selectable.
+    }
   }
 
   protected statusOf(topicId: string): Status {

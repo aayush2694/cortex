@@ -7,6 +7,7 @@ Status = Literal["not_started", "learning", "confident"]
 
 STATUS_BASE: dict[str, float] = {"not_started": 0.0, "learning": 0.3, "confident": 0.7}
 VISUALIZER_BONUS = 0.1
+PRACTICE_BONUS = 0.2  # reached when every practice problem of a pattern is solved
 DECAY_GRACE_DAYS = 30  # no decay for the first month without activity
 DECAY_PER_DAY = 0.005  # then lose 0.5% of the score per idle day...
 DECAY_FLOOR = 0.5  # ...but never more than half of it
@@ -14,10 +15,13 @@ UNLOCK_THRESHOLD = 0.6  # a prerequisite counts as "known" from this mastery
 DONE_THRESHOLD = 0.7  # topics at or above this are not recommended again
 
 
-def compute_mastery(status: str, visualizer_done: bool, days_inactive: float) -> float:
+def compute_mastery(
+    status: str, visualizer_done: bool, days_inactive: float, solved_ratio: float = 0.0
+) -> float:
     score = STATUS_BASE.get(status, 0.0)
     if visualizer_done:
         score += VISUALIZER_BONUS
+    score += PRACTICE_BONUS * min(1.0, max(0.0, solved_ratio))
     idle = max(0.0, days_inactive - DECAY_GRACE_DAYS)
     score *= max(DECAY_FLOOR, 1.0 - DECAY_PER_DAY * idle)
     return round(min(1.0, max(0.0, score)), 3)

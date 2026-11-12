@@ -10,7 +10,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel
 
-View = Literal["array", "grid", "graph"]
+View = Literal["array", "grid", "graph", "sequence", "list", "tree", "intervals", "table"]
+Kind = Literal["algorithm", "pattern"]
 MAX_FRAMES = 5000
 
 
@@ -77,6 +78,7 @@ class AlgorithmSpec:
     input_model: type[BaseModel]
     example: dict[str, Any]
     run: RunFn
+    kind: Kind = "algorithm"
 
 
 REGISTRY: dict[str, AlgorithmSpec] = {}

@@ -27,6 +27,20 @@ class EventIn(BaseModel):
     kind: Literal["visualizer_completed"]
 
 
+class SolvedIn(BaseModel):
+    solved: bool
+
+
+class SolvedItem(BaseModel):
+    topic_id: str
+    slug: str
+    solved_at: datetime
+
+
+class SolvedOut(BaseModel):
+    items: list[SolvedItem]
+
+
 class RecommendationOut(BaseModel):
     topic: TopicOut
     priority: float

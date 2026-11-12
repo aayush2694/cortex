@@ -6,6 +6,21 @@ class ResourceOut(BaseModel):
     url: str
 
 
+class ProblemOut(BaseModel):
+    title: str
+    slug: str
+    difficulty: str
+
+
+class PatternOut(BaseModel):
+    group: str
+    complexity: str
+    walkthrough: str
+    signals: list[str]
+    template: str
+    problems: list[ProblemOut]
+
+
 class TopicOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -17,6 +32,8 @@ class TopicOut(BaseModel):
     phase: int
     visualizer: str | None
     resources: list[ResourceOut] = []
+    concepts: list[str] = []
+    pattern: PatternOut | None = None
 
 
 class EdgeOut(BaseModel):

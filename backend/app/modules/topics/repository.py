@@ -36,6 +36,8 @@ class TopicRepository:
                     "visualizer": t.visualizer,
                     "position": i,
                     "resources": [r.model_dump(mode="json") for r in t.resources],
+                    "concepts": t.concepts,
+                    "pattern": t.pattern.model_dump(mode="json") if t.pattern else None,
                 }
                 for i, t in enumerate(catalog.topics)
             ]

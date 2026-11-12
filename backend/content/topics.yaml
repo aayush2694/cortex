@@ -83,13 +83,295 @@ topics:
     visualizer: binary_search
     requires: [arrays]
 
+  # ---------------- DSA problem-solving patterns (batch 1: arrays and strings) ----------------
   - id: two-pointers
     track: dsa
     title: Two Pointers
-    summary: Move two indices through an array to solve pair and window problems in O(n).
+    summary: Move two indices through a sorted array or string to find pairs or partitions in O(n).
     difficulty: 2
-    phase: 3
-    requires: [arrays]
+    phase: 1
+    visualizer: two_pointers
+    requires:
+    - arrays
+    concepts:
+    - Each step rules out one element for good, so the whole scan is O(n).
+    - Opposite-end pointers work on sorted data; same-direction pointers (read/write) work for in-place filtering.
+    - 'For 3Sum, fix one number and run two pointers on the rest: O(n²) instead of O(n³).'
+    pattern:
+      group: Arrays and strings
+      complexity: O(n) time · O(1) space
+      walkthrough: Pair with a target sum in a sorted array
+      signals:
+      - The input is sorted, or sorting it first is fine
+      - You need a pair (or triple) that meets a condition
+      - You compare elements from both ends, like a palindrome check
+      - Brute force would check every pair in O(n²)
+      template: |-
+        left, right = 0, len(nums) - 1
+        while left < right:
+            if condition_met(nums[left], nums[right]):
+                return left, right
+            if need_bigger:
+                left += 1
+            else:
+                right -= 1
+      problems:
+      - title: Valid Palindrome
+        slug: valid-palindrome
+        difficulty: easy
+      - title: Remove Duplicates from Sorted Array
+        slug: remove-duplicates-from-sorted-array
+        difficulty: easy
+      - title: Two Sum II - Input Array Is Sorted
+        slug: two-sum-ii-input-array-is-sorted
+        difficulty: medium
+      - title: 3Sum
+        slug: 3sum
+        difficulty: medium
+      - title: Container With Most Water
+        slug: container-with-most-water
+        difficulty: medium
+      - title: Trapping Rain Water
+        slug: trapping-rain-water
+        difficulty: hard
+
+  - id: sliding-window
+    track: dsa
+    title: Sliding Window
+    summary: Keep a window over a contiguous range and slide it, instead of re-checking every subarray.
+    difficulty: 3
+    phase: 1
+    visualizer: sliding_window
+    requires:
+    - two-pointers
+    - hash-maps
+    concepts:
+    - Fixed-size windows move both ends together; variable windows grow right and shrink left.
+    - Track what's inside the window with a counter or hash map, updating it in O(1) per step.
+    - Every element enters and leaves the window at most once, so the total work is O(n).
+    pattern:
+      group: Arrays and strings
+      complexity: O(n) time · O(k) space
+      walkthrough: Longest substring without repeating characters
+      signals:
+      - The question is about a contiguous subarray or substring
+      - It asks for the longest, shortest, or a count of windows
+      - There's a rule like 'at most k distinct' or 'sum at least s'
+      - Brute force would check every subarray in O(n²)
+      template: |-
+        left = 0
+        for right, x in enumerate(nums):
+            add(x)
+            while window_breaks_rule():
+                remove(nums[left])
+                left += 1
+            best = max(best, right - left + 1)
+      problems:
+      - title: Maximum Average Subarray I
+        slug: maximum-average-subarray-i
+        difficulty: easy
+      - title: Longest Substring Without Repeating Characters
+        slug: longest-substring-without-repeating-characters
+        difficulty: medium
+      - title: Minimum Size Subarray Sum
+        slug: minimum-size-subarray-sum
+        difficulty: medium
+      - title: Permutation in String
+        slug: permutation-in-string
+        difficulty: medium
+      - title: Longest Repeating Character Replacement
+        slug: longest-repeating-character-replacement
+        difficulty: medium
+      - title: Minimum Window Substring
+        slug: minimum-window-substring
+        difficulty: hard
+
+  - id: prefix-sum
+    track: dsa
+    title: Prefix Sum
+    summary: Precompute running sums so any subarray sum is a single subtraction.
+    difficulty: 3
+    phase: 1
+    visualizer: prefix_sum
+    requires:
+    - arrays
+    - hash-maps
+    concepts:
+    - sum(i..j) = prefix[j + 1] - prefix[i], so every range sum costs O(1) after O(n) setup.
+    - Pair prefix sums with a hash map to count subarrays with a target sum in one pass.
+    - 'The same idea works in 2D: a prefix-sum table answers any rectangle sum in O(1).'
+    pattern:
+      group: Arrays and strings
+      complexity: O(n) time · O(n) space
+      walkthrough: Count subarrays that sum to k
+      signals:
+      - You need many range-sum queries on the same array
+      - The question asks for subarrays with a given sum
+      - Negative numbers rule out a sliding window
+      - Balance problems, like equal numbers of 0s and 1s
+      template: |-
+        prefix = 0
+        seen = {0: 1}
+        for x in nums:
+            prefix += x
+            count += seen.get(prefix - k, 0)
+            seen[prefix] = seen.get(prefix, 0) + 1
+      problems:
+      - title: Range Sum Query - Immutable
+        slug: range-sum-query-immutable
+        difficulty: easy
+      - title: Find Pivot Index
+        slug: find-pivot-index
+        difficulty: easy
+      - title: Subarray Sum Equals K
+        slug: subarray-sum-equals-k
+        difficulty: medium
+      - title: Product of Array Except Self
+        slug: product-of-array-except-self
+        difficulty: medium
+      - title: Continuous Subarray Sum
+        slug: continuous-subarray-sum
+        difficulty: medium
+
+  - id: frequency-counting
+    track: dsa
+    title: Hash Map Lookups
+    summary: 'Trade memory for speed: remember what you''ve seen in a hash map for O(1) lookups.'
+    difficulty: 2
+    phase: 1
+    visualizer: frequency_counting
+    requires:
+    - hash-maps
+    concepts:
+    - A hash map turns an O(n) search into an O(1) lookup on average.
+    - Counting with Counter or a dict solves anagram and 'most frequent' questions.
+    - 'Pick the key carefully: sorted letters group anagrams, a tuple of counts works too.'
+    pattern:
+      group: Arrays and strings
+      complexity: O(n) time · O(n) space
+      walkthrough: Two sum in a single pass
+      signals:
+      - You keep asking 'have I seen this before?'
+      - You compare counts of characters or items (anagrams)
+      - You need to group items by a shared key
+      - A nested loop is only there to search for something
+      template: |-
+        seen = {}
+        for i, x in enumerate(nums):
+            if complement(x) in seen:
+                return seen[complement(x)], i
+            seen[x] = i
+      problems:
+      - title: Two Sum
+        slug: two-sum
+        difficulty: easy
+      - title: Valid Anagram
+        slug: valid-anagram
+        difficulty: easy
+      - title: Group Anagrams
+        slug: group-anagrams
+        difficulty: medium
+      - title: Top K Frequent Elements
+        slug: top-k-frequent-elements
+        difficulty: medium
+      - title: Longest Consecutive Sequence
+        slug: longest-consecutive-sequence
+        difficulty: medium
+
+  - id: modified-binary-search
+    track: dsa
+    title: Modified Binary Search
+    summary: 'Binary search beyond plain sorted arrays: rotated arrays, boundaries, and searching for the answer.'
+    difficulty: 3
+    phase: 1
+    visualizer: modified_binary_search
+    requires:
+    - binary-search
+    concepts:
+    - You only need a rule that says which half can't hold the answer, not a fully sorted array.
+    - In a rotated array, one side of mid is always sorted; check whether the target is in it.
+    - '''Binary search on the answer'': search over possible answers and test each guess.'
+    pattern:
+      group: Searching
+      complexity: O(log n) time · O(1) space
+      walkthrough: Search in a rotated sorted array
+      signals:
+      - The data is sorted, or sorted in pieces (rotated)
+      - You need the first or last position that meets a condition
+      - The answer is a number in a range, and you can check a guess (min speed, capacity)
+      - The expected complexity is O(log n)
+      template: |-
+        lo, hi = 0, len(nums) - 1
+        while lo <= hi:
+            mid = (lo + hi) // 2
+            if is_answer(mid):
+                return mid
+            if answer_is_left(mid):
+                hi = mid - 1
+            else:
+                lo = mid + 1
+      problems:
+      - title: Binary Search
+        slug: binary-search
+        difficulty: easy
+      - title: Search in Rotated Sorted Array
+        slug: search-in-rotated-sorted-array
+        difficulty: medium
+      - title: Find Minimum in Rotated Sorted Array
+        slug: find-minimum-in-rotated-sorted-array
+        difficulty: medium
+      - title: Koko Eating Bananas
+        slug: koko-eating-bananas
+        difficulty: medium
+      - title: Median of Two Sorted Arrays
+        slug: median-of-two-sorted-arrays
+        difficulty: hard
+
+  - id: cyclic-sort
+    track: dsa
+    title: Cyclic Sort
+    summary: When values are 1..n, swap each one into its own slot to find missing or duplicate numbers.
+    difficulty: 3
+    phase: 1
+    visualizer: cyclic_sort
+    requires:
+    - arrays
+    concepts:
+    - Value x belongs at index x - 1; each swap puts at least one number in its final place.
+    - After sorting, any index i that doesn't hold i + 1 points to a missing or duplicate value.
+    - Each number moves at most once, so it's O(n) even though there's a while loop.
+    pattern:
+      group: Searching
+      complexity: O(n) time · O(1) space
+      walkthrough: Find all numbers missing from 1..n
+      signals:
+      - Values are in a known range like 1..n or 0..n
+      - You need missing, duplicate, or first-missing-positive numbers
+      - You must use O(1) extra space
+      template: |-
+        i = 0
+        while i < len(nums):
+            home = nums[i] - 1
+            if nums[i] != nums[home]:
+                nums[i], nums[home] = nums[home], nums[i]
+            else:
+                i += 1
+      problems:
+      - title: Missing Number
+        slug: missing-number
+        difficulty: easy
+      - title: Find All Numbers Disappeared in an Array
+        slug: find-all-numbers-disappeared-in-an-array
+        difficulty: easy
+      - title: Find the Duplicate Number
+        slug: find-the-duplicate-number
+        difficulty: medium
+      - title: Find All Duplicates in an Array
+        slug: find-all-duplicates-in-an-array
+        difficulty: medium
+      - title: First Missing Positive
+        slug: first-missing-positive
+        difficulty: hard
 
   - id: hash-maps
     track: dsa
@@ -99,6 +381,18 @@ topics:
     phase: 3
     requires: [arrays]
 
+  - id: linked-lists
+    track: dsa
+    title: Linked Lists
+    summary: Nodes that point to the next node - O(1) inserts at a known spot, but no random access.
+    difficulty: 2
+    phase: 1
+    requires: [arrays]
+    concepts:
+      - "Each node stores a value and a pointer to the next node; the list is just a pointer to the head."
+      - "Inserting or deleting next to a node you hold is O(1); finding the i-th node is O(n)."
+      - "A dummy (sentinel) node before the head removes most edge cases around an empty list."
+
   - id: stacks-queues
     track: dsa
     title: Stacks & Queues
@@ -106,6 +400,193 @@ topics:
     difficulty: 1
     phase: 3
     requires: [arrays]
+
+  # ---------------- DSA problem-solving patterns (batch 2: linked lists, stacks and intervals) ----------------
+  - id: fast-slow-pointers
+    track: dsa
+    title: Fast & Slow Pointers
+    summary: Two pointers moving at different speeds detect cycles and find middles in one pass.
+    difficulty: 3
+    phase: 1
+    visualizer: fast_slow_pointers
+    requires:
+    - linked-lists
+    - two-pointers
+    concepts:
+    - Inside a loop the fast pointer gains one step per move, so it must catch the slow one.
+    - When fast reaches the end, slow is exactly at the middle.
+    - After they meet, a pointer from the head and one from the meeting point meet at the cycle start.
+    pattern:
+      group: Linked lists
+      complexity: O(n) time · O(1) space
+      walkthrough: Find where a linked list's cycle starts
+      signals:
+      - You need to detect a loop in a linked list or a sequence
+      - You need the middle of a linked list in one pass
+      - A sequence of numbers might repeat (like the happy number problem)
+      - You must use O(1) extra space, so no visited set
+      template: |-
+        slow = fast = head
+        while fast and fast.next:
+            slow = slow.next
+            fast = fast.next.next
+            if slow is fast:
+                return True  # cycle
+        return False
+      problems:
+      - title: Linked List Cycle
+        slug: linked-list-cycle
+        difficulty: easy
+      - title: Middle of the Linked List
+        slug: middle-of-the-linked-list
+        difficulty: easy
+      - title: Happy Number
+        slug: happy-number
+        difficulty: easy
+      - title: Palindrome Linked List
+        slug: palindrome-linked-list
+        difficulty: easy
+      - title: Linked List Cycle II
+        slug: linked-list-cycle-ii
+        difficulty: medium
+
+  - id: linked-list-reversal
+    track: dsa
+    title: In-place Reversal
+    summary: Reverse all or part of a linked list by re-pointing links, without extra memory.
+    difficulty: 3
+    phase: 1
+    visualizer: linked_list_reversal
+    requires:
+    - linked-lists
+    concepts:
+    - Always save curr.next before you overwrite it, or you lose the rest of the list.
+    - 'Three pointers are enough: prev, curr and next.'
+    - A dummy node before the head makes reversing a middle section much simpler.
+    pattern:
+      group: Linked lists
+      complexity: O(n) time · O(1) space
+      walkthrough: Reverse a linked list
+      signals:
+      - The problem asks to reverse a list, or a part of it
+      - You need to process a list in k-sized groups
+      - You must compare the first half with the reversed second half
+      - Extra memory isn't allowed
+      template: |-
+        prev, curr = None, head
+        while curr:
+            nxt = curr.next
+            curr.next = prev
+            prev, curr = curr, nxt
+        return prev
+      problems:
+      - title: Reverse Linked List
+        slug: reverse-linked-list
+        difficulty: easy
+      - title: Reverse Linked List II
+        slug: reverse-linked-list-ii
+        difficulty: medium
+      - title: Swap Nodes in Pairs
+        slug: swap-nodes-in-pairs
+        difficulty: medium
+      - title: Reorder List
+        slug: reorder-list
+        difficulty: medium
+      - title: Reverse Nodes in k-Group
+        slug: reverse-nodes-in-k-group
+        difficulty: hard
+
+  - id: monotonic-stack
+    track: dsa
+    title: Monotonic Stack
+    summary: A stack kept in sorted order answers 'next greater' and 'next smaller' questions in O(n).
+    difficulty: 4
+    phase: 1
+    visualizer: monotonic_stack
+    requires:
+    - stacks-queues
+    concepts:
+    - Store indices, not values, so you can compute distances and look values up.
+    - Each element is pushed once and popped at most once, so the loop is O(n) overall.
+    - Use a decreasing stack for 'next greater' and an increasing stack for 'next smaller'.
+    pattern:
+      group: Stacks and intervals
+      complexity: O(n) time · O(n) space
+      walkthrough: Days until a warmer temperature
+      signals:
+      - You need the next (or previous) greater or smaller element for each item
+      - The question mentions spans, 'days until', or histograms
+      - You need the maximum of every sliding window (a monotonic deque)
+      - 'Brute force looks ahead from every element: O(n²)'
+      template: |-
+        stack = []
+        for i, x in enumerate(nums):
+            while stack and nums[stack[-1]] < x:
+                j = stack.pop()
+                answer[j] = x  # x is j's next greater
+            stack.append(i)
+      problems:
+      - title: Next Greater Element I
+        slug: next-greater-element-i
+        difficulty: easy
+      - title: Daily Temperatures
+        slug: daily-temperatures
+        difficulty: medium
+      - title: Online Stock Span
+        slug: online-stock-span
+        difficulty: medium
+      - title: Sliding Window Maximum
+        slug: sliding-window-maximum
+        difficulty: hard
+      - title: Largest Rectangle in Histogram
+        slug: largest-rectangle-in-histogram
+        difficulty: hard
+
+  - id: merge-intervals
+    track: dsa
+    title: Merge Intervals
+    summary: Sort intervals by start time, then merge, insert or count overlaps in one pass.
+    difficulty: 3
+    phase: 1
+    visualizer: merge_intervals
+    requires:
+    - arrays
+    concepts:
+    - After sorting by start, an interval can only overlap the last merged one.
+    - Two intervals [a, b] and [c, d] overlap when c <= b (with a <= c after sorting).
+    - For 'fewest to remove' style questions, sort by end time and act greedily.
+    pattern:
+      group: Stacks and intervals
+      complexity: O(n log n) time · O(n) space
+      walkthrough: Merge overlapping intervals
+      signals:
+      - The input is a list of ranges, meetings or time slots
+      - You need to merge, insert or remove overlapping ranges
+      - You need the minimum number of rooms, arrows or removals
+      template: |-
+        intervals.sort(key=lambda iv: iv[0])
+        merged = []
+        for start, end in intervals:
+            if merged and start <= merged[-1][1]:
+                merged[-1][1] = max(merged[-1][1], end)
+            else:
+                merged.append([start, end])
+      problems:
+      - title: Merge Intervals
+        slug: merge-intervals
+        difficulty: medium
+      - title: Insert Interval
+        slug: insert-interval
+        difficulty: medium
+      - title: Non-overlapping Intervals
+        slug: non-overlapping-intervals
+        difficulty: medium
+      - title: Interval List Intersections
+        slug: interval-list-intersections
+        difficulty: medium
+      - title: Minimum Number of Arrows to Burst Balloons
+        slug: minimum-number-of-arrows-to-burst-balloons
+        difficulty: medium
 
   - id: trees
     track: dsa
@@ -149,6 +630,292 @@ topics:
     visualizer: dijkstra
     requires: [bfs, heaps]
 
+  # ---------------- DSA problem-solving patterns (batch 3: trees, graphs and heaps) ----------------
+  - id: tree-bfs
+    track: dsa
+    title: Tree BFS
+    summary: 'Visit a tree level by level with a queue: level order, right side view, shortest depth.'
+    difficulty: 3
+    phase: 1
+    visualizer: tree_bfs
+    requires:
+    - trees
+    - stacks-queues
+    concepts:
+    - A queue (first in, first out) naturally visits nodes in level order.
+    - Snapshot len(queue) at the start of each level to know where the level ends.
+    - 'BFS finds the minimum depth fastest: stop at the first leaf you reach.'
+    pattern:
+      group: Trees and graphs
+      complexity: O(n) time · O(w) space
+      walkthrough: Level order traversal
+      signals:
+      - The question talks about levels, rows or depth of a tree
+      - You need the nearest or shallowest node
+      - 'You need something per level: average, max, rightmost node'
+      template: |-
+        queue = deque([root])
+        while queue:
+            for _ in range(len(queue)):
+                node = queue.popleft()
+                visit(node)
+                if node.left: queue.append(node.left)
+                if node.right: queue.append(node.right)
+      problems:
+      - title: Average of Levels in Binary Tree
+        slug: average-of-levels-in-binary-tree
+        difficulty: easy
+      - title: Minimum Depth of Binary Tree
+        slug: minimum-depth-of-binary-tree
+        difficulty: easy
+      - title: Binary Tree Level Order Traversal
+        slug: binary-tree-level-order-traversal
+        difficulty: medium
+      - title: Binary Tree Right Side View
+        slug: binary-tree-right-side-view
+        difficulty: medium
+      - title: Binary Tree Zigzag Level Order Traversal
+        slug: binary-tree-zigzag-level-order-traversal
+        difficulty: medium
+
+  - id: tree-dfs
+    track: dsa
+    title: Tree DFS
+    summary: 'Go deep down one branch at a time with recursion: paths, depths, and bottom-up answers.'
+    difficulty: 3
+    phase: 1
+    visualizer: tree_dfs
+    requires:
+    - trees
+    - recursion
+    concepts:
+    - The call stack remembers the current path; returning from a call is backtracking.
+    - Top-down DFS passes information down (remaining sum); bottom-up DFS returns answers up (height).
+    - Many tree problems are one DFS where each node combines its children's results.
+    pattern:
+      group: Trees and graphs
+      complexity: O(n) time · O(h) space
+      walkthrough: Root-to-leaf path sum
+      signals:
+      - The question is about root-to-leaf paths
+      - An answer for a node depends on its children (height, diameter)
+      - You need pre-order, in-order or post-order traversal
+      template: |-
+        def dfs(node, state):
+            if not node:
+                return base_case
+            left = dfs(node.left, new_state)
+            right = dfs(node.right, new_state)
+            return combine(node, left, right)
+      problems:
+      - title: Maximum Depth of Binary Tree
+        slug: maximum-depth-of-binary-tree
+        difficulty: easy
+      - title: Invert Binary Tree
+        slug: invert-binary-tree
+        difficulty: easy
+      - title: Path Sum
+        slug: path-sum
+        difficulty: easy
+      - title: Diameter of Binary Tree
+        slug: diameter-of-binary-tree
+        difficulty: easy
+      - title: Lowest Common Ancestor of a Binary Tree
+        slug: lowest-common-ancestor-of-a-binary-tree
+        difficulty: medium
+      - title: Binary Tree Maximum Path Sum
+        slug: binary-tree-maximum-path-sum
+        difficulty: hard
+
+  - id: grid-traversal
+    track: dsa
+    title: Grid Traversal
+    summary: 'Treat a grid as a graph of cells and flood-fill with BFS or DFS: islands, regions, shortest paths.'
+    difficulty: 3
+    phase: 1
+    visualizer: grid_traversal
+    requires:
+    - graphs
+    - bfs
+    concepts:
+    - Each cell is a node with up to 4 neighbours; check bounds before every step.
+    - Mark cells as visited when you add them to the queue, not when you pop them.
+    - Start BFS from every source at once to model things spreading in parallel.
+    pattern:
+      group: Trees and graphs
+      complexity: O(rows × cols) time and space
+      walkthrough: Count the islands
+      signals:
+      - The input is a 2D grid of cells, like a map or a board
+      - You need to count or measure connected regions
+      - You need the fewest steps between cells (use BFS)
+      - Something spreads step by step, like rotting oranges (multi-source BFS)
+      template: |-
+        for r in range(rows):
+            for c in range(cols):
+                if grid[r][c] == LAND and (r, c) not in seen:
+                    count += 1
+                    flood_fill(r, c)  # BFS or DFS over 4 neighbours
+      problems:
+      - title: Flood Fill
+        slug: flood-fill
+        difficulty: easy
+      - title: Number of Islands
+        slug: number-of-islands
+        difficulty: medium
+      - title: Rotting Oranges
+        slug: rotting-oranges
+        difficulty: medium
+      - title: Shortest Path in Binary Matrix
+        slug: shortest-path-in-binary-matrix
+        difficulty: medium
+      - title: Pacific Atlantic Water Flow
+        slug: pacific-atlantic-water-flow
+        difficulty: medium
+
+  - id: topological-sort
+    track: dsa
+    title: Topological Sort
+    summary: Order tasks so every prerequisite comes first, and detect impossible (cyclic) dependencies.
+    difficulty: 4
+    phase: 1
+    visualizer: topological_sort
+    requires:
+    - graphs
+    - bfs
+    concepts:
+    - In-degree is the number of prerequisites still unfinished for a task.
+    - If some tasks never reach in-degree 0, the graph has a cycle and no valid order exists.
+    - 'DFS works too: add a node to the order after all its descendants, then reverse.'
+    pattern:
+      group: Trees and graphs
+      complexity: O(V + E) time and space
+      walkthrough: Order tasks by their prerequisites
+      signals:
+      - Tasks, courses or builds have 'must come before' rules
+      - You need a valid order, or to know if one exists
+      - The graph is directed and should have no cycles
+      template: |-
+        indegree = count_incoming_edges(graph)
+        queue = deque(v for v in graph if indegree[v] == 0)
+        while queue:
+            v = queue.popleft(); order.append(v)
+            for w in graph[v]:
+                indegree[w] -= 1
+                if indegree[w] == 0:
+                    queue.append(w)
+      problems:
+      - title: Course Schedule
+        slug: course-schedule
+        difficulty: medium
+      - title: Course Schedule II
+        slug: course-schedule-ii
+        difficulty: medium
+      - title: Find Eventual Safe States
+        slug: find-eventual-safe-states
+        difficulty: medium
+      - title: Minimum Height Trees
+        slug: minimum-height-trees
+        difficulty: medium
+      - title: Parallel Courses III
+        slug: parallel-courses-iii
+        difficulty: hard
+
+  - id: union-find
+    track: dsa
+    title: Union-Find
+    summary: Track which items are connected as edges arrive, and spot the edge that creates a cycle.
+    difficulty: 4
+    phase: 1
+    visualizer: union_find
+    requires:
+    - graphs
+    concepts:
+    - Each group is a tree; its root is the group's name.
+    - Path compression in find() keeps the trees flat, making operations almost O(1).
+    - Union by size or rank (attach the smaller tree) keeps it fast in the worst case.
+    pattern:
+      group: Trees and graphs
+      complexity: ≈ O(1) per operation
+      walkthrough: Connect groups and spot cycles
+      signals:
+      - You need the number of connected groups (provinces, components)
+      - Connections arrive one by one and you must check 'already connected?'
+      - You need to find the edge that creates a cycle
+      template: |-
+        parent = {x: x for x in items}
+        def find(x):
+            while parent[x] != x:
+                parent[x] = parent[parent[x]]
+                x = parent[x]
+            return x
+        def union(a, b):
+            parent[find(b)] = find(a)
+      problems:
+      - title: Number of Provinces
+        slug: number-of-provinces
+        difficulty: medium
+      - title: Redundant Connection
+        slug: redundant-connection
+        difficulty: medium
+      - title: Number of Operations to Make Network Connected
+        slug: number-of-operations-to-make-network-connected
+        difficulty: medium
+      - title: Accounts Merge
+        slug: accounts-merge
+        difficulty: medium
+      - title: Most Stones Removed with Same Row or Column
+        slug: most-stones-removed-with-same-row-or-column
+        difficulty: medium
+
+  - id: top-k-elements
+    track: dsa
+    title: Top K Elements
+    summary: Keep a heap of size k to find the k largest, smallest or most frequent items efficiently.
+    difficulty: 3
+    phase: 1
+    visualizer: top_k_elements
+    requires:
+    - heaps
+    concepts:
+    - 'For the k largest, use a min-heap of size k: its root is the weakest member of the top k.'
+    - Python's heapq is a min-heap; push negatives to get a max-heap.
+    - O(n log k) beats sorting (O(n log n)) when k is much smaller than n.
+    pattern:
+      group: Heaps
+      complexity: O(n log k) time · O(k) space
+      walkthrough: Kth largest with a min-heap
+      signals:
+      - The question says 'top k', 'k largest', 'k closest' or 'kth'
+      - You need a running median or best-so-far from a stream
+      - You need to merge k sorted lists
+      template: |-
+        heap = []
+        for x in nums:
+            heapq.heappush(heap, x)
+            if len(heap) > k:
+                heapq.heappop(heap)  # drop the smallest
+        return heap[0]  # kth largest
+      problems:
+      - title: Last Stone Weight
+        slug: last-stone-weight
+        difficulty: easy
+      - title: Kth Largest Element in a Stream
+        slug: kth-largest-element-in-a-stream
+        difficulty: easy
+      - title: Kth Largest Element in an Array
+        slug: kth-largest-element-in-an-array
+        difficulty: medium
+      - title: K Closest Points to Origin
+        slug: k-closest-points-to-origin
+        difficulty: medium
+      - title: Find Median from Data Stream
+        slug: find-median-from-data-stream
+        difficulty: hard
+      - title: Merge k Sorted Lists
+        slug: merge-k-sorted-lists
+        difficulty: hard
+
   - id: dynamic-programming
     track: dsa
     title: Dynamic Programming
@@ -156,6 +923,107 @@ topics:
     difficulty: 4
     phase: 3
     requires: [recursion, hash-maps]
+
+  # ---------------- DSA problem-solving patterns (batch 4: recursion) ----------------
+  - id: backtracking
+    track: dsa
+    title: Backtracking
+    summary: 'Build answers one choice at a time, undo, and try the next: subsets, permutations, puzzles.'
+    difficulty: 4
+    phase: 1
+    visualizer: backtracking
+    requires:
+    - recursion
+    - trees
+    concepts:
+    - 'Choose, explore, un-choose: the undo step is what makes it backtracking.'
+    - The calls form a decision tree; each root-to-leaf path is one candidate answer.
+    - 'Prune early: stop exploring a branch as soon as it can''t lead to a valid answer.'
+    pattern:
+      group: Recursion
+      complexity: Exponential time · O(n) space
+      walkthrough: Generate every subset
+      signals:
+      - You must list all subsets, permutations or combinations
+      - The question is a puzzle with constraints (N-Queens, Sudoku, word search)
+      - Inputs are small (n around 10 to 20), so exponential time is fine
+      - Partial answers can be ruled out early (pruning)
+      template: |-
+        def backtrack(state):
+            if is_complete(state):
+                results.append(copy(state))
+                return
+            for choice in choices(state):
+                if is_valid(state, choice):
+                    make(choice)
+                    backtrack(state)
+                    undo(choice)
+      problems:
+      - title: Subsets
+        slug: subsets
+        difficulty: medium
+      - title: Permutations
+        slug: permutations
+        difficulty: medium
+      - title: Combination Sum
+        slug: combination-sum
+        difficulty: medium
+      - title: Letter Combinations of a Phone Number
+        slug: letter-combinations-of-a-phone-number
+        difficulty: medium
+      - title: Word Search
+        slug: word-search
+        difficulty: medium
+      - title: N-Queens
+        slug: n-queens
+        difficulty: hard
+
+  - id: dp-grid
+    track: dsa
+    title: Dynamic Programming on Grids
+    summary: 'Fill a table where each cell reuses answers to smaller subproblems: paths, edit distance, LCS.'
+    difficulty: 4
+    phase: 1
+    visualizer: dp_grid
+    requires:
+    - dynamic-programming
+    concepts:
+    - Define dp[i][j] in words first; the recurrence and base cases follow from that.
+    - Fill the table in an order where every cell's inputs are already computed.
+    - Often only the previous row is needed, which cuts memory to O(m).
+    pattern:
+      group: Recursion
+      complexity: O(n · m) time and space
+      walkthrough: Longest common subsequence
+      signals:
+      - The question compares two strings or sequences
+      - You count paths, or find the cheapest path, in a grid
+      - The answer for a prefix or position depends on smaller ones
+      - Plain recursion would solve the same subproblem many times
+      template: |-
+        dp = [[0] * (m + 1) for _ in range(n + 1)]
+        for i in range(1, n + 1):
+            for j in range(1, m + 1):
+                dp[i][j] = best_of(dp[i - 1][j],
+                                   dp[i][j - 1],
+                                   dp[i - 1][j - 1])
+        return dp[n][m]
+      problems:
+      - title: Unique Paths
+        slug: unique-paths
+        difficulty: medium
+      - title: Minimum Path Sum
+        slug: minimum-path-sum
+        difficulty: medium
+      - title: Longest Common Subsequence
+        slug: longest-common-subsequence
+        difficulty: medium
+      - title: Longest Palindromic Subsequence
+        slug: longest-palindromic-subsequence
+        difficulty: medium
+      - title: Edit Distance
+        slug: edit-distance
+        difficulty: medium
 
   # ---------------- Languages ----------------
   - id: python-basics
@@ -385,49 +1253,385 @@ topics:
     requires: [prompting]
 
   # ---------------- System design ----------------
+  # Core concepts -> patterns -> distributed systems -> interview case studies.
+
   - id: sd-fundamentals
     track: system-design
     title: System Design Fundamentals
-    summary: Latency vs throughput, availability, and how to approach a design interview.
+    summary: Latency vs throughput, availability, scaling, and how to approach a design interview.
     difficulty: 2
     phase: 3
+    concepts:
+      - "Start every design by clarifying requirements: who the users are, the core features, and the scale (requests per second, data size)."
+      - "Latency is how long one request takes; throughput is how many requests you handle per second."
+      - "Availability is measured in nines: 99.9% allows about 8.8 hours of downtime a year, 99.99% about 53 minutes."
+      - "Scale vertically (a bigger machine) first; scale horizontally (more machines) when one machine is no longer enough."
+      - "Every design is a set of trade-offs. Name them out loud in an interview."
+    resources:
+      - { label: The System Design Primer, url: "https://github.com/donnemartin/system-design-primer" }
+      - { label: Cloud design patterns, url: "https://learn.microsoft.com/en-us/azure/architecture/patterns/" }
+
+  - id: networking-basics
+    track: system-design
+    title: Networking Essentials
+    summary: What happens between a click and a response - DNS, TCP and UDP, HTTP, and TLS.
+    difficulty: 2
+    phase: 3
+    requires: [sd-fundamentals]
+    concepts:
+      - "DNS turns a name like example.com into an IP address, with caching at every level along the way."
+      - "TCP gives reliable, ordered delivery; UDP is faster but can drop or reorder packets."
+      - "HTTP is request and response; HTTP/2 and HTTP/3 send many requests over a single connection."
+      - "TLS encrypts traffic; its handshake adds round trips, which is why connections are reused."
+      - "Round trips dominate latency, so fewer and bigger requests are usually faster."
+    resources:
+      - { label: An overview of HTTP, url: "https://developer.mozilla.org/en-US/docs/Web/HTTP/Overview" }
+      - { label: What DNS is, url: "https://developer.mozilla.org/en-US/docs/Glossary/DNS" }
+
+  - id: api-design
+    track: system-design
+    title: API Design
+    summary: Clear, stable APIs - REST resources, gRPC between services, pagination, versioning and idempotency.
+    difficulty: 2
+    phase: 3
+    requires: [networking-basics]
+    concepts:
+      - "REST models nouns as resources (/users/42) and uses HTTP methods for the actions on them."
+      - "gRPC sends Protocol Buffers over HTTP/2. It is fast and typed, which suits calls between internal services."
+      - "Paginate large lists with cursors rather than page numbers, so results stay stable while data changes."
+      - "Make retried requests safe with idempotency keys, so a payment is never charged twice."
+      - "Version your API and never break existing clients without warning."
+    resources:
+      - { label: API design best practices, url: "https://learn.microsoft.com/en-us/azure/architecture/best-practices/api-design" }
+      - { label: Introduction to gRPC, url: "https://grpc.io/docs/what-is-grpc/introduction/" }
+      - { label: Idempotent requests (Stripe), url: "https://docs.stripe.com/api/idempotent_requests" }
 
   - id: load-balancing
     track: system-design
     title: Load Balancing
-    summary: Spreading traffic across servers; round robin, least connections, health checks.
+    summary: Spreading traffic across servers - round robin, least connections, health checks and stateless servers.
     difficulty: 2
     phase: 3
-    requires: [sd-fundamentals]
+    requires: [sd-fundamentals, networking-basics]
+    concepts:
+      - "A load balancer spreads requests across servers and takes unhealthy ones out using health checks."
+      - "Layer 4 balancers route by IP and port; layer 7 balancers can route by URL path, header or cookie."
+      - "Common algorithms are round robin, least connections, and hashing on the client or a key."
+      - "Keep servers stateless so any server can handle any request; keep sessions in a shared store."
+      - "The load balancer itself must be redundant, or it becomes a single point of failure."
+    resources:
+      - { label: Load-balancing options, url: "https://learn.microsoft.com/en-us/azure/architecture/guide/technology-choices/load-balancing-overview" }
+      - { label: The System Design Primer, url: "https://github.com/donnemartin/system-design-primer" }
 
   - id: caching
     track: system-design
     title: Caching
-    summary: Keeping hot data close; cache-aside, write-through, eviction policies like LRU.
+    summary: Keeping hot data close - cache-aside, write-through, eviction policies like LRU, and invalidation.
     difficulty: 3
     phase: 3
     requires: [sd-fundamentals, hash-maps]
+    concepts:
+      - "Cache-aside: read from the cache; on a miss, load from the database and store the result in the cache."
+      - "Write-through updates the cache on every write; write-back delays the database write for speed, at some risk."
+      - "Eviction policies like LRU decide what to drop when the cache is full; TTLs expire data after a set time."
+      - "Invalidation is the hard part, so decide up front how stale each kind of data is allowed to be."
+      - "Watch for cache stampedes, where many requests miss at once and overwhelm the database."
+    resources:
+      - { label: Caching guidance, url: "https://learn.microsoft.com/en-us/azure/architecture/best-practices/caching" }
+      - { label: Cache-aside pattern, url: "https://learn.microsoft.com/en-us/azure/architecture/patterns/cache-aside" }
+      - { label: HTTP caching, url: "https://developer.mozilla.org/en-US/docs/Web/HTTP/Caching" }
+
+  - id: cdn
+    track: system-design
+    title: CDNs & Edge Caching
+    summary: Serve static files and cacheable responses from servers close to your users.
+    difficulty: 2
+    phase: 3
+    requires: [caching, networking-basics]
+    concepts:
+      - "A CDN copies content to edge servers around the world, so users download it from somewhere nearby."
+      - "It works best for static assets: images, video, and JavaScript and CSS bundles."
+      - "Cache-Control headers tell the CDN and browsers how long a response may be reused."
+      - "Fingerprinted file names (app.3f9a.js) let you cache files forever and still ship updates instantly."
+    resources:
+      - { label: CDN best practices, url: "https://learn.microsoft.com/en-us/azure/architecture/best-practices/cdn" }
+      - { label: HTTP caching, url: "https://developer.mozilla.org/en-US/docs/Web/HTTP/Caching" }
 
   - id: databases
     track: system-design
     title: Databases & Indexing
-    summary: SQL vs NoSQL, indexes, transactions, replication and sharding.
+    summary: SQL vs NoSQL, indexes, transactions and isolation, and when to normalise.
     difficulty: 3
     phase: 3
     requires: [sd-fundamentals]
+    concepts:
+      - "Relational databases give you SQL, joins and ACID transactions. Most products should start with one."
+      - "NoSQL stores (key-value, document, wide-column) trade query flexibility for scale or a simpler model."
+      - "An index is a sorted lookup structure, usually a B-tree. It speeds up reads but slows down writes."
+      - "Transaction isolation levels control which concurrent changes a transaction is allowed to see."
+      - "Normalise to avoid duplicated data; denormalise selectively where reads must be fast."
+    resources:
+      - { label: Indexes (PostgreSQL), url: "https://www.postgresql.org/docs/current/indexes.html" }
+      - { label: Transaction isolation (PostgreSQL), url: "https://www.postgresql.org/docs/current/transaction-iso.html" }
+
+  - id: database-replication
+    track: system-design
+    title: Replication
+    summary: Keep copies of your data on several machines for availability and to scale reads.
+    difficulty: 3
+    phase: 3
+    requires: [databases]
+    concepts:
+      - "Leader-follower replication: one node takes writes and streams changes to read-only followers."
+      - "Synchronous replication is safer but slower; asynchronous is faster but can lose the latest writes."
+      - "Followers lag behind, so users may not see their own writes. Plan for read-your-writes consistency."
+      - "Failover promotes a follower when the leader dies, and must avoid having two leaders (split brain)."
+    resources:
+      - { label: High availability and replication (PostgreSQL), url: "https://www.postgresql.org/docs/current/high-availability.html" }
+      - { label: The System Design Primer, url: "https://github.com/donnemartin/system-design-primer" }
+
+  - id: consistent-hashing
+    track: system-design
+    title: Consistent Hashing
+    summary: Spread keys across servers so that adding or removing a server moves only a small share of keys.
+    difficulty: 3
+    phase: 3
+    requires: [hash-maps, load-balancing]
+    concepts:
+      - "Plain hash(key) % N reshuffles almost every key whenever N changes."
+      - "Consistent hashing puts servers and keys on a ring; each key belongs to the next server clockwise."
+      - "Virtual nodes give each server many points on the ring, which spreads keys more evenly."
+      - "Distributed caches and Dynamo-style databases use it to place data."
+    resources:
+      - { label: "Dynamo paper (Amazon, PDF)", url: "https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf" }
+
+  - id: sharding
+    track: system-design
+    title: Partitioning & Sharding
+    summary: Split a dataset across many databases when one machine can no longer hold it or keep up.
+    difficulty: 4
+    phase: 3
+    requires: [database-replication, consistent-hashing]
+    concepts:
+      - "Sharding (horizontal partitioning) splits rows across databases using a shard key."
+      - "A good shard key spreads load evenly and keeps data that is read together on the same shard."
+      - "Range-based sharding keeps order but risks hot spots; hash-based sharding spreads load but loses order."
+      - "Cross-shard queries and transactions are slow and complex, so design the data model to avoid them."
+      - "Plan for resharding early: moving data while serving traffic is one of the hardest operations."
+    resources:
+      - { label: Data partitioning guidance, url: "https://learn.microsoft.com/en-us/azure/architecture/best-practices/data-partitioning" }
+      - { label: Sharding pattern, url: "https://learn.microsoft.com/en-us/azure/architecture/patterns/sharding" }
 
   - id: message-queues
     track: system-design
     title: Message Queues
-    summary: Decoupling services with queues and streams; at-least-once delivery and retries.
+    summary: Decoupling services with queues and logs - background work, load leveling, retries and dead letters.
     difficulty: 3
     phase: 3
     requires: [sd-fundamentals, stacks-queues]
+    concepts:
+      - "A queue decouples producers from consumers, so slow work happens in the background."
+      - "Queues absorb traffic spikes: consumers work through the backlog at their own pace (load leveling)."
+      - "Most queues deliver at least once, so consumers must be idempotent and safe to run twice."
+      - "Dead-letter queues hold messages that keep failing, so one bad message does not block the rest."
+      - "Logs like Kafka keep messages so they can be replayed; classic queues delete them once consumed."
+    resources:
+      - { label: Queue-based load leveling, url: "https://learn.microsoft.com/en-us/azure/architecture/patterns/queue-based-load-leveling" }
+      - { label: Introduction to Kafka, url: "https://kafka.apache.org/intro" }
+
+  - id: event-driven
+    track: system-design
+    title: Event-Driven Architecture
+    summary: Services react to events instead of calling each other directly - pub/sub, event sourcing and CQRS.
+    difficulty: 4
+    phase: 3
+    requires: [message-queues, api-design]
+    concepts:
+      - "Publish/subscribe lets one event reach many independent subscribers without the publisher knowing them."
+      - "Events describe facts that already happened (OrderPlaced); commands ask for something to happen."
+      - "Event sourcing stores every change as an event and rebuilds the current state by replaying them."
+      - "CQRS uses separate models for writing and for reading, each optimised for its own job."
+      - "The price is eventual consistency: different parts of the system catch up at different times."
+    resources:
+      - { label: Event-driven architecture style, url: "https://learn.microsoft.com/en-us/azure/architecture/guide/architecture-styles/event-driven" }
+      - { label: Publisher-subscriber pattern, url: "https://learn.microsoft.com/en-us/azure/architecture/patterns/publisher-subscriber" }
+      - { label: "CQRS (Martin Fowler)", url: "https://martinfowler.com/bliki/CQRS.html" }
+      - { label: "Event sourcing (Martin Fowler)", url: "https://martinfowler.com/eaaDev/EventSourcing.html" }
+
+  - id: rate-limiting
+    track: system-design
+    title: Rate Limiting
+    summary: Protect services from overload and abuse by capping how many requests each client can make.
+    difficulty: 3
+    phase: 3
+    requires: [api-design, caching]
+    concepts:
+      - "Token bucket: tokens refill at a steady rate and each request spends one, which allows short bursts."
+      - "Leaky bucket, fixed window and sliding window are alternatives with different burst behaviour."
+      - "Keep counters in a fast shared store like Redis so every server enforces the same limits."
+      - "Reply with HTTP 429 and a Retry-After header so well-behaved clients know when to try again."
+    resources:
+      - { label: Rate limiting pattern, url: "https://learn.microsoft.com/en-us/azure/architecture/patterns/rate-limiting-pattern" }
+      - { label: "Handling overload (Google SRE book)", url: "https://sre.google/sre-book/handling-overload/" }
+
+  - id: microservices
+    track: system-design
+    title: Monoliths & Microservices
+    summary: When to split one application into independently deployed services, and what that costs.
+    difficulty: 3
+    phase: 3
+    requires: [api-design, message-queues]
+    concepts:
+      - "A well-structured monolith is the right starting point for most products and small teams."
+      - "Microservices let teams deploy and scale parts independently, at the cost of network calls and operational complexity."
+      - "Split services along business capabilities, and give each service ownership of its own data."
+      - "Distributed systems fail partially, so every call between services needs a timeout and a failure plan."
+    resources:
+      - { label: "Microservices (Martin Fowler)", url: "https://martinfowler.com/articles/microservices.html" }
+      - { label: Microservices architecture style, url: "https://learn.microsoft.com/en-us/azure/architecture/guide/architecture-styles/microservices" }
+
+  - id: resilience-patterns
+    track: system-design
+    title: Resilience Patterns
+    summary: Keep working when dependencies fail - timeouts, retries with backoff, circuit breakers and bulkheads.
+    difficulty: 4
+    phase: 3
+    requires: [microservices]
+    concepts:
+      - "Always set timeouts: a slow dependency is often worse than a dead one."
+      - "Retry transient failures with exponential backoff and jitter, so retries do not turn into a storm."
+      - "A circuit breaker stops calling a failing service for a while, giving it time to recover."
+      - "Bulkheads isolate resources such as thread pools and connections, so one failure cannot sink everything."
+      - "Degrade gracefully: serve cached or partial results instead of an error page."
+    resources:
+      - { label: "Timeouts, retries and backoff with jitter (AWS)", url: "https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/" }
+      - { label: Circuit breaker pattern, url: "https://learn.microsoft.com/en-us/azure/architecture/patterns/circuit-breaker" }
+      - { label: Bulkhead pattern, url: "https://learn.microsoft.com/en-us/azure/architecture/patterns/bulkhead" }
+
+  - id: observability
+    track: system-design
+    title: Observability
+    summary: Know what your system is doing in production - logs, metrics, traces and service level objectives.
+    difficulty: 3
+    phase: 3
+    requires: [sd-fundamentals]
+    concepts:
+      - "Logs record events, metrics measure things over time, and traces follow one request across services."
+      - "Watch the four golden signals: latency, traffic, errors and saturation."
+      - "An SLO is a reliability target (for example 99.9% of requests under 300 ms); the error budget is what is left to spend."
+      - "Alert on symptoms users feel, not on every internal cause."
+    resources:
+      - { label: Observability primer (OpenTelemetry), url: "https://opentelemetry.io/docs/concepts/observability-primer/" }
+      - { label: "Service level objectives (Google SRE book)", url: "https://sre.google/sre-book/service-level-objectives/" }
+      - { label: "Monitoring distributed systems (Google SRE book)", url: "https://sre.google/sre-book/monitoring-distributed-systems/" }
+
+  - id: search-systems
+    track: system-design
+    title: Search Systems
+    summary: Find documents by their words, fast, using inverted indexes and relevance ranking.
+    difficulty: 3
+    phase: 3
+    requires: [databases]
+    concepts:
+      - "An inverted index maps each word to the list of documents that contain it."
+      - "Text is tokenised and normalised (lowercased, stemmed) before it is indexed."
+      - "Results are ranked by relevance, for example with BM25 scoring."
+      - "Search indexes are usually updated asynchronously from the main database."
+    resources:
+      - { label: Full text search (PostgreSQL), url: "https://www.postgresql.org/docs/current/textsearch-intro.html" }
+
+  - id: blob-storage
+    track: system-design
+    title: File Uploads & Object Storage
+    summary: Store images, videos and documents in object storage instead of your database.
+    difficulty: 2
+    phase: 3
+    requires: [api-design, cdn]
+    concepts:
+      - "Object storage (such as Amazon S3 or Azure Blob Storage) holds large files cheaply; the database keeps only their metadata."
+      - "Let clients upload directly using short-lived signed URLs, so files never pass through your servers."
+      - "Serve popular files through a CDN placed in front of the storage."
+      - "Process uploads (thumbnails, virus scans) in the background using a queue."
+    resources:
+      - { label: Valet key pattern, url: "https://learn.microsoft.com/en-us/azure/architecture/patterns/valet-key" }
+      - { label: CDN best practices, url: "https://learn.microsoft.com/en-us/azure/architecture/best-practices/cdn" }
 
   - id: distributed-systems
     track: system-design
     title: Distributed Systems
-    summary: Consistency models, CAP, consensus and what happens when the network fails.
+    summary: Consistency models, the CAP theorem, quorums, and what happens when the network fails.
     difficulty: 5
     phase: 3
-    requires: [databases, message-queues]
+    requires: [database-replication, message-queues]
+    concepts:
+      - "The network is unreliable: messages can be lost, delayed or duplicated, and clocks drift apart."
+      - "CAP theorem: during a network partition you must choose between consistency and availability."
+      - "Strong consistency means every read sees the latest write; eventual consistency means replicas converge later."
+      - "Quorums (W + R > N) give consistent reads in leaderless replicated stores."
+    resources:
+      - { label: "Consistency models (Jepsen)", url: "https://jepsen.io/consistency" }
+      - { label: "Dynamo paper (Amazon, PDF)", url: "https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf" }
+
+  - id: consensus
+    track: system-design
+    title: Consensus & Leader Election
+    summary: How a group of machines agrees on one value or one leader, even when some of them fail.
+    difficulty: 5
+    phase: 3
+    requires: [distributed-systems]
+    concepts:
+      - "Consensus algorithms like Raft keep a replicated log identical on a majority of nodes."
+      - "A cluster of 2f + 1 nodes survives f failures, which is why clusters usually have 3 or 5 nodes."
+      - "Leader election picks one node to coordinate; terms or epochs stop an old leader from acting."
+      - "Coordination services such as etcd and ZooKeeper provide locks and configuration built on consensus."
+    resources:
+      - { label: The Raft consensus algorithm, url: "https://raft.github.io/" }
+      - { label: Leader election pattern, url: "https://learn.microsoft.com/en-us/azure/architecture/patterns/leader-election" }
+
+  # ---------------- System design: interview case studies ----------------
+
+  - id: design-url-shortener
+    track: system-design
+    title: "Case Study: URL Shortener"
+    summary: Design a link shortener - short codes, fast redirects, and a read-heavy workload.
+    difficulty: 3
+    phase: 3
+    requires: [caching, databases, api-design]
+    concepts:
+      - "Estimate scale first: redirects (reads) outnumber new links (writes) by roughly 100 to 1."
+      - "Generate short codes with base62 encoding of a counter or a random ID, and handle collisions."
+      - "Serve redirects from a cache, because most traffic goes to a small set of popular links."
+      - "Choose HTTP 301 or 302 redirects depending on whether you need to count clicks."
+    resources:
+      - { label: "Similar design: Pastebin (System Design Primer)", url: "https://github.com/donnemartin/system-design-primer/blob/master/solutions/system_design/pastebin/README.md" }
+
+  - id: design-chat
+    track: system-design
+    title: "Case Study: Chat System"
+    summary: Design real-time one-to-one and group messaging with presence and message history.
+    difficulty: 4
+    phase: 3
+    requires: [message-queues, load-balancing, databases]
+    concepts:
+      - "Keep a persistent WebSocket connection per online user, so the server can push messages instantly."
+      - "Route messages through a pub/sub layer, because sender and receiver may be connected to different servers."
+      - "Order messages per conversation with sequence numbers rather than relying on timestamps."
+      - "Reach offline users with push notifications, and sync missed messages when they reconnect."
+    resources:
+      - { label: The WebSocket API, url: "https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API" }
+      - { label: Publisher-subscriber pattern, url: "https://learn.microsoft.com/en-us/azure/architecture/patterns/publisher-subscriber" }
+
+  - id: design-news-feed
+    track: system-design
+    title: "Case Study: News Feed"
+    summary: Design a social feed that shows each user recent posts from the people they follow.
+    difficulty: 5
+    phase: 3
+    requires: [caching, sharding, message-queues]
+    concepts:
+      - "Fan-out on write precomputes every follower's feed when someone posts: fast reads, heavy writes."
+      - "Fan-out on read builds the feed when it is requested: cheap writes, slower reads."
+      - "A hybrid fans out for normal accounts and merges posts from very popular accounts at read time."
+      - "Store each feed in a cache as a list of post IDs, and load the post details separately."
+    resources:
+      - { label: "Similar design: Twitter timeline (System Design Primer)", url: "https://github.com/donnemartin/system-design-primer/blob/master/solutions/system_design/twitter/README.md" }

@@ -24,6 +24,16 @@ export class LearningStore {
   readonly loading = computed(() => this.map.isLoading() || this.progressRes.isLoading());
   readonly error = computed(() => this.map.error() ?? this.progressRes.error());
 
+  readonly solvedRes = this.api.solvedProblems();
+  readonly algorithmsRes = this.api.algorithms();
+
+  /** Slugs of LeetCode problems you've marked solved. */
+  readonly solved = computed(() => new Set((this.solvedRes.value()?.items ?? []).map((s) => s.slug)));
+  readonly algorithmByKey = computed(
+    () => new Map((this.algorithmsRes.value()?.items ?? []).map((a) => [a.key, a])),
+  );
+  readonly patterns = computed(() => this.topics().filter((t) => t.pattern));
+
   readonly topicById = computed(() => new Map(this.topics().map((t) => [t.id, t])));
 
   readonly progressById = computed(
@@ -64,6 +74,27 @@ export class LearningStore {
 
   async markVisualizerDone(topicId: string): Promise<void> {
     this.patch(await this.api.recordVisualizerDone(topicId));
+  }
+
+  solvedCount(topic: Topic): number {
+    const solved = this.solved();
+    return (topic.pattern?.problems ?? []).filter((p) => solved.has(p.slug)).length;
+  }
+
+  async setSolved(topicId: string, slug: string, solved: boolean): Promise<void> {
+    // Optimistic: tick the box straight away, roll back if the server says no.
+    const before = this.solvedRes.value();
+    this.solvedRes.update((current) => {
+      const items = (current?.items ?? []).filter((s) => s.slug !== slug);
+      if (solved) items.push({ topic_id: topicId, slug, solved_at: new Date().toISOString() });
+      return { items };
+    });
+    try {
+      this.patch(await this.api.setSolved(topicId, slug, solved));
+    } catch (err) {
+      this.solvedRes.set(before);
+      throw err;
+    }
   }
 
   /** Update one item locally, so the UI reacts instantly without refetching everything. */

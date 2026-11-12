@@ -1,3 +1,5 @@
+from typing import Any
+
 from sqlalchemy import ForeignKey, SmallInteger, String, Text, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
@@ -22,6 +24,12 @@ class Topic(Base):
     resources: Mapped[list[dict[str, str]]] = mapped_column(
         JSONB, default=list, server_default=text("'[]'::jsonb")
     )
+    # ["Key idea one", "Key idea two"]
+    concepts: Mapped[list[str]] = mapped_column(
+        JSONB, default=list, server_default=text("'[]'::jsonb")
+    )
+    # Problem-solving pattern content (signals, template, LeetCode problems), or null.
+    pattern: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
 
 
 class TopicEdge(Base):

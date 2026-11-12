@@ -45,6 +45,8 @@ erDiagram
 | `visualizer` | text null | Tracer key if the topic has a visualizer, e.g. `binary_search` |
 | `phase` | smallint | Roadmap phase where the topic's interactive content ships |
 | `resources` | jsonb | Links to official docs, e.g. `[{"label": "Models", "url": "https://docs.djangoproject.com/..."}]` |
+| `concepts` | jsonb | Key ideas to learn, one sentence each; also sent to the tutor as context |
+| `pattern` | jsonb null | For problem-solving patterns: group, signals, template, walkthrough, LeetCode problems |
 
 **`topic_edges`** — prerequisites (a directed acyclic graph).
 | Column | Type | Notes |
@@ -62,6 +64,8 @@ erDiagram
 | `mastery` | real | 0.0–1.0, computed by the learning engine |
 | `last_activity_at` | timestamptz | |
 | PK | (`user_id`, `topic_id`) | |
+
+**`solved_problems`**: LeetCode practice problems you've marked solved (`user_id`, `slug` as the key, `topic_id`, `solved_at`). Each solved problem adds to that pattern's mastery.
 
 **`activity_events`** — append-only log; mastery is computed from it.
 | Column | Type | Notes |

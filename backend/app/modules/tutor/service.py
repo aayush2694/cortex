@@ -81,6 +81,7 @@ class TutorService:
                 "track": detail.track,
                 "summary": detail.summary,
                 "requires": [t.title for t in detail.requires],
+                "concepts": detail.concepts,
             }
         titles = {t.id: t.title for t in (await self.topics.knowledge_map()).topics}
         items = (await self.progress.overview(user)).items

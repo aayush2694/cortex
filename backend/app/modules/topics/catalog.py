@@ -2,7 +2,7 @@
 
 from collections import deque
 from pathlib import Path
-from typing import Literal
+from typing import Annotated, Literal
 
 import yaml
 from pydantic import BaseModel, Field, HttpUrl
@@ -17,6 +17,25 @@ class Resource(BaseModel):
     url: HttpUrl
 
 
+class Problem(BaseModel):
+    """A practice problem on LeetCode (slug = the part of the URL after /problems/)."""
+
+    title: str = Field(max_length=120)
+    slug: str = Field(pattern=r"^[a-z0-9]+(-[a-z0-9]+)*$", max_length=120)
+    difficulty: Literal["easy", "medium", "hard"]
+
+
+class PatternSpec(BaseModel):
+    """Extra content for problem-solving patterns (Two pointers, Sliding window, ...)."""
+
+    group: str = Field(max_length=60)
+    complexity: str = Field(max_length=80)
+    walkthrough: str = Field(max_length=120)  # the problem the animation solves
+    signals: list[Annotated[str, Field(max_length=160)]] = Field(min_length=1)
+    template: str
+    problems: list[Problem] = Field(min_length=1)
+
+
 class TopicSpec(BaseModel):
     id: str = Field(pattern=r"^[a-z0-9]+(-[a-z0-9]+)*$", max_length=80)
     track: Track
@@ -27,6 +46,9 @@ class TopicSpec(BaseModel):
     visualizer: str | None = None
     requires: list[str] = []
     resources: list[Resource] = []
+    # Key ideas to learn, one short sentence each.
+    concepts: list[Annotated[str, Field(max_length=240)]] = []
+    pattern: PatternSpec | None = None
 
 
 class Catalog(BaseModel):
@@ -52,6 +74,17 @@ def validate_catalog(catalog: Catalog) -> None:
                 raise CatalogError(f"Topic '{t.id}' requires unknown topic '{req}'")
             if req == t.id:
                 raise CatalogError(f"Topic '{t.id}' requires itself")
+
+    slugs: set[str] = set()
+    for t in catalog.topics:
+        if t.pattern is None:
+            continue
+        if not t.visualizer:
+            raise CatalogError(f"Pattern '{t.id}' needs a visualizer for its walkthrough")
+        for prob in t.pattern.problems:
+            if prob.slug in slugs:
+                raise CatalogError(f"Problem '{prob.slug}' is listed under two patterns")
+            slugs.add(prob.slug)
 
     order = topological_order(catalog)
     if len(order) != len(ids):

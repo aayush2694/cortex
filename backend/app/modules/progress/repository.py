@@ -5,7 +5,7 @@ from typing import Any
 from sqlalchemy import exists, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.modules.progress.models import ActivityEvent, Progress
+from app.modules.progress.models import ActivityEvent, Progress, SolvedProblem
 
 
 class ProgressRepository:
@@ -33,6 +33,18 @@ class ProgressRepository:
         self.session.add(
             ActivityEvent(user_id=user_id, topic_id=topic_id, kind=kind, payload=payload)
         )
+        await self.session.flush()
+
+    async def solved(self, user_id: uuid.UUID) -> Sequence[SolvedProblem]:
+        stmt = select(SolvedProblem).where(SolvedProblem.user_id == user_id)
+        return (await self.session.scalars(stmt.order_by(SolvedProblem.solved_at))).all()
+
+    async def set_solved(self, user_id: uuid.UUID, topic_id: str, slug: str, solved: bool) -> None:
+        row = await self.session.get(SolvedProblem, (user_id, slug))
+        if solved and row is None:
+            self.session.add(SolvedProblem(user_id=user_id, topic_id=topic_id, slug=slug))
+        elif not solved and row is not None:
+            await self.session.delete(row)
         await self.session.flush()
 
     async def topics_with_event(self, user_id: uuid.UUID, kind: str) -> set[str]:

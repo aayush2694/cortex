@@ -20,6 +20,27 @@ export interface Topic {
   phase: number;
   visualizer: string | null;
   resources: Resource[];
+  concepts: string[];
+  pattern: Pattern | null;
+}
+
+export interface Problem {
+  title: string;
+  slug: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+}
+
+export interface Pattern {
+  group: string;
+  complexity: string;
+  walkthrough: string;
+  signals: string[];
+  template: string;
+  problems: Problem[];
+}
+
+export function leetcodeUrl(slug: string): string {
+  return `https://leetcode.com/problems/${slug}/`;
 }
 
 export interface Resource {
@@ -50,13 +71,14 @@ export interface Recommendation {
   reason: string;
 }
 
-export type View = 'array' | 'grid' | 'graph';
+export type View = 'array' | 'grid' | 'graph' | 'sequence' | 'list' | 'tree' | 'intervals' | 'table';
 
 export interface Algorithm {
   key: string;
   title: string;
   topic_id: string;
   view: View;
+  kind: 'algorithm' | 'pattern';
   description: string;
   complexity: string;
   source: string[];
@@ -80,6 +102,12 @@ export interface Trace {
   frames: Frame[];
   result: Record<string, any>;
   stats: Record<string, number>;
+}
+
+export interface SolvedProblem {
+  topic_id: string;
+  slug: string;
+  solved_at: string;
 }
 
 export interface ChatSession {

@@ -2,6 +2,7 @@ import json
 from typing import Any
 
 import httpx
+import pytest
 
 from app.clients.llm import LLMEvent
 from tests.integration.conftest import FakeLLM
@@ -60,6 +61,15 @@ async def test_topic_resources(client: httpx.AsyncClient) -> None:
     assert {t["id"] for t in d["requires"]} == {"django-basics"}
     frameworks = (await client.get(f"{API}/topics", params={"track": "frameworks"})).json()
     assert len(frameworks["topics"]) >= 10
+
+
+async def test_topic_concepts(client: httpx.AsyncClient) -> None:
+    d = (await client.get(f"{API}/topics/caching")).json()
+    assert d["track"] == "system-design"
+    assert len(d["concepts"]) >= 3
+    assert any("Cache-aside" in c for c in d["concepts"])
+    sd = (await client.get(f"{API}/topics", params={"track": "system-design"})).json()
+    assert len(sd["topics"]) >= 20
 
 
 async def test_topic_detail_and_404(client: httpx.AsyncClient) -> None:
@@ -221,3 +231,44 @@ async def test_tutor_stream_crash_still_ends_with_error(
     events = parse_sse(r.text)
     assert [e for e, _ in events] == ["delta", "error"]
     assert events[-1][1]["code"] == "internal_error"
+
+
+# ---------------------------------------------------------------- patterns
+
+
+async def test_pattern_topic_and_solved_problems(client: httpx.AsyncClient) -> None:
+    t = (await client.get(f"{API}/topics/sliding-window")).json()
+    assert t["pattern"]["group"] == "Arrays and strings"
+    assert t["visualizer"] == "sliding_window"
+    slug = t["pattern"]["problems"][0]["slug"]
+    total = len(t["pattern"]["problems"])
+
+    r = await client.put(f"{API}/progress/sliding-window/problems/{slug}", json={"solved": True})
+    assert r.status_code == 200
+    item = r.json()
+    assert item["status"] == "learning"  # solving a problem starts the topic
+    assert item["mastery"] == pytest.approx(0.3 + 0.2 / total, abs=1e-3)
+
+    solved = (await client.get(f"{API}/progress/problems")).json()["items"]
+    assert [(s["topic_id"], s["slug"]) for s in solved] == [("sliding-window", slug)]
+
+    r = await client.put(f"{API}/progress/sliding-window/problems/{slug}", json={"solved": False})
+    assert r.json()["mastery"] == pytest.approx(0.3, abs=1e-3)
+    assert (await client.get(f"{API}/progress/problems")).json()["items"] == []
+
+
+async def test_unknown_problem_rejected(client: httpx.AsyncClient) -> None:
+    r = await client.put(f"{API}/progress/sliding-window/problems/two-sum", json={"solved": True})
+    assert r.status_code == 422 and r.json()["error"]["code"] == "unknown_problem"
+    r = await client.put(f"{API}/progress/arrays/problems/two-sum", json={"solved": True})
+    assert r.status_code == 422
+
+
+async def test_pattern_walkthrough_is_listed(client: httpx.AsyncClient) -> None:
+    algos = (await client.get(f"{API}/visualizer/algorithms")).json()["items"]
+    kinds = {a["key"]: a["kind"] for a in algos}
+    assert kinds["bubble_sort"] == "algorithm" and kinds["sliding_window"] == "pattern"
+    r = await client.post(
+        f"{API}/visualizer/sliding_window/trace", json={"input": {"text": "pwwkew"}}
+    )
+    assert r.status_code == 200 and r.json()["result"]["best"] == 3

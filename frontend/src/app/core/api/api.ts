@@ -6,6 +6,7 @@ import {
   Algorithm,
   ChatSession,
   ChatSessionDetail,
+  SolvedProblem,
   KnowledgeMap,
   ProgressItem,
   Recommendation,
@@ -42,6 +43,10 @@ export class Api {
     return httpResource<{ items: Recommendation[] }>(() => `${API}/progress/next?limit=${limit}`);
   }
 
+  solvedProblems() {
+    return httpResource<{ items: SolvedProblem[] }>(() => `${API}/progress/problems`);
+  }
+
   algorithms() {
     return httpResource<{ items: Algorithm[] }>(() => `${API}/visualizer/algorithms`);
   }
@@ -61,6 +66,12 @@ export class Api {
       this.http.post<ProgressItem>(`${API}/progress/${topicId}/events`, {
         kind: 'visualizer_completed',
       }),
+    );
+  }
+
+  setSolved(topicId: string, slug: string, solved: boolean) {
+    return firstValueFrom(
+      this.http.put<ProgressItem>(`${API}/progress/${topicId}/problems/${slug}`, { solved }),
     );
   }
 

@@ -12,6 +12,9 @@
   @if (selected(); as algo) {
     <header class="page-head">
       <div>
+        @if (algo.kind === 'pattern') {
+          <a class="back" [routerLink]="['/topics', algo.topic_id]"><i class="ti ti-chevron-left"></i>Pattern</a>
+        }
         <div class="title-row">
           <h1>{{ algo.title }}</h1>
           <span class="pill mono">{{ algo.complexity }}</span>
@@ -26,71 +29,14 @@
       </div>
     </header>
 
-    <div class="workspace">
-      <section class="stage card">
-        @if (trace.error()) {
-          <div class="problem">
-            <i class="ti ti-alert-triangle" aria-hidden="true"></i>
-            <p>{{ errorText() }}</p>
-            <button class="btn" (click)="resetInput()">Use the example</button>
-          </div>
-        } @else if (frame(); as f) {
-          <div class="view">
-            @switch (algo.view) {
-              @case ('array') {
-                <app-array-view [frame]="f" [boxes]="algo.key === 'binary_search'" />
-              }
-              @case ('grid') {
-                <app-grid-view [frame]="f" [input]="$any(traceInput())" (toggleWall)="toggleWall($event)" />
-              }
-              @case ('graph') {
-                <app-graph-view [frame]="f" [input]="$any(traceInput())" />
-              }
-            }
-          </div>
-
-          <div class="narration" aria-live="polite">
-            <span class="pill action {{ f.action }}">{{ label(f.action) }}</span>
-            <p>{{ f.message }}</p>
-          </div>
-
-          <div class="controls">
-            <button class="btn icon" (click)="restart()" aria-label="Restart (R)"><i class="ti ti-player-skip-back"></i></button>
-            <button class="btn icon" (click)="step(-1); playing.set(false)" aria-label="Previous step (Left arrow)"><i class="ti ti-chevron-left"></i></button>
-            <button class="btn primary icon play" (click)="togglePlay()" [attr.aria-label]="playing() ? 'Pause (Space)' : 'Play (Space)'">
-              <i class="ti" [class.ti-player-pause]="playing()" [class.ti-player-play]="!playing()"></i>
-            </button>
-            <button class="btn icon" (click)="step(1); playing.set(false)" aria-label="Next step (Right arrow)"><i class="ti ti-chevron-right"></i></button>
-            <input
-              class="scrub"
-              type="range"
-              min="0"
-              [max]="frames().length - 1"
-              [value]="index()"
-              (input)="seek($any($event.target).value)"
-              aria-label="Step"
-            />
-            <span class="faint mono step">{{ index() + 1 }}/{{ frames().length }}</span>
-            <button class="btn ghost speed mono" (click)="cycleSpeed()" aria-label="Change speed">{{ speed() }}×</button>
-          </div>
-        } @else {
-          <div class="skeleton" style="height: 300px"></div>
-        }
-      </section>
-
-      <div class="side">
-        @if (frame(); as f) {
-          <app-code-panel [source]="algo.source" [line]="f.line" />
-          <div class="card stats">
-            @for (c of counters(); track c[0]) {
-              <div><span class="faint">{{ label(c[0]) }}</span><strong class="mono">{{ c[1] }}</strong></div>
-            } @empty {
-              <div><span class="faint">steps</span><strong class="mono">{{ index() + 1 }}</strong></div>
-            }
-          </div>
-        }
-      </div>
-    </div>
+    <app-trace-player
+      [algorithm]="algo"
+      [data]="traceInput()"
+      layout="full"
+      (completed)="onCompleted($event)"
+      (toggleWall)="toggleWall($event)"
+      (resetInput)="resetInput()"
+    />
 
     <div class="below">
       @if (algo.view === 'array') {
@@ -117,6 +63,25 @@
             }
             <button class="btn primary" (click)="applyArray()">Run</button>
             <button class="btn" (click)="shuffle()"><i class="ti ti-arrows-shuffle"></i>Random</button>
+            <button class="btn ghost" (click)="resetInput()">Reset</button>
+          </div>
+          @if (inputError()) {
+            <p class="error">{{ inputError() }}</p>
+          }
+        </section>
+      } @else if (algo.view !== 'grid') {
+        <section class="card editor">
+          <h2>Your input</h2>
+          <textarea
+            class="input json mono"
+            rows="4"
+            [value]="jsonText()"
+            (input)="jsonText.set($any($event.target).value)"
+            aria-label="Input as JSON"
+            spellcheck="false"
+          ></textarea>
+          <div class="fields">
+            <button class="btn primary" (click)="applyJson()">Run</button>
             <button class="btn ghost" (click)="resetInput()">Reset</button>
           </div>
           @if (inputError()) {

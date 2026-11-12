@@ -116,3 +116,44 @@ def test_django_track_and_doc_links() -> None:
     for t in catalog.topics:
         for r in t.resources:
             assert r.url.scheme == "https"
+
+
+def test_system_design_track_has_concepts_and_links() -> None:
+    catalog = load_catalog("content")
+    sd = [t for t in catalog.topics if t.track == "system-design"]
+    assert len(sd) >= 20
+    for t in sd:
+        assert len(t.concepts) >= 3, f"{t.id} needs key ideas"
+        assert t.resources, f"{t.id} needs reference links"
+
+
+def test_tutor_context_includes_key_ideas() -> None:
+    from app.modules.tutor.prompts import session_context
+
+    topic = {
+        "title": "Caching",
+        "track": "system-design",
+        "summary": "s",
+        "requires": [],
+        "concepts": ["Cache-aside reads from the cache first."],
+    }
+    text = session_context(topic, confident=[], learning=[])
+    assert "Key ideas this topic covers:" in text
+    assert "- Cache-aside reads from the cache first." in text
+
+
+def test_patterns_are_complete() -> None:
+    catalog = load_catalog("content")
+    patterns = [t for t in catalog.topics if t.pattern]
+    assert len(patterns) >= 6
+    for t in patterns:
+        assert t.pattern is not None
+        assert t.visualizer in REGISTRY and REGISTRY[t.visualizer].kind == "pattern"
+        assert REGISTRY[t.visualizer].topic_id == t.id
+        assert len(t.pattern.signals) >= 3 and len(t.pattern.problems) >= 4
+        assert t.pattern.template.strip()
+
+
+def test_practice_bonus() -> None:
+    assert compute_mastery("learning", False, 0, solved_ratio=1.0) == 0.5
+    assert compute_mastery("confident", True, 0, solved_ratio=1.0) == 1.0

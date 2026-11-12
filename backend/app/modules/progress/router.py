@@ -3,7 +3,15 @@ from typing import Annotated
 from fastapi import APIRouter, Query
 
 from app.core.auth import CurrentUser, DbSession
-from app.modules.progress.schemas import EventIn, NextOut, ProgressItem, ProgressOut, SetStatusIn
+from app.modules.progress.schemas import (
+    EventIn,
+    NextOut,
+    ProgressItem,
+    ProgressOut,
+    SetStatusIn,
+    SolvedIn,
+    SolvedOut,
+)
 from app.modules.progress.service import ProgressService
 
 router = APIRouter(prefix="/progress", tags=["progress"])
@@ -33,3 +41,19 @@ async def record_event(
     topic_id: str, body: EventIn, user: CurrentUser, session: DbSession
 ) -> ProgressItem:
     return await ProgressService(session).record_event(user, topic_id, body.kind)
+
+
+@router.get("/problems", response_model=SolvedOut, summary="Practice problems you've solved")
+async def get_solved(user: CurrentUser, session: DbSession) -> SolvedOut:
+    return await ProgressService(session).solved_problems(user)
+
+
+@router.put(
+    "/{topic_id}/problems/{slug}",
+    response_model=ProgressItem,
+    summary="Mark a pattern's practice problem as solved (or not)",
+)
+async def set_solved(
+    topic_id: str, slug: str, body: SolvedIn, user: CurrentUser, session: DbSession
+) -> ProgressItem:
+    return await ProgressService(session).set_solved(user, topic_id, slug, body.solved)

@@ -29,124 +29,15 @@
   gap: 8px;
 }
 
-.workspace {
-  display: grid;
-  grid-template-columns: minmax(0, 1.5fr) minmax(300px, 1fr);
-  gap: 12px;
-  align-items: start;
-}
-
-.stage {
-  padding: 20px;
-}
-
-.view {
-  min-height: 300px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.narration {
-  display: flex;
+.back {
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
-  min-height: 44px;
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 0.5px solid var(--separator);
-
-  p {
-    font-size: 14.5px;
-  }
-}
-
-.action {
-  text-transform: capitalize;
-  flex-shrink: 0;
-  background: var(--raised);
-  color: var(--text);
-
-  // Moments that matter most get the strongest treatment.
-  &.found,
-  &.done,
-  &.placed {
-    background: var(--accent);
-    color: var(--on-accent);
-  }
-  &.pivot,
-  &.pick,
-  &.split {
-    background: transparent;
-    box-shadow: inset 0 0 0 1px var(--text);
-  }
-}
-
-.controls {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 14px;
-
-  .play {
-    width: 44px;
-    height: 36px;
-  }
-  .step {
-    min-width: 52px;
-    text-align: right;
-  }
-  .speed {
-    min-width: 44px;
-    justify-content: center;
-  }
-}
-
-.scrub {
-  flex: 1;
-  margin: 0 8px;
-  accent-color: var(--text);
-  min-width: 60px;
-}
-
-.problem {
-  min-height: 300px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  text-align: center;
-
-  i {
-    font-size: 28px;
+  gap: 2px;
+  margin: 0 0 8px -4px;
+  font-size: 14px;
+  color: var(--text-2);
+  &:hover {
     color: var(--text);
-  }
-}
-
-.side {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  position: sticky;
-  top: 72px;
-}
-
-.stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
-  gap: 12px;
-
-  div {
-    display: flex;
-    flex-direction: column;
-  }
-  span {
-    text-transform: capitalize;
-  }
-  strong {
-    font-size: 20px;
-    font-weight: 500;
   }
 }
 
@@ -159,6 +50,16 @@
   h2 {
     margin-bottom: 12px;
   }
+}
+
+.json {
+  width: 100%;
+  height: auto;
+  min-height: 96px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  resize: vertical;
+  line-height: 1.5;
 }
 
 .editor .fields {
@@ -192,11 +93,7 @@
 }
 
 @media (max-width: 1000px) {
-  .workspace,
   .below {
     grid-template-columns: 1fr;
-  }
-  .side {
-    position: static;
   }
 }

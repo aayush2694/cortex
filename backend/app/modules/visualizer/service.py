@@ -23,6 +23,7 @@ def _describe(spec: AlgorithmSpec) -> AlgorithmOut:
         title=spec.title,
         topic_id=spec.topic_id,
         view=spec.view,
+        kind=spec.kind,
         description=spec.description,
         complexity=spec.complexity,
         source=spec.source.strip("\n").splitlines(),

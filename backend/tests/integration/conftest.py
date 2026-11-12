@@ -43,7 +43,7 @@ async def clean_user_data() -> AsyncIterator[None]:
     async with get_engine().begin() as conn:
         await conn.execute(
             text(
-                "TRUNCATE users, progress, activity_events, chat_sessions, "
+                "TRUNCATE users, progress, activity_events, solved_problems, chat_sessions, "
                 "chat_messages RESTART IDENTITY CASCADE"
             )
         )

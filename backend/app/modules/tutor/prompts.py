@@ -34,6 +34,9 @@ def session_context(topic: dict[str, Any] | None, confident: list[str], learning
         lines.append(f"Topic summary: {topic['summary']}")
         if topic["requires"]:
             lines.append("Prerequisites: " + ", ".join(topic["requires"]))
+        if topic.get("concepts"):
+            lines.append("Key ideas this topic covers:")
+            lines.extend(f"- {c}" for c in topic["concepts"])
     else:
         lines.append("Current topic: none (general question)")
     lines.append("Topics the learner is confident in: " + (", ".join(confident) or "none yet"))
