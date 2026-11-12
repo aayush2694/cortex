@@ -85,7 +85,7 @@ import { LearningStore } from '../../core/learning-store';
       border: 0;
       border-radius: 50%;
       background: transparent;
-      color: var(--text-3);
+      color: var(--text-2);
       font-size: 20px;
       cursor: pointer;
       transition:

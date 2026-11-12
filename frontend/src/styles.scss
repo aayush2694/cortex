@@ -18,7 +18,12 @@
   --border-strong: #48484a;
   --text: #f5f5f7; // label
   --text-2: #98989d; // secondary label
-  --text-3: #636366; // tertiary label
+  --text-3: #636366; // decorative only (icons, rules): too faint for words
+  // Activity heatmap, least to most. Level 1 stands 3:1 from an empty cell; even steps after.
+  --heat-1: #75757a;
+  --heat-2: #99999e;
+  --heat-3: #c3c3c8;
+  --heat-4: #f5f5f7;
   --accent: #f5f5f7; // primary action = white
   --on-accent: #000000;
   --accent-soft: rgb(255 255 255 / 0.1);
@@ -46,8 +51,12 @@
   --separator: #e5e5ea;
   --border-strong: #d2d2d7;
   --text: #1d1d1f;
-  --text-2: #6e6e73;
-  --text-3: #aeaeb2;
+  --text-2: #68686d; // 4.5:1 even on --raised
+  --text-3: #aeaeb2; // decorative only
+  --heat-1: #85858a;
+  --heat-2: #626267;
+  --heat-3: #414146;
+  --heat-4: #1d1d1f;
   --accent: #1d1d1f;
   --on-accent: #ffffff;
   --accent-soft: rgb(0 0 0 / 0.06);
@@ -394,13 +403,13 @@ pre,
     box-shadow: 0 0 0 3px var(--selected), inset 0 0 0 1px var(--border-strong);
   }
   &::placeholder {
-    color: var(--text-3);
+    color: var(--text-2);
   }
 }
 
 kbd {
   font-family: var(--font);
-  font-size: 11.5px;
+  font-size: 12px;
   padding: 1px 6px;
   border-radius: 5px;
   background: var(--raised);

@@ -275,7 +275,7 @@ export function answerParts(card: Pick<Flashcard, 'kind' | 'back'>):
       flex-direction: column;
       gap: 2px;
       .when {
-        font-size: 11.5px;
+        font-size: 12px;
         opacity: 0.7;
       }
     }

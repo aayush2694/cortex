@@ -170,7 +170,7 @@ type Filter = Track | 'all';
       }
       .status-ring {
         fill: none;
-        stroke: var(--text-3);
+        stroke: var(--text-2);
         stroke-width: 1.5;
       }
       .status-fill {

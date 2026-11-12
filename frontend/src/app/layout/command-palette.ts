@@ -121,7 +121,7 @@ interface Command {
         color: var(--text);
         font: 15px var(--font);
         &::placeholder {
-          color: var(--text-3);
+          color: var(--text-2);
         }
       }
     }

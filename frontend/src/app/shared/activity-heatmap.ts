@@ -59,7 +59,7 @@ export function levelFor(count: number): number {
     .months {
       grid-auto-flow: column;
       grid-template-columns: repeat(26, 13px);
-      font-size: 11px;
+      font-size: 12px;
       color: var(--text-2);
       margin-bottom: 4px;
       height: 14px;
@@ -78,16 +78,16 @@ export function levelFor(count: number): number {
       animation: in 0.4s var(--ease) both;
     }
     .l1 {
-      background: var(--tone-4);
+      background: var(--heat-1);
     }
     .l2 {
-      background: var(--tone-3);
+      background: var(--heat-2);
     }
     .l3 {
-      background: var(--tone-2);
+      background: var(--heat-3);
     }
     .l4 {
-      background: var(--tone-1);
+      background: var(--heat-4);
     }
     .future {
       visibility: hidden;
@@ -98,7 +98,7 @@ export function levelFor(count: number): number {
       align-items: center;
       gap: 3px;
       margin-top: 8px;
-      font-size: 11px;
+      font-size: 12px;
       i {
         width: 10px;
         height: 10px;

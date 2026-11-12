@@ -108,7 +108,7 @@ const PAD = 32;
       }
       .lab {
         fill: var(--text-2);
-        font: 500 10.5px var(--mono);
+        font: 500 12px var(--mono);
         text-anchor: middle;
       }
       &.active circle,

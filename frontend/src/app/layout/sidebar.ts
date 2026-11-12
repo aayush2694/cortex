@@ -70,9 +70,9 @@ import { NAV_SECTIONS } from './nav';
     }
     .section {
       padding: 14px 10px 5px;
-      font-size: 11.5px;
+      font-size: 12px;
       font-weight: 600;
-      color: var(--text-3);
+      color: var(--text-2);
     }
     .nav-item {
       display: flex;

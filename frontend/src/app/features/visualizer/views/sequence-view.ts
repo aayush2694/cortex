@@ -157,7 +157,7 @@ interface SequenceState {
       top: 50px;
       width: 42px;
       text-align: center;
-      font: 600 11px var(--mono);
+      font: 600 12px var(--mono);
       color: var(--text);
       transition: left 0.35s var(--ease);
       &::before {

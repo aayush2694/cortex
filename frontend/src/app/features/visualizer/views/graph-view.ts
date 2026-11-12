@@ -113,7 +113,7 @@ const R = 22;
       }
       text {
         fill: var(--text-2);
-        font: 500 11px var(--mono);
+        font: 500 12px var(--mono);
         text-anchor: middle;
       }
       &.tree line {
@@ -163,7 +163,7 @@ const R = 22;
       }
       .dist {
         fill: var(--text-2);
-        font: 500 11.5px var(--mono);
+        font: 500 12px var(--mono);
         text-anchor: middle;
       }
       &.done circle {

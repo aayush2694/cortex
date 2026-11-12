@@ -63,8 +63,8 @@ interface IntervalsState {
     .tick {
       position: absolute;
       transform: translateX(-50%);
-      font: 500 11px var(--mono);
-      color: var(--text-3);
+      font: 500 12px var(--mono);
+      color: var(--text-2);
     }
     .lane {
       display: flex;
@@ -75,7 +75,7 @@ interface IntervalsState {
       width: 68px;
       flex-shrink: 0;
       text-align: right;
-      font-size: 11.5px;
+      font-size: 12px;
       color: var(--text-2);
     }
     .track {
@@ -130,7 +130,7 @@ interface IntervalsState {
         left 0.45s var(--ease);
       animation: grow 0.4s var(--ease);
       span {
-        font-size: 11px;
+        font-size: 12px;
         font-weight: 600;
         white-space: nowrap;
       }

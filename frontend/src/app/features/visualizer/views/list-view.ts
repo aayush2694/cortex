@@ -136,7 +136,7 @@ interface Arrow {
       }
     }
     .null text {
-      fill: var(--text-3);
+      fill: var(--text-2);
       font: 500 12px var(--mono);
       text-anchor: middle;
     }

@@ -49,7 +49,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
       width: 34px;
       padding-right: 12px;
       text-align: right;
-      color: var(--text-3);
+      color: var(--text-2);
       user-select: none;
     }
   `,

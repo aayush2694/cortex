@@ -199,7 +199,7 @@ const MAX_Y = 64;
     .tick,
     .lbl {
       fill: var(--text-2);
-      font: 500 11px var(--mono);
+      font: 500 12px var(--mono);
     }
     .lbl {
       fill: var(--text);

@@ -100,7 +100,7 @@ const ACTION_TONE: Record<string, Tone> = {
       transition: height 0.25s var(--ease), background-color 0.15s, opacity 0.15s;
     }
     .val {
-      font: 500 11px var(--mono);
+      font: 500 12px var(--mono);
       color: var(--text-2);
     }
     /* Monochrome states: brightness and outline instead of colour. */
@@ -155,7 +155,7 @@ const ACTION_TONE: Record<string, Tone> = {
       min-height: 38px;
     }
     .ptr {
-      font: 500 11px var(--mono);
+      font: 500 12px var(--mono);
       color: var(--text-2);
       text-align: center;
       &.accent {

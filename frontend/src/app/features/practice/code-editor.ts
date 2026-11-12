@@ -25,7 +25,7 @@ const highlight = HighlightStyle.define([
   { tag: [t.typeName, t.standard(t.name)], color: 'var(--tone-1)' },
   { tag: [t.function(t.variableName), t.function(t.definition(t.variableName))], color: 'var(--tone-1)' },
   { tag: [t.string, t.number, t.bool, t.null], color: 'var(--tone-2)' },
-  { tag: t.comment, color: 'var(--text-3)', fontStyle: 'italic' },
+  { tag: t.comment, color: 'var(--text-2)', fontStyle: 'italic' },
   { tag: [t.operator, t.punctuation, t.bracket], color: 'var(--text-2)' },
 ]);
 
@@ -33,7 +33,7 @@ const theme = EditorView.theme({
   '&': { height: '100%', fontSize: '13px', backgroundColor: 'transparent', color: 'var(--text)' },
   '.cm-scroller': { fontFamily: 'var(--mono)', lineHeight: '1.7' },
   '.cm-content': { caretColor: 'var(--text)', padding: '10px 0' },
-  '.cm-gutters': { backgroundColor: 'transparent', border: 'none', color: 'var(--text-3)' },
+  '.cm-gutters': { backgroundColor: 'transparent', border: 'none', color: 'var(--text-2)' },
   '.cm-activeLine, .cm-activeLineGutter': { backgroundColor: 'var(--hover)' },
   '&.cm-focused': { outline: 'none' },
   '&.cm-focused .cm-cursor': { borderLeftColor: 'var(--text)' },

@@ -63,7 +63,7 @@ import { show } from './practice-format';
     }
     .null,
     .empty {
-      color: var(--text-3);
+      color: var(--text-2);
       font-style: italic;
     }
   `,
