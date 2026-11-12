@@ -1,0 +1,34 @@
+# Dependabot opens a pull request when a dependency has a new version.
+# Updates are grouped so you get a few PRs a week, not dozens. CI checks each one.
+version: 2
+updates:
+  - package-ecosystem: uv
+    directory: /backend
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      python:
+        patterns: ["*"]
+
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      angular:
+        patterns: ["@angular/*", "@angular-devkit/*"]
+      codemirror:
+        patterns: ["codemirror", "@codemirror/*", "@lezer/*"]
+      other:
+        patterns: ["*"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      actions:
+        patterns: ["*"]

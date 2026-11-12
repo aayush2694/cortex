@@ -53,8 +53,12 @@ jobs:
       - name: Type check
         run: uv run mypy app
 
-      - name: Tests
-        run: uv run pytest -q
+      - name: Tests with coverage
+        # Fails if coverage drops below 90%. The table shows on the run's summary page.
+        run: >-
+          uv run pytest -q --cov --cov-report=term
+          --cov-report=markdown-append:$GITHUB_STEP_SUMMARY
+          --cov-fail-under=90
 
   frontend:
     runs-on: ubuntu-latest
@@ -72,6 +76,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci                        # exact versions from package-lock.json
+
+      - name: Unit tests
+        run: npx ng test --watch=false
 
       - name: Build
         run: npx ng build

@@ -19,3 +19,8 @@ __pycache__/
 node_modules/
 dist/
 .angular/
+
+# Test coverage data
+.coverage
+.coverage.*
+htmlcov/
