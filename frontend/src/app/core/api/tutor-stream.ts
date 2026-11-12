@@ -23,13 +23,22 @@ export async function* streamTutorReply(
   });
 
   if (!res.ok || !res.body) {
+    let code = 'http_error';
     let message = `Request failed (${res.status})`;
     try {
-      message = (await res.json()).error?.message ?? message;
+      const err = (await res.json()).error;
+      code = err?.code ?? code;
+      message = err?.message ?? message;
+      if (code === 'tutor_limit_reached' && err.details?.reset_at) {
+        // Show when the allowance resets in your own time zone, not the server's.
+        const at = new Date(err.details.reset_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+        const n = err.details.limit;
+        message = `You've used today's ${n} tutor ${n === 1 ? 'message' : 'messages'}. More at ${at}.`;
+      }
     } catch {
       // not JSON
     }
-    yield { type: 'error', code: 'http_error', message };
+    yield { type: 'error', code, message };
     return;
   }
 

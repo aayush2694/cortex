@@ -58,6 +58,17 @@ jobs:
       - name: Type check
         run: uv run mypy app
 
+      # The tests build tables straight from the models, so check the real migrations too:
+      # they must apply to an empty database, match the models, and be reversible.
+      - name: Migrations apply, match the models, and roll back
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/cortex_test
+        run: |
+          uv run alembic upgrade head
+          uv run alembic check
+          uv run alembic downgrade base
+          uv run alembic upgrade head
+
       - name: Tests with coverage
         # Fails if coverage drops below 90%. The table shows on the run's summary page.
         run: >-

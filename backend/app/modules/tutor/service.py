@@ -2,6 +2,7 @@ import json
 import logging
 import uuid
 from collections.abc import AsyncIterator
+from datetime import UTC, datetime, time, timedelta
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.clients.llm import LLMClient
 from app.core.config import get_settings
 from app.core.db import get_sessionmaker
-from app.core.errors import NotFound
+from app.core.errors import NotFound, TooManyRequests
 from app.modules.progress.service import ProgressService
 from app.modules.topics.service import TopicService
 from app.modules.tutor.models import ChatMessage, ChatSession
@@ -51,6 +52,18 @@ class TutorService:
         self.topics = TopicService(session)
         self.progress = ProgressService(session)
 
+    async def _check_daily_limit(self, user: User) -> None:
+        """Refuse before anything is saved or sent once today's (UTC) allowance is used."""
+        limit = get_settings().tutor_daily_limit
+        day_start = datetime.combine(datetime.now(UTC).date(), time.min, tzinfo=UTC)
+        if await self.repo.user_messages_since(user.id, day_start) >= limit:
+            raise TooManyRequests(
+                f"You've used today's {limit} tutor {'message' if limit == 1 else 'messages'}. "
+                "The limit resets at midnight UTC.",
+                code="tutor_limit_reached",
+                details={"limit": limit, "reset_at": (day_start + timedelta(days=1)).isoformat()},
+            )
+
     async def create_session(self, user: User, topic_id: str | None) -> SessionOut:
         title = "General question"
         if topic_id is not None:
@@ -71,6 +84,7 @@ class TutorService:
     ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
         """Save the user's message and build the system prompt + messages for the model."""
         chat = await self._owned(user, session_id)
+        await self._check_daily_limit(user)
         await self.repo.add_message(chat, "user", [{"type": "text", "text": text}])
 
         topic: dict[str, Any] | None = None

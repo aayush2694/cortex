@@ -44,6 +44,11 @@ class ValidationFailed(AppError):
     code = "validation_failed"
 
 
+class TooManyRequests(AppError):
+    status_code = 429
+    code = "too_many_requests"
+
+
 class AIUnavailable(AppError):
     status_code = 503
     code = "ai_unavailable"

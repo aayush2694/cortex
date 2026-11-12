@@ -447,3 +447,74 @@ async def test_profile_match_and_questions(client: httpx.AsyncClient) -> None:
     r = await client.put(f"{API}/jobs/questions/{qid}", json={"my_answer": "My take"})
     assert r.json()["practised"] is True and r.json()["my_answer"] == "My take"
     assert (await client.put(f"{API}/jobs/questions/nope", json={})).status_code == 404
+
+
+# ---------------------------------------------------------------- tutor daily limit
+
+
+@pytest.fixture
+def tutor_limit() -> Any:
+    """Lower the daily limit for a test, then put it back."""
+    from app.core.config import get_settings
+
+    settings = get_settings()
+    original = settings.tutor_daily_limit
+    settings.tutor_daily_limit = 2
+    yield 2
+    settings.tutor_daily_limit = original
+
+
+def done_event() -> list[LLMEvent]:
+    return [
+        LLMEvent(
+            "done",
+            data={
+                "content": [{"type": "text", "text": "ok"}],
+                "stop_reason": "end_turn",
+                "model": "fake",
+                "input_tokens": 1,
+                "output_tokens": 1,
+            },
+        )
+    ]
+
+
+async def test_tutor_refuses_messages_over_the_daily_limit(
+    client: httpx.AsyncClient, fake_llm: FakeLLM, tutor_limit: int
+) -> None:
+    fake_llm.events = done_event()
+    s = (await client.post(f"{API}/tutor/sessions", json={})).json()
+    url = f"{API}/tutor/sessions/{s['id']}/messages"
+    for i in range(tutor_limit):
+        assert (await client.post(url, json={"text": f"q{i}"})).status_code == 200
+
+    r = await client.post(url, json={"text": "one too many"})
+    assert r.status_code == 429
+    err = r.json()["error"]
+    assert err["code"] == "tutor_limit_reached"
+    assert err["details"]["limit"] == tutor_limit and err["details"]["reset_at"]
+    # Claude was not called and the refused message was not saved.
+    assert len(fake_llm.calls) == tutor_limit
+    detail = (await client.get(f"{API}/tutor/sessions/{s['id']}")).json()
+    assert "one too many" not in [m["text"] for m in detail["messages"]]
+
+
+async def test_tutor_limit_resets_the_next_day(
+    client: httpx.AsyncClient, fake_llm: FakeLLM, tutor_limit: int
+) -> None:
+    from sqlalchemy import text
+
+    from app.core.db import get_engine
+
+    fake_llm.events = done_event()
+    s = (await client.post(f"{API}/tutor/sessions", json={})).json()
+    url = f"{API}/tutor/sessions/{s['id']}/messages"
+    for i in range(tutor_limit):
+        await client.post(url, json={"text": f"q{i}"})
+
+    # Yesterday's messages don't count against today.
+    async with get_engine().begin() as conn:
+        await conn.execute(
+            text("UPDATE chat_messages SET created_at = created_at - interval '1 day'")
+        )
+    assert (await client.post(url, json={"text": "new day"})).status_code == 200

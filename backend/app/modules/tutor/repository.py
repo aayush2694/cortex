@@ -1,8 +1,9 @@
 import uuid
 from collections.abc import Sequence
+from datetime import datetime
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import utcnow
@@ -64,3 +65,17 @@ class TutorRepository:
         self.session.add(msg)
         await self.session.flush()
         return msg
+
+    async def user_messages_since(self, user_id: uuid.UUID, since: datetime) -> int:
+        """Messages this user sent the tutor since `since`: one paid Claude call each."""
+        stmt = (
+            select(func.count())
+            .select_from(ChatMessage)
+            .join(ChatSession, ChatSession.id == ChatMessage.session_id)
+            .where(
+                ChatSession.user_id == user_id,
+                ChatMessage.role == "user",
+                ChatMessage.created_at >= since,
+            )
+        )
+        return int(await self.session.scalar(stmt) or 0)

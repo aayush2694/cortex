@@ -3,6 +3,7 @@
 from functools import lru_cache
 from typing import Literal
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -26,6 +27,8 @@ class Settings(BaseSettings):
     tutor_effort: Literal["low", "medium", "high", "xhigh", "max"] = "medium"
     tutor_max_tokens: int = 16000
     tutor_history_turns: int = 20
+    # Messages each user may send the tutor per day (UTC); each one is a paid Claude call.
+    tutor_daily_limit: int = Field(default=30, ge=1)
 
     content_dir: str = "content"
 
