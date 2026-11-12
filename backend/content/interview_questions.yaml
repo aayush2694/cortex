@@ -1,0 +1,583 @@
+# Interview questions for a Python / Django / Angular full stack role.
+# `answer` holds the key points a strong answer covers (Markdown), not a script to memorise.
+categories:
+  - { id: python, label: Python }
+  - { id: django, label: Django }
+  - { id: drf, label: Django REST Framework }
+  - { id: postgresql, label: PostgreSQL & SQL }
+  - { id: angular, label: Angular }
+  - { id: system-design, label: System design }
+  - { id: behavioral, label: Behavioral }
+
+questions:
+  # ------------------------------------------------------------------ Python
+  - id: py-gil
+    category: python
+    difficulty: medium
+    question: What is the GIL, and when does it actually matter?
+    answer: |
+      - CPython's Global Interpreter Lock lets only one thread run Python bytecode at a time.
+      - **I/O-bound** threads are fine: the lock is released while waiting on the network or disk.
+      - **CPU-bound** threads don't run in parallel. Use processes (`multiprocessing`,
+        `ProcessPoolExecutor`) or libraries that do the work in C (NumPy) instead.
+      - Python 3.13 added an optional free-threaded build without the GIL; it isn't the default.
+
+  - id: py-generators
+    category: python
+    difficulty: easy
+    question: When would you use a generator instead of building a list?
+    answer: |
+      - A generator (`yield`) produces items one at a time, on demand, using O(1) memory.
+      - Good for large or endless data: reading a big file line by line, streaming rows, pipelines.
+      - It can only be iterated once, and `len()` and indexing don't work.
+      - Generator expressions `(x for x in xs)` are the lazy version of list comprehensions.
+
+  - id: py-decorators
+    category: python
+    difficulty: medium
+    question: How does a decorator work? Write one that logs how long a function takes.
+    answer: |
+      - A decorator is a function that takes a function and returns a new one that wraps it;
+        `@timed` is shorthand for `f = timed(f)`.
+      - Use `functools.wraps` so the wrapper keeps the original name and docstring.
+      - A decorator that takes arguments needs one more layer of function.
+
+      ```python
+      import functools, time
+
+      def timed(fn):
+          @functools.wraps(fn)
+          def wrapper(*args, **kwargs):
+              start = time.perf_counter()
+              try:
+                  return fn(*args, **kwargs)
+              finally:
+                  print(f"{fn.__name__} took {time.perf_counter() - start:.3f}s")
+          return wrapper
+      ```
+
+  - id: py-mutable-default
+    category: python
+    difficulty: easy
+    question: "What's wrong with `def add(item, items=[])`?"
+    answer: |
+      - Default values are evaluated once, when the function is defined, not on each call.
+      - Every call without `items` shares the same list, so items pile up between calls.
+      - Fix: default to `None` and create the list inside: `items = [] if items is None else items`.
+
+  - id: py-is-vs-eq
+    category: python
+    difficulty: easy
+    question: What's the difference between `is` and `==`?
+    answer: |
+      - `==` compares values (calls `__eq__`); `is` checks whether two names are the same object.
+      - Use `is` for singletons: `x is None`, `x is True` rarely.
+      - Don't use `is` for numbers or strings: small ints and some strings are cached, so it can
+        appear to work and then fail for other values.
+
+  - id: py-dict-internals
+    category: python
+    difficulty: medium
+    question: How does a Python dict work, and why must keys be hashable?
+    answer: |
+      - It's a hash table: the key's hash picks a slot, and equality resolves collisions.
+      - Lookup, insert and delete are O(1) on average.
+      - Keys must be hashable and their hash must not change, which is why lists can't be keys
+        but tuples of immutable values can.
+      - Since Python 3.7, dicts keep insertion order.
+
+  - id: py-context-managers
+    category: python
+    difficulty: easy
+    question: What is a context manager, and how do you write one?
+    answer: |
+      - Used with `with`, it guarantees setup and cleanup, even when an exception is raised
+        (files, locks, database transactions).
+      - Write a class with `__enter__` and `__exit__`, or a generator with
+        `@contextlib.contextmanager` that yields once inside `try/finally`.
+
+  - id: py-asyncio
+    category: python
+    difficulty: medium
+    question: When would you choose asyncio over threads?
+    answer: |
+      - When you have many concurrent I/O waits (thousands of HTTP calls or sockets): one thread
+        and an event loop handle them cheaply.
+      - It's cooperative: code yields at `await`. Anything blocking (CPU work, `time.sleep`,
+        a sync DB driver) stalls every task; push it to `asyncio.to_thread` or a process pool.
+      - You need async libraries end to end (httpx, asyncpg).
+      - Threads are simpler for a few blocking calls with sync libraries.
+
+  - id: py-copy
+    category: python
+    difficulty: easy
+    question: What's the difference between a shallow and a deep copy?
+    answer: |
+      - A shallow copy (`list(x)`, `x.copy()`, `copy.copy`) makes a new outer container that
+        still points at the same inner objects.
+      - A deep copy (`copy.deepcopy`) copies everything recursively.
+      - Bug to mention: `[[0] * 3] * 3` creates three references to the same inner list.
+
+  # ------------------------------------------------------------------ Django
+  - id: dj-n-plus-one
+    category: django
+    difficulty: medium
+    question: What is the N+1 query problem, and how do you fix it in Django?
+    answer: |
+      - Loading N objects and then touching a relation on each one runs 1 + N queries.
+      - `select_related` follows foreign keys and one-to-one fields with a JOIN (one query).
+      - `prefetch_related` handles many-to-many and reverse relations with one extra query.
+      - Find it with django-debug-toolbar, query logging, or `assertNumQueries` in tests.
+
+  - id: dj-request-lifecycle
+    category: django
+    difficulty: medium
+    question: Walk me through what happens when a request reaches a Django app.
+    answer: |
+      - The web server (Nginx) passes it to a WSGI/ASGI server (Gunicorn, Uvicorn).
+      - Django builds an `HttpRequest` and runs it through the request side of each middleware.
+      - The URL resolver picks a view; the view uses forms or serializers, the ORM, templates.
+      - The `HttpResponse` goes back through middleware in reverse order and out to the client.
+
+  - id: dj-middleware
+    category: django
+    difficulty: medium
+    question: What is middleware? Give an example you'd write yourself.
+    answer: |
+      - A hook that wraps every request and response, configured in `MIDDLEWARE` (order matters).
+      - Built-ins handle sessions, CSRF, authentication and security headers.
+      - Examples: attach a request ID for logging, time each request, enforce tenant selection,
+        mask personal data in logs.
+
+  - id: dj-migrations
+    category: django
+    difficulty: hard
+    question: How would you run a migration on a very large table in production?
+    answer: |
+      - Avoid long locks: add new columns as nullable (or with a database default), then backfill
+        in small batches, then add constraints.
+      - Create indexes concurrently (`AddIndexConcurrently` on PostgreSQL, non-atomic migration).
+      - Split schema changes and code changes across deploys so old and new code both work.
+      - Test on a copy of production data and know how to roll back.
+
+  - id: dj-signals
+    category: django
+    difficulty: medium
+    question: What are Django signals, and when should you avoid them?
+    answer: |
+      - Hooks like `post_save` that run code when something happens, without the sender
+        knowing who listens.
+      - They hide control flow, make tests and debugging harder, and don't fire for
+        `QuerySet.update()` or `bulk_create`.
+      - Prefer calling a service function explicitly; keep signals for decoupled, optional
+        reactions (like cache invalidation).
+
+  - id: dj-queryset-lazy
+    category: django
+    difficulty: medium
+    question: When does a QuerySet actually hit the database?
+    answer: |
+      - QuerySets are lazy: chaining `filter()` builds SQL without running it.
+      - They run when evaluated: iteration, `list()`, `len()`, `bool()`, slicing with a step,
+        or `repr()`.
+      - Results are cached on that QuerySet, so iterating twice queries once.
+      - Use `.exists()` and `.count()` when you don't need the rows.
+
+  - id: dj-transactions
+    category: django
+    difficulty: medium
+    question: How do transactions work in Django?
+    answer: |
+      - By default each query autocommits.
+      - `transaction.atomic()` (decorator or `with`) wraps a block: all of it commits or none.
+      - `select_for_update()` locks rows inside the transaction to prevent races.
+      - `transaction.on_commit()` runs side effects (emails, tasks) only after a successful commit.
+
+  - id: dj-security
+    category: django
+    difficulty: easy
+    question: What does Django protect you from out of the box?
+    answer: |
+      - SQL injection (the ORM parameterises queries), XSS (templates auto-escape),
+        CSRF (tokens on unsafe methods) and clickjacking (`X-Frame-Options`).
+      - Strong password hashing and a full auth system.
+      - You still need `DEBUG = False`, HTTPS settings, and care with `|safe` and raw SQL.
+
+  # ------------------------------------------------------------------ DRF
+  - id: drf-serializers
+    category: drf
+    difficulty: easy
+    question: What's the difference between a Serializer and a ModelSerializer?
+    answer: |
+      - Both convert data to and from JSON and validate input.
+      - `Serializer` needs every field and `create`/`update` written by hand.
+      - `ModelSerializer` generates fields, validators and `create`/`update` from a model.
+
+  - id: drf-views
+    category: drf
+    difficulty: medium
+    question: "APIView, generic views or ViewSets: how do you choose?"
+    answer: |
+      - `APIView`: full control, for endpoints that aren't plain CRUD.
+      - Generic views and mixins (`ListCreateAPIView`): standard behaviour with little code.
+      - `ViewSet` plus a router: all CRUD actions for a resource and URLs generated for you.
+      - Choose the least code that stays readable; custom actions use `@action`.
+
+  - id: drf-auth
+    category: drf
+    difficulty: medium
+    question: How do authentication and permissions work in DRF?
+    answer: |
+      - Authentication classes work out who the user is (session, token, JWT with simplejwt).
+      - Permission classes decide whether they may proceed (`IsAuthenticated`, custom classes).
+      - Object-level checks go in `has_object_permission` and run on `get_object()`.
+      - Throttling limits request rates per user or IP.
+
+  - id: drf-pagination
+    category: drf
+    difficulty: medium
+    question: How would you paginate an endpoint over millions of rows?
+    answer: |
+      - Page-number and limit/offset are simple but `OFFSET` gets slow deep into the data and
+        rows shift when new ones are inserted.
+      - Cursor pagination uses an indexed, ordered column ("rows after this one"): fast at any
+        depth and stable under inserts, but no jumping to page 500.
+      - Always use a stable ordering backed by an index.
+
+  - id: drf-validation
+    category: drf
+    difficulty: easy
+    question: Where does validation go in a DRF serializer?
+    answer: |
+      - Field-level: `validate_<field>(self, value)`.
+      - Across fields: `validate(self, attrs)`.
+      - Reusable rules: `validators=[...]`, including `UniqueTogetherValidator`.
+      - Keep database constraints as the last line of defence.
+
+  - id: drf-slow-endpoint
+    category: drf
+    difficulty: hard
+    question: A DRF list endpoint is slow. How do you find and fix the problem?
+    answer: |
+      - Measure first: query count and time per request (debug toolbar, logs, APM).
+      - Nested serializers and `SerializerMethodField` often cause N+1 queries: fix with
+        `select_related`/`prefetch_related` in `get_queryset`.
+      - Fetch only needed columns (`only`, `values`), paginate, and add indexes for filters and
+        ordering (check `EXPLAIN ANALYZE`).
+      - Cache expensive, rarely changing responses.
+
+  - id: drf-versioning
+    category: drf
+    difficulty: medium
+    question: How would you version an API?
+    answer: |
+      - Common choices: URL path (`/api/v1/`), a header, or a query parameter.
+      - URL versioning is easiest to see, route and cache.
+      - Avoid breaking changes: add fields rather than rename or remove them, and give clients a
+        deprecation period before retiring a version.
+
+  # ------------------------------------------------------------------ PostgreSQL
+  - id: pg-btree
+    category: postgresql
+    difficulty: medium
+    question: How does a B-tree index speed up a query, and what does it cost?
+    answer: |
+      - It keeps column values sorted in a balanced tree, so lookups, ranges and `ORDER BY` take
+        O(log n) instead of scanning the table.
+      - Costs: slower writes (each index is updated), more disk, more to vacuum.
+      - It won't help if the query wraps the column in a function or matches most rows.
+
+  - id: pg-explain
+    category: postgresql
+    difficulty: medium
+    question: How do you read EXPLAIN ANALYZE?
+    answer: |
+      - It shows the plan tree with estimated and actual rows, time and loops per node.
+      - Look for sequential scans on big tables, huge gaps between estimated and actual rows
+        (stale statistics, run `ANALYZE`), and nested loops over many rows.
+      - Add `BUFFERS` to see how much was read from disk versus cache.
+
+  - id: pg-composite-index
+    category: postgresql
+    difficulty: medium
+    question: In what order should the columns of a composite index go?
+    answer: |
+      - An index on `(a, b)` helps filters on `a`, or on `a` and `b`, but not on `b` alone.
+      - Put columns used with equality first, then the one used for ranges or sorting.
+      - `INCLUDE` extra columns to allow index-only scans.
+
+  - id: pg-isolation
+    category: postgresql
+    difficulty: hard
+    question: What transaction isolation levels does PostgreSQL support?
+    answer: |
+      - Read committed (default): each statement sees data committed before it started.
+      - Repeatable read: the whole transaction sees one snapshot.
+      - Serializable: as if transactions ran one at a time; conflicting ones fail and must retry.
+      - Read uncommitted is accepted but behaves like read committed.
+
+  - id: pg-mvcc
+    category: postgresql
+    difficulty: hard
+    question: What is MVCC, and why does PostgreSQL need VACUUM?
+    answer: |
+      - Multi-version concurrency control: an update writes a new row version instead of changing
+        the old one, so readers never block writers.
+      - Old versions become dead rows once no transaction can see them.
+      - VACUUM (usually autovacuum) reclaims them and prevents transaction ID wraparound;
+        heavy-update tables may need tuned autovacuum settings.
+
+  - id: pg-normalization
+    category: postgresql
+    difficulty: medium
+    question: When would you denormalise a schema?
+    answer: |
+      - Normalise by default: each fact stored once, so updates can't make data disagree.
+      - Denormalise deliberately for read performance (counters, a copied field to avoid a
+        join, reporting tables) and own the cost of keeping copies in sync.
+      - Materialised views are a middle ground for heavy reports.
+
+  - id: pg-deadlock
+    category: postgresql
+    difficulty: medium
+    question: What is a deadlock, and how do you avoid one?
+    answer: |
+      - Two transactions each hold a lock the other needs; PostgreSQL detects it and aborts one.
+      - Avoid it by locking rows in a consistent order, keeping transactions short, and locking up
+        front with `SELECT ... FOR UPDATE` when you know you'll write.
+      - Retry the aborted transaction.
+
+  - id: pg-jsonb
+    category: postgresql
+    difficulty: medium
+    question: When would you use a JSONB column instead of normal columns?
+    answer: |
+      - For flexible or sparse attributes, third-party payloads, or settings blobs.
+      - Columns are better for anything you filter, join or constrain often: types and
+        foreign keys are enforced.
+      - JSONB supports GIN indexes for containment queries (`@>`).
+
+  # ------------------------------------------------------------------ Angular
+  - id: ng-change-detection
+    category: angular
+    difficulty: hard
+    question: How does change detection work, and what do OnPush and signals change?
+    answer: |
+      - Angular checks component templates for changed values and updates the DOM.
+      - Historically zone.js triggered a check of the whole tree after any async event.
+      - `OnPush` skips a component unless an input changed, an event fired inside it, or a
+        signal or `async` pipe it reads updated.
+      - Signals tell Angular exactly what changed; newer apps run zoneless by default.
+
+  - id: ng-signals-rxjs
+    category: angular
+    difficulty: medium
+    question: "Signals or RxJS observables: when do you use which?"
+    answer: |
+      - Signals hold current state synchronously: `signal`, `computed`, `effect`, read with `()`.
+      - Observables model streams of events over time with operators: debouncing, retries,
+        combining HTTP calls, cancellation (`switchMap`).
+      - Bridge them with `toSignal` and `toObservable`.
+
+  - id: ng-di
+    category: angular
+    difficulty: medium
+    question: How does dependency injection work in Angular?
+    answer: |
+      - Classes ask for dependencies (`inject(Service)`) instead of creating them.
+      - Injectors form a hierarchy: `providedIn: 'root'` gives one app-wide instance; providers on
+        a component give each component its own.
+      - Tokens (`InjectionToken`) inject config values; DI makes testing with fakes easy.
+
+  - id: ng-performance
+    category: angular
+    difficulty: medium
+    question: How do you make a large Angular app load and run faster?
+    answer: |
+      - Lazy-load routes (`loadComponent`) and use `@defer` for heavy parts of a page.
+      - `OnPush` and signals to cut change detection work; `track` in `@for`.
+      - Watch bundle budgets, use `NgOptimizedImage`, and consider SSR with hydration.
+      - Measure with Lighthouse and the Angular DevTools profiler.
+
+  - id: ng-lifecycle
+    category: angular
+    difficulty: easy
+    question: Which lifecycle hooks do you actually use, and for what?
+    answer: |
+      - `ngOnInit` for setup that needs inputs; the constructor only for injection.
+      - `ngOnChanges` to react to input changes (or `computed` with signal inputs).
+      - `ngOnDestroy` or `DestroyRef.onDestroy` for cleanup.
+      - `afterNextRender` for code that needs the DOM, such as third-party widgets.
+
+  - id: ng-standalone
+    category: angular
+    difficulty: easy
+    question: What are standalone components, and why did Angular move to them?
+    answer: |
+      - Components declare their own `imports` instead of belonging to an `NgModule`.
+      - Less boilerplate, clearer dependencies, and easier lazy loading of single components.
+      - Apps bootstrap with `bootstrapApplication` and providers like `provideRouter`.
+
+  - id: ng-leaks
+    category: angular
+    difficulty: medium
+    question: How do you avoid memory leaks from subscriptions?
+    answer: |
+      - Prefer the `async` pipe or `toSignal`, which unsubscribe for you.
+      - For manual subscriptions use `takeUntilDestroyed()`.
+      - HTTP observables complete on their own; long-lived streams (intervals, store selectors,
+        websockets) are where leaks happen.
+
+  # ------------------------------------------------------------------ System design
+  - id: sd-url-shortener
+    category: system-design
+    difficulty: medium
+    question: Design a URL shortener.
+    answer: |
+      - Clarify scale: reads far outnumber writes; short codes must be unique.
+      - Codes: base62-encode an ID from a sequence (or random codes with a uniqueness check).
+      - Store code → URL in a key-value store or indexed table; cache hot codes (Redis/CDN).
+      - Redirect with 302 if you want analytics on every click (301 gets cached by browsers);
+        log clicks asynchronously through a queue.
+      - Add rate limiting and abuse checks on creation.
+
+  - id: sd-rate-limiter
+    category: system-design
+    difficulty: medium
+    question: Design a rate limiter for an API.
+    answer: |
+      - Algorithms: token bucket (allows bursts), fixed window counter, sliding window log/counter.
+      - In a cluster, keep counters in Redis with atomic operations (`INCR` with expiry, or a
+        Lua script).
+      - Enforce at the API gateway or middleware; return `429` with `Retry-After`.
+      - Decide what happens if Redis is down (fail open or closed).
+
+  - id: sd-caching
+    category: system-design
+    difficulty: medium
+    question: Where and how would you add caching to a slow API?
+    answer: |
+      - Layers: browser/CDN for public responses, an app cache (Redis) for computed data, the
+        database's own cache.
+      - Cache-aside: read the cache, on a miss load from the database and store with a TTL.
+      - Plan invalidation (delete on write, short TTLs) and stampede protection (locks, jitter).
+      - Don't cache per-user sensitive data in shared caches.
+
+  - id: sd-idempotent-payments
+    category: system-design
+    difficulty: hard
+    question: How do you make a payment API safe to retry?
+    answer: |
+      - Clients send an idempotency key; the server stores key → result with a unique constraint
+        and returns the stored result for repeats.
+      - Model payments as a state machine (created → pending → succeeded/failed) and make
+        transitions conditional.
+      - Use the outbox pattern so the database change and the event are never out of sync.
+      - Reconcile with the provider's webhooks and reports; never trust a single callback.
+
+  - id: sd-message-queue
+    category: system-design
+    difficulty: medium
+    question: When would you put a message queue between two services?
+    answer: |
+      - To absorb spikes, run slow work in the background, retry failures, and decouple services
+        so one being down doesn't break the other.
+      - Consumers must be idempotent: most queues deliver at least once.
+      - Watch queue depth, and use dead-letter queues for messages that keep failing.
+
+  - id: sd-db-bottleneck
+    category: system-design
+    difficulty: hard
+    question: Your database has become the bottleneck. What are your options?
+    answer: |
+      - First: slow-query log, indexes, fixing N+1 queries, connection pooling (PgBouncer).
+      - Then: caching, read replicas for read-heavy traffic, a bigger machine.
+      - Then: partition large tables, archive old data, move workloads (search, analytics)
+        to specialised stores.
+      - Sharding last: it complicates queries, transactions and operations.
+
+  - id: sd-notifications
+    category: system-design
+    difficulty: medium
+    question: Design a notification system for email, SMS and push.
+    answer: |
+      - Services publish events; a notification service applies user preferences and templates.
+      - One queue per channel with workers calling providers (SES, Twilio, FCM), with retries and
+        provider fallback.
+      - Deduplicate with idempotency keys, rate-limit per user, and record delivery status.
+
+  # ------------------------------------------------------------------ Behavioral
+  - id: bh-about-you
+    category: behavioral
+    difficulty: easy
+    question: Tell me about yourself.
+    answer: |
+      - 60–90 seconds: present (role, stack, what you own), past (one or two highlights with
+        numbers), future (why this role fits what you want next).
+      - Tailor the highlights to the job description.
+      - End with a hook they can ask about.
+
+  - id: bh-why-change
+    category: behavioral
+    difficulty: easy
+    question: Why are you looking for a change?
+    answer: |
+      - Stay positive and forward-looking: scale, ownership, a domain, technologies.
+      - Never criticise your current employer.
+      - Connect the reason to something specific about this company.
+
+  - id: bh-disagreement
+    category: behavioral
+    difficulty: medium
+    question: Tell me about a time you disagreed with a teammate or lead.
+    answer: |
+      - Use STAR: Situation, Task, Action, Result.
+      - Show that you listened, brought data (a benchmark, a prototype), and stayed respectful.
+      - Share the outcome, even if your idea lost, and what you learned.
+
+  - id: bh-production-mistake
+    category: behavioral
+    difficulty: medium
+    question: Tell me about a mistake you made that reached production.
+    answer: |
+      - Own it plainly; don't pick a fake weakness.
+      - How you noticed, how you limited the damage, how you fixed it.
+      - What you changed so it can't happen again: a test, a check in CI, a review step.
+
+  - id: bh-proud-project
+    category: behavioral
+    difficulty: easy
+    question: Which project are you most proud of?
+    answer: |
+      - Pick one where you made decisions, not just tasks.
+      - Explain the problem, your approach and trade-offs, and a measurable result
+        (for example, "page loads 70% faster after ORM query tuning").
+      - Be ready for deep follow-up questions on the technical details.
+
+  - id: bh-deadline
+    category: behavioral
+    difficulty: medium
+    question: How do you handle a deadline you can't meet?
+    answer: |
+      - Raise it early with facts, not at the last minute.
+      - Offer options: reduce scope, phase the release, add help, or move the date.
+      - Agree on the trade-off with stakeholders, then deliver what you committed to.
+
+  - id: bh-salary
+    category: behavioral
+    difficulty: medium
+    question: What are your salary expectations?
+    answer: |
+      - Research the market range for the role, level and city before the call.
+      - Give a range based on the role and market, not only on your current pay.
+      - Discuss total compensation (fixed, variable, bonus, stock, benefits) and your notice
+        period honestly.
+
+  - id: bh-your-questions
+    category: behavioral
+    difficulty: easy
+    question: What questions do you ask at the end of an interview?
+    answer: |
+      - About the work: what the first three months look like, the biggest technical challenge.
+      - About the team: how decisions are made, code review and on-call practices.
+      - About growth: how performance is measured and what success looks like in a year.

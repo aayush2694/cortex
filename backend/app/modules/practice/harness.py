@@ -9,11 +9,13 @@ import contextlib
 import copy
 import io
 import json
+import sqlite3
 import time
 import traceback
 from typing import Any
 
 MAX_STDOUT = 2000
+MAX_ROWS = 500  # rows of a SQL result kept for display and comparison
 MAX_NODES = 10_000  # a returned list longer than this almost certainly has a cycle
 
 COMPARES = ("exact", "unordered", "unordered_nested")
@@ -227,9 +229,68 @@ def run_cases(
     return {"compile_error": None, "stdout": top_out.getvalue()[:MAX_STDOUT], "results": results}
 
 
+def _only_comments(query: str) -> bool:
+    lines = [line.strip() for line in query.splitlines()]
+    return all(not line or line.startswith("--") for line in lines)
+
+
+def run_sql(
+    source: str, setup: str, cases: list[dict[str, Any]], compare: str = "exact"
+) -> dict[str, Any]:
+    """Run one SQL query against each case's tables in a fresh in-memory SQLite database.
+
+    A case's single argument maps table name -> list of rows; `setup` creates the tables.
+    Each result also carries the query's column names.
+    """
+    query = source.strip()
+    if not query.rstrip(";").strip() or _only_comments(query):
+        return {"compile_error": "Write a SELECT statement", "stdout": "", "results": []}
+
+    results = []
+    for case in cases:
+        start = time.perf_counter()
+        output: Any = None
+        columns: list[str] = []
+        error = None
+        con = sqlite3.connect(":memory:")
+        try:
+            con.executescript(setup)
+            for table, rows in case["args"][0].items():
+                if rows:
+                    marks = ", ".join("?" * len(rows[0]))
+                    con.executemany(f'INSERT INTO "{table}" VALUES ({marks})', rows)
+            try:
+                cur = con.execute(query)
+                output = [list(row) for row in cur.fetchmany(MAX_ROWS)]
+                columns = [d[0] for d in cur.description or []]
+            except sqlite3.ProgrammingError as exc:
+                error = (
+                    "Run one statement at a time"
+                    if "one statement" in str(exc)
+                    else f"{type(exc).__name__}: {exc}"
+                )
+            except sqlite3.Error as exc:
+                error = f"{type(exc).__name__}: {exc}"
+        finally:
+            con.close()
+        results.append(
+            {
+                "passed": error is None and matches(output, case["expected"], compare),
+                "output": output,
+                "columns": columns,
+                "error": error,
+                "stdout": "",
+                "ms": round((time.perf_counter() - start) * 1000, 2),
+            }
+        )
+    return {"compile_error": None, "stdout": "", "results": results}
+
+
 def run_cases_json(payload: str) -> str:
     """Entry point for the browser: JSON in, JSON out."""
     p = json.loads(payload)
+    if p.get("language") == "sql":
+        return json.dumps(run_sql(p["code"], p["setup"], p["cases"], p.get("compare", "exact")))
     return json.dumps(
         run_cases(
             p["code"],

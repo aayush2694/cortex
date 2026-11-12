@@ -11,7 +11,7 @@ from app.modules.practice.catalog import (
     load_practice,
     validate_practice,
 )
-from app.modules.practice.harness import matches, run_cases, run_cases_json
+from app.modules.practice.harness import matches, run_cases, run_cases_json, run_sql
 from app.modules.topics.catalog import load_catalog
 
 CONTENT = get_settings().content_dir
@@ -23,20 +23,24 @@ def test_problems_point_at_real_pattern_topics() -> None:
     topics = {t.id: t for t in load_catalog(CONTENT).topics}
     validate_practice(PRACTICE, set(topics))
     for p in PRACTICE.problems:
-        assert topics[p.topic_id].pattern is not None, f"{p.id} should belong to a pattern"
+        if p.language == "sql":
+            assert p.topic_id.startswith("sql-"), f"{p.id} should belong to a SQL topic"
+        else:
+            assert topics[p.topic_id].pattern is not None, f"{p.id} should belong to a pattern"
+
+
+def judge(problem, code):  # type: ignore[no-untyped-def]
+    cases = [c.model_dump() for c in problem.cases]
+    if problem.language == "sql":
+        return run_sql(code, problem.setup, cases, problem.compare)
+    return run_cases(
+        code, problem.function, cases, problem.compare, problem.arg_types, problem.returns
+    )
 
 
 @pytest.mark.parametrize("problem", CASES)
 def test_reference_solution_passes_every_case(problem) -> None:  # type: ignore[no-untyped-def]
-    cases = [c.model_dump() for c in problem.cases]
-    run = run_cases(
-        problem.solution,
-        problem.function,
-        cases,
-        problem.compare,
-        problem.arg_types,
-        problem.returns,
-    )
+    run = judge(problem, problem.solution)
     assert run["compile_error"] is None
     failed = [i for i, r in enumerate(run["results"]) if not r["passed"]]
     assert not failed, f"{problem.id}: cases {failed} fail: {run['results']}"
@@ -44,15 +48,7 @@ def test_reference_solution_passes_every_case(problem) -> None:  # type: ignore[
 
 @pytest.mark.parametrize("problem", CASES)
 def test_starter_code_does_not_pass(problem) -> None:  # type: ignore[no-untyped-def]
-    cases = [c.model_dump() for c in problem.cases]
-    run = run_cases(
-        problem.starter,
-        problem.function,
-        cases,
-        problem.compare,
-        problem.arg_types,
-        problem.returns,
-    )
+    run = judge(problem, problem.starter)
     assert run["compile_error"] is None
     assert not all(r["passed"] for r in run["results"])
 
@@ -153,3 +149,38 @@ def test_harness_builds_linked_lists_and_trees() -> None:
     make = "def f(n):\n    return TreeNode(n, TreeNode(n - 1))\n"
     run = run_cases(make, "f", [{"args": [5], "expected": [5, 4]}], "exact", None, "tree")
     assert run["results"][0]["passed"]
+
+
+# ---------------------------------------------------------------- SQL
+
+SQL_SETUP = "CREATE TABLE t (id INTEGER, name TEXT);"
+SQL_CASE = {"args": [{"t": [[1, "a"], [2, None]]}], "expected": [["a"]]}
+
+
+def test_sql_runs_a_query_per_case_and_reports_columns() -> None:
+    run = run_sql("SELECT name AS who FROM t WHERE name IS NOT NULL;", SQL_SETUP, [SQL_CASE])
+    result = run["results"][0]
+    assert result["passed"] and result["columns"] == ["who"]
+
+
+def test_sql_errors_are_readable() -> None:
+    assert run_sql("-- nothing yet\n", SQL_SETUP, [SQL_CASE])["compile_error"]
+    run = run_sql("SELEC name FROM t", SQL_SETUP, [SQL_CASE])
+    assert run["results"][0]["error"].startswith("OperationalError")
+    run = run_sql("SELECT 1; SELECT 2;", SQL_SETUP, [SQL_CASE])
+    assert run["results"][0]["error"] == "Run one statement at a time"
+
+
+def test_sql_cases_are_isolated() -> None:
+    # Deleting rows in one case can't affect the next: each case gets a fresh database.
+    run = run_sql("DELETE FROM t", SQL_SETUP, [SQL_CASE, SQL_CASE])
+    assert [r["output"] for r in run["results"]] == [[], []]
+    run = run_sql("SELECT name FROM t WHERE name = 'a'", SQL_SETUP, [SQL_CASE, SQL_CASE])
+    assert all(r["passed"] for r in run["results"])
+
+
+def test_sql_problems_know_their_tables() -> None:
+    sql = [p for p in PRACTICE.problems if p.language == "sql"]
+    assert len(sql) >= 10
+    employees = next(p for p in sql if p.id == "who-is-the-manager").tables
+    assert employees == {"employees": ["id", "name", "manager_id"]}

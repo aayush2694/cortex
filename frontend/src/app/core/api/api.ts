@@ -6,6 +6,17 @@ import {
   Algorithm,
   ChatSession,
   ChatSessionDetail,
+  InterviewQuestion,
+  JobApplication,
+  QuestionBank,
+  SkillMatch,
+  Activity,
+  Flashcard,
+  Grade,
+  NoteSummary,
+  PrepPlan,
+  Today,
+  TopicNote,
   CodingProblem,
   CodingProblemSummary,
   Solution,
@@ -20,6 +31,10 @@ import {
 } from './models';
 
 export const API = '/api/v1';
+
+/** The browser's time zone, so "today" and the heatmap follow your calendar. */
+export const TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+const tz = encodeURIComponent(TIME_ZONE);
 
 /**
  * Reads use httpResource (signal-based, reloads when inputs change).
@@ -71,6 +86,48 @@ export class Api {
     );
   }
 
+  today() {
+    return httpResource<Today>(() => `${API}/study/today?tz=${tz}`);
+  }
+
+  activity(days = 182) {
+    return httpResource<Activity>(() => `${API}/study/activity?tz=${tz}&days=${days}`);
+  }
+
+  dueCards() {
+    return httpResource<{ items: Flashcard[] }>(() => `${API}/study/cards/due?limit=100`);
+  }
+
+  allCards() {
+    return httpResource<{ items: Flashcard[] }>(() => `${API}/study/cards`);
+  }
+
+  notes() {
+    return httpResource<{ items: NoteSummary[] }>(() => `${API}/study/notes`);
+  }
+
+  note(topicId: Signal<string | undefined>) {
+    return httpResource<TopicNote>(() =>
+      topicId() ? `${API}/study/notes/${topicId()}` : undefined,
+    );
+  }
+
+  plan() {
+    return httpResource<PrepPlan>(() => `${API}/study/plan`);
+  }
+
+  applications() {
+    return httpResource<{ items: JobApplication[] }>(() => `${API}/jobs/applications`);
+  }
+
+  jobProfile() {
+    return httpResource<{ current_ctc: number | null }>(() => `${API}/jobs/profile`);
+  }
+
+  questionBank() {
+    return httpResource<QuestionBank>(() => `${API}/jobs/questions`);
+  }
+
   chatSessions() {
     return httpResource<{ items: ChatSession[] }>(() => `${API}/tutor/sessions`);
   }
@@ -112,6 +169,63 @@ export class Api {
     return firstValueFrom(
       this.http.post<Submission>(`${API}/practice/problems/${id}/submissions`, body),
     );
+  }
+
+  saveNote(topicId: string, body: string) {
+    return firstValueFrom(this.http.put<TopicNote>(`${API}/study/notes/${topicId}`, { body }));
+  }
+
+  addTopicCards(topicId: string) {
+    return firstValueFrom(
+      this.http.post<{ added: number; items: Flashcard[] }>(
+        `${API}/study/topics/${topicId}/cards`,
+        {},
+      ),
+    );
+  }
+
+  addCard(body: { topic_id: string | null; front: string; back: string }) {
+    return firstValueFrom(this.http.post<Flashcard>(`${API}/study/cards`, body));
+  }
+
+  reviewCard(id: number, grade: Grade) {
+    return firstValueFrom(this.http.post<Flashcard>(`${API}/study/cards/${id}/review`, { grade }));
+  }
+
+  deleteCard(id: number) {
+    return firstValueFrom(this.http.delete<void>(`${API}/study/cards/${id}`));
+  }
+
+  savePlan(plan: PrepPlan) {
+    return firstValueFrom(this.http.put<PrepPlan>(`${API}/study/plan`, plan));
+  }
+
+  createApplication(body: Partial<JobApplication> & { company: string; role: string }) {
+    return firstValueFrom(this.http.post<JobApplication>(`${API}/jobs/applications`, body));
+  }
+
+  updateApplication(id: number, patch: Partial<JobApplication>) {
+    return firstValueFrom(this.http.patch<JobApplication>(`${API}/jobs/applications/${id}`, patch));
+  }
+
+  deleteApplication(id: number) {
+    return firstValueFrom(this.http.delete<void>(`${API}/jobs/applications/${id}`));
+  }
+
+  saveJobProfile(currentCtc: number | null) {
+    return firstValueFrom(
+      this.http.put<{ current_ctc: number | null }>(`${API}/jobs/profile`, {
+        current_ctc: currentCtc,
+      }),
+    );
+  }
+
+  matchResume(resume: string, job: string) {
+    return firstValueFrom(this.http.post<SkillMatch>(`${API}/jobs/match`, { resume, job }));
+  }
+
+  saveQuestion(id: string, body: { practised?: boolean; my_answer?: string }) {
+    return firstValueFrom(this.http.put<InterviewQuestion>(`${API}/jobs/questions/${id}`, body));
   }
 
   createChat(topicId: string | null) {

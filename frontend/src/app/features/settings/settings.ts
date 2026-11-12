@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 
 import { APPEARANCES, ThemeService } from '../../core/theme/theme';
+import { PlanSettings } from './plan-settings';
 
 const SHORTCUTS: { keys: string[]; action: string }[] = [
   { keys: ['⌘', 'K'], action: 'Search topics, pages and settings' },
@@ -13,6 +14,7 @@ const SHORTCUTS: { keys: string[]; action: string }[] = [
 
 @Component({
   selector: 'app-settings',
+  imports: [PlanSettings],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page narrow">
@@ -42,6 +44,8 @@ const SHORTCUTS: { keys: string[]; action: string }[] = [
           </button>
         }
       </div>
+
+      <app-plan-settings />
 
       <span class="group-label">Keyboard shortcuts</span>
       <div class="list">

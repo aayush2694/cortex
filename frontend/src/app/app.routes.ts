@@ -31,6 +31,41 @@ export const routes: Routes = [
       import('./features/practice/practice-page').then((m) => m.PracticePage),
   },
   {
+    path: 'review',
+    title: 'Review · Cortex',
+    loadComponent: () => import('./features/review/review').then((m) => m.Review),
+  },
+  {
+    path: 'cheatsheet',
+    title: 'Big-O cheat sheet · Cortex',
+    loadComponent: () => import('./features/cheatsheet/cheatsheet').then((m) => m.Cheatsheet),
+  },
+  {
+    path: 'jobs',
+    title: 'Job tracker · Cortex',
+    loadComponent: () => import('./features/jobs/job-board').then((m) => m.JobBoard),
+  },
+  {
+    path: 'interview',
+    title: 'Interview prep · Cortex',
+    loadComponent: () => import('./features/jobs/interview-prep').then((m) => m.InterviewPrep),
+  },
+  {
+    path: 'resume-match',
+    title: 'Resume match · Cortex',
+    loadComponent: () => import('./features/jobs/resume-match').then((m) => m.ResumeMatch),
+  },
+  {
+    path: 'offers',
+    title: 'Offers · Cortex',
+    loadComponent: () => import('./features/jobs/offers').then((m) => m.Offers),
+  },
+  {
+    path: 'tools',
+    title: 'Developer tools · Cortex',
+    loadComponent: () => import('./features/tools/tools').then((m) => m.Tools),
+  },
+  {
     path: 'topics/:id',
     title: 'Topic · Cortex',
     loadComponent: () => import('./features/topics/topic-page').then((m) => m.TopicPage),

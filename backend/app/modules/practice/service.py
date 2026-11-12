@@ -70,6 +70,7 @@ class PracticeService:
             difficulty=p.difficulty,
             solved=solved,
             attempts=(await self.repo.attempts(user.id)).get(p.id, 0),
+            language=p.language,
             statement=p.statement,
             function=p.function,
             params=p.params,
@@ -78,6 +79,9 @@ class PracticeService:
             arg_types=list(p.arg_types) if p.arg_types else None,
             returns=p.returns,
             cases=[CaseOut(args=c.args, expected=c.expected, hidden=c.hidden) for c in p.cases],
+            setup=p.setup,
+            tables=p.tables,
+            output_columns=p.output_columns,
             hints=p.hints,
             complexity=p.complexity,
         )

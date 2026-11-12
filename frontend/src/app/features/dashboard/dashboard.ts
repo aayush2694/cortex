@@ -5,6 +5,7 @@ import { Api } from '../../core/api/api';
 import { TRACK_LABELS, Track } from '../../core/api/models';
 import { LearningStore } from '../../core/learning-store';
 import { StatusDot } from '../../shared/status-dot';
+import { TodayPanel } from './today-panel';
 
 const TRACK_ICONS: Record<Track, string> = {
   dsa: 'ti-binary-tree',
@@ -16,7 +17,7 @@ const TRACK_ICONS: Record<Track, string> = {
 
 @Component({
   selector: 'app-dashboard',
-  imports: [RouterLink, StatusDot],
+  imports: [RouterLink, StatusDot, TodayPanel],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page">
@@ -52,6 +53,8 @@ const TRACK_ICONS: Record<Track, string> = {
           <span class="value">{{ overall() }}<small>%</small></span>
         </div>
       </div>
+
+      <app-today-panel />
 
       <div class="columns">
         <section>

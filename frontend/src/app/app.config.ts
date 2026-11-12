@@ -20,7 +20,7 @@ export const appConfig: ApplicationConfig = {
       withComponentInputBinding(), // route params arrive as component input()s
       // No withViewTransitions(): when the browser aborts a transition (e.g. a background
       // tab), navigation could stall and leave the page blank.
-      withInMemoryScrolling({ scrollPositionRestoration: 'top' }),
+      withInMemoryScrolling({ scrollPositionRestoration: 'top', anchorScrolling: 'enabled' }),
       withNavigationErrorHandler(reloadOnStaleChunk),
     ),
   ],

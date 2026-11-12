@@ -320,3 +320,130 @@ async def test_practice_submission_solves_and_raises_mastery(client: httpx.Async
     progress = (await client.get(f"{API}/progress")).json()["items"]
     sw = next(p for p in progress if p["topic_id"] == "sliding-window")
     assert sw["status"] == "learning" and sw["mastery"] > 0.3  # base 0.3 + practice share
+
+
+# ---------------------------------------------------------------- study tools
+
+
+async def test_topic_cards_review_and_due(client: httpx.AsyncClient) -> None:
+    r = await client.post(f"{API}/study/topics/sliding-window/cards")
+    assert r.status_code == 200
+    kinds = sorted(c["kind"] for c in r.json()["items"])
+    assert kinds == ["ideas", "signals", "template"]
+    # Adding again doesn't duplicate.
+    assert (await client.post(f"{API}/study/topics/sliding-window/cards")).json()["added"] == 0
+
+    due = (await client.get(f"{API}/study/cards/due")).json()["items"]
+    assert len(due) == 3
+    card = due[0]
+    assert card["next"]["good"] == 1.0
+
+    r = await client.post(f"{API}/study/cards/{card['id']}/review", json={"grade": "good"})
+    assert r.status_code == 200 and r.json()["reps"] == 1
+    assert len((await client.get(f"{API}/study/cards/due")).json()["items"]) == 2
+
+    r = await client.post(f"{API}/study/cards/{card['id']}/review", json={"grade": "meh"})
+    assert r.status_code == 422
+
+
+async def test_custom_cards_and_errors(client: httpx.AsyncClient) -> None:
+    r = await client.post(f"{API}/study/cards", json={"front": "GIL?", "back": "One thread"})
+    assert r.status_code == 201 and r.json()["kind"] == "custom" and r.json()["topic_id"] is None
+    cid = r.json()["id"]
+    r = await client.post(
+        f"{API}/study/cards", json={"topic_id": "nope", "front": "a", "back": "b"}
+    )
+    assert r.status_code == 404
+    assert (await client.delete(f"{API}/study/cards/{cid}")).status_code == 204
+    assert (await client.delete(f"{API}/study/cards/{cid}")).status_code == 404
+    # Topics without key ideas can't make cards.
+    topics = (await client.get(f"{API}/topics")).json()["topics"]
+    bare = next((t["id"] for t in topics if not t.get("concepts") and not t.get("pattern")), None)
+    if bare:
+        r = await client.post(f"{API}/study/topics/{bare}/cards")
+        assert r.status_code == 422 and r.json()["error"]["code"] == "nothing_to_review"
+
+
+async def test_notes_save_list_and_clear(client: httpx.AsyncClient) -> None:
+    assert (await client.get(f"{API}/study/notes/two-pointers")).json()["body"] == ""
+    r = await client.put(f"{API}/study/notes/two-pointers", json={"body": "# Sorted?\nUse ends"})
+    assert r.status_code == 200 and r.json()["updated_at"]
+    notes = (await client.get(f"{API}/study/notes")).json()["items"]
+    assert notes == [
+        {"topic_id": "two-pointers", "preview": "Sorted?", "updated_at": notes[0]["updated_at"]}
+    ]
+    await client.put(f"{API}/study/notes/two-pointers", json={"body": "  "})
+    assert (await client.get(f"{API}/study/notes")).json()["items"] == []
+
+
+async def test_activity_streak_and_today(client: httpx.AsyncClient) -> None:
+    await client.put(f"{API}/progress/two-pointers", json={"status": "learning"})
+    act = (await client.get(f"{API}/study/activity?tz=Asia/Kolkata")).json()
+    assert act["streak"] == 1 and act["active_days"] == 1 and act["total"] >= 1
+    r = await client.get(f"{API}/study/activity?tz=Mars/Olympus")
+    assert r.status_code == 422 and r.json()["error"]["code"] == "bad_time_zone"
+
+    today = (await client.get(f"{API}/study/today?tz=Asia/Kolkata")).json()
+    # Two Pointers is the only topic in progress, so today's problem comes from it.
+    assert today["problem"]["topic_id"] == "two-pointers"
+    assert today["problem"]["difficulty"] == "easy"
+    assert today["days_left"] is None and today["pace"] is None
+
+    r = await client.put(
+        f"{API}/study/plan", json={"target_date": today["date"], "daily_problems": 2}
+    )
+    assert r.status_code == 200 and r.json()["daily_problems"] == 2
+    today = (await client.get(f"{API}/study/today?tz=Asia/Kolkata")).json()
+    assert today["days_left"] == 0 and today["pace"] == today["remaining_problems"]
+
+
+# ---------------------------------------------------------------- job search tools
+
+
+async def test_application_board_flow(client: httpx.AsyncClient) -> None:
+    url = f"{API}/jobs/applications"
+    a = (await client.post(url, json={"company": "Zoho", "role": "Backend"})).json()
+    assert a["status"] == "wishlist" and a["applied_on"] is None and a["position"] == 1
+    b = (await client.post(url, json={"company": "Postman", "role": "SDE 2"})).json()
+    assert b["position"] == 2
+
+    # Moving to "applied" stamps the date and puts the card at the end of that column.
+    r = await client.patch(f"{url}/{a['id']}", json={"status": "applied"})
+    assert r.status_code == 200
+    moved = r.json()
+    assert moved["applied_on"] is not None and moved["position"] == 1
+
+    r = await client.patch(
+        f"{url}/{b['id']}",
+        json={"status": "offer", "fixed": 16, "variable": 2, "next_step": None},
+    )
+    assert r.json()["fixed"] == 16 and r.json()["status"] == "offer"
+    # Required fields can't be cleared with null.
+    r = await client.patch(f"{url}/{b['id']}", json={"company": None, "notes": None})
+    assert r.json()["company"] == "Postman" and r.json()["notes"] == ""
+
+    assert len((await client.get(url)).json()["items"]) == 2
+    assert (await client.patch(f"{url}/{a['id']}", json={"status": "ghosted"})).status_code == 422
+    assert (await client.delete(f"{url}/{a['id']}")).status_code == 204
+    assert (await client.delete(f"{url}/{a['id']}")).status_code == 404
+
+
+async def test_profile_match_and_questions(client: httpx.AsyncClient) -> None:
+    assert (await client.get(f"{API}/jobs/profile")).json()["current_ctc"] is None
+    r = await client.put(f"{API}/jobs/profile", json={"current_ctc": 11})
+    assert r.json()["current_ctc"] == 11
+
+    r = await client.post(
+        f"{API}/jobs/match", json={"resume": "Python and Django", "job": "Python, Redis"}
+    )
+    assert r.json()["score"] == 50
+    assert [s["name"] for s in r.json()["missing"]] == ["Redis"]
+
+    bank = (await client.get(f"{API}/jobs/questions")).json()
+    assert {c["id"] for c in bank["categories"]} >= {"python", "django", "behavioral"}
+    qid = bank["items"][0]["id"]
+    r = await client.put(f"{API}/jobs/questions/{qid}", json={"practised": True})
+    assert r.json()["practised"] is True and r.json()["my_answer"] == ""
+    r = await client.put(f"{API}/jobs/questions/{qid}", json={"my_answer": "My take"})
+    assert r.json()["practised"] is True and r.json()["my_answer"] == "My take"
+    assert (await client.put(f"{API}/jobs/questions/nope", json={})).status_code == 404

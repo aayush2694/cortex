@@ -11,6 +11,8 @@ export interface CaseResult {
   error: string | null;
   stdout: string;
   ms: number;
+  /** SQL problems: the column names your query returned. */
+  columns?: string[];
 }
 
 export interface RunResult {
@@ -21,11 +23,19 @@ export interface RunResult {
   timedOut?: boolean;
 }
 
+/** How arguments are built (Python) or which tables to create (SQL). */
+export interface RunOptions {
+  arg_types?: string[] | null;
+  returns?: string;
+  language?: 'python' | 'sql';
+  setup?: string | null;
+}
+
 /** Longest a single run may take before we stop it (an endless loop, say). */
 export const RUN_TIMEOUT_MS = 5000;
 
 /**
- * Runs Python solutions in the browser. Pyodide lives in a Web Worker (public/pyodide-worker.js)
+ * Runs Python solutions, and SQL queries against SQLite, in the browser. Pyodide lives in a Web Worker (public/pyodide-worker.js)
  * and judges code with the same harness the backend tests use, fetched from the API.
  * A run that takes too long terminates the worker; the next run starts a fresh one.
  */
@@ -52,7 +62,7 @@ export class PythonRunner {
     fn: string,
     cases: TestCase[],
     compare: string,
-    types: { arg_types: string[] | null; returns: string } = { arg_types: null, returns: 'plain' },
+    options: RunOptions = {},
   ): Promise<RunResult> {
     const worker = await this.start();
     const id = ++this.seq;
@@ -61,8 +71,10 @@ export class PythonRunner {
       code,
       function: fn,
       compare,
-      arg_types: types.arg_types,
-      returns: types.returns,
+      arg_types: options.arg_types ?? null,
+      returns: options.returns ?? 'plain',
+      language: options.language ?? 'python',
+      setup: options.setup ?? null,
       cases: cases.map((c) => ({ args: c.args, expected: c.expected })),
     });
     try {

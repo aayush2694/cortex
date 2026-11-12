@@ -1,0 +1,74 @@
+# Skills the resume matcher recognises. A skill matches when any alias appears as a whole
+# word (case-insensitive). Keep aliases specific: "go" alone would match ordinary English.
+skills:
+  # Languages
+  - { name: Python, category: Languages, aliases: [python, python3] }
+  - { name: JavaScript, category: Languages, aliases: [javascript, ecmascript, es6] }
+  - { name: TypeScript, category: Languages, aliases: [typescript] }
+  - { name: Java, category: Languages, aliases: [java] }
+  - { name: C#, category: Languages, aliases: ["c#", csharp] }
+  - { name: Go, category: Languages, aliases: [golang, "go lang"] }
+  - { name: SQL, category: Languages, aliases: [sql] }
+  - { name: HTML, category: Languages, aliases: [html, html5] }
+  - { name: CSS, category: Languages, aliases: [css, css3, scss, sass] }
+
+  # Backend
+  - { name: Django, category: Backend, aliases: [django] }
+  - { name: Django REST Framework, category: Backend, aliases: [django rest framework, drf] }
+  - { name: FastAPI, category: Backend, aliases: [fastapi] }
+  - { name: Flask, category: Backend, aliases: [flask] }
+  - { name: Node.js, category: Backend, aliases: [node.js, nodejs, node js] }
+  - { name: .NET, category: Backend, aliases: [.net, .net core, asp.net, dotnet] }
+  - { name: Spring Boot, category: Backend, aliases: [spring boot, spring framework] }
+  - { name: REST APIs, category: Backend, aliases: [restful, rest api, rest apis, rest services] }
+  - { name: GraphQL, category: Backend, aliases: [graphql] }
+  - { name: Celery, category: Backend, aliases: [celery] }
+  - { name: Microservices, category: Backend, aliases: [microservices, microservice] }
+  - { name: ORM, category: Backend, aliases: [orm, sqlalchemy, django orm] }
+  - { name: Async programming, category: Backend, aliases: [asyncio, async/await, asynchronous] }
+
+  # Frontend
+  - { name: Angular, category: Frontend, aliases: [angular, angularjs] }
+  - { name: React, category: Frontend, aliases: [react, reactjs, react.js] }
+  - { name: Vue, category: Frontend, aliases: [vue, vuejs, vue.js] }
+  - { name: RxJS, category: Frontend, aliases: [rxjs] }
+  - { name: Kendo UI, category: Frontend, aliases: [kendo, kendo ui] }
+
+  # Data
+  - { name: PostgreSQL, category: Data, aliases: [postgresql, postgres, psql] }
+  - { name: MySQL, category: Data, aliases: [mysql] }
+  - { name: MongoDB, category: Data, aliases: [mongodb, mongo] }
+  - { name: Redis, category: Data, aliases: [redis] }
+  - { name: Elasticsearch, category: Data, aliases: [elasticsearch, elastic search, opensearch] }
+  - { name: Kafka, category: Data, aliases: [kafka] }
+  - { name: RabbitMQ, category: Data, aliases: [rabbitmq] }
+  - { name: Pandas, category: Data, aliases: [pandas] }
+
+  # Cloud and DevOps
+  - { name: AWS, category: Cloud & DevOps, aliases: [aws, amazon web services, ec2, s3, lambda] }
+  - { name: Azure, category: Cloud & DevOps, aliases: [azure] }
+  - { name: GCP, category: Cloud & DevOps, aliases: [gcp, google cloud] }
+  - { name: Docker, category: Cloud & DevOps, aliases: [docker, containers, containerization] }
+  - { name: Kubernetes, category: Cloud & DevOps, aliases: [kubernetes, k8s] }
+  - { name: CI/CD, category: Cloud & DevOps, aliases: [ci/cd, cicd, github actions, jenkins, gitlab ci] }
+  - { name: Terraform, category: Cloud & DevOps, aliases: [terraform, infrastructure as code] }
+  - { name: Linux, category: Cloud & DevOps, aliases: [linux, unix, bash] }
+  - { name: Nginx, category: Cloud & DevOps, aliases: [nginx] }
+  - { name: Gunicorn, category: Cloud & DevOps, aliases: [gunicorn, uvicorn] }
+  - { name: Git, category: Cloud & DevOps, aliases: [git, github, gitlab, bitbucket] }
+
+  # Practices
+  - { name: Unit testing, category: Practices, aliases: [unit testing, unit tests, pytest, unittest, jest, jasmine, karma] }
+  - { name: System design, category: Practices, aliases: [system design, scalable systems, distributed systems, high level design] }
+  - { name: Data structures & algorithms, category: Practices, aliases: [data structures, algorithms, dsa] }
+  - { name: Design patterns, category: Practices, aliases: [design patterns, solid principles] }
+  - { name: OOP, category: Practices, aliases: [oop, object oriented, object-oriented] }
+  - { name: Caching, category: Practices, aliases: [caching, cache, cdn] }
+  - { name: Performance tuning, category: Practices, aliases: [performance optimization, query optimization, performance tuning] }
+  - { name: Security, category: Practices, aliases: [owasp, security, authentication, authorization, oauth, jwt] }
+  - { name: Agile, category: Practices, aliases: [agile, scrum, kanban, jira] }
+  - { name: Code review, category: Practices, aliases: [code review, code reviews] }
+
+  # AI
+  - { name: Machine learning, category: AI, aliases: [machine learning, ml, scikit-learn] }
+  - { name: LLMs / Generative AI, category: AI, aliases: [llm, llms, generative ai, genai, rag, prompt engineering] }

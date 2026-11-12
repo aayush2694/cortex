@@ -37,8 +37,17 @@
 
         <h3>Examples</h3>
         @for (c of examples(); track $index) {
-          <pre class="example">{{ args(c) }}
+          @if (isSql()) {
+            <div class="example" style="display: flex; flex-wrap: wrap; gap: 12px 20px">
+              @for (tbl of tablesOf(c); track tbl.name) {
+                <app-sql-table [caption]="tbl.name" [columns]="tbl.columns" [rows]="tbl.rows" />
+              }
+              <app-sql-table caption="→ your query returns" [columns]="p.output_columns" [rows]="rowsOf(c.expected)" />
+            </div>
+          } @else {
+            <pre class="example">{{ args(c) }}
 → {{ show(c.expected) }}</pre>
+          }
         }
 
         @for (n of notation(); track n) {
@@ -46,8 +55,12 @@
         }
 
         <div class="meta faint">
-          <span><i class="ti ti-clock" aria-hidden="true"></i>Aim for {{ p.complexity }}</span>
-          <a [routerLink]="['/topics', p.topic_id]"><i class="ti ti-player-play" aria-hidden="true"></i>Watch the pattern</a>
+          @if (!isSql()) {
+            <span><i class="ti ti-clock" aria-hidden="true"></i>Aim for {{ p.complexity }}</span>
+          }
+          <a [routerLink]="['/topics', p.topic_id]">
+            <i class="ti" [class.ti-player-play]="!!topic()?.pattern" [class.ti-book]="!topic()?.pattern" aria-hidden="true"></i>{{ topic()?.pattern ? 'Watch the pattern' : 'Read the topic' }}
+          </a>
         </div>
 
         @if (p.hints.length) {
@@ -88,9 +101,9 @@
         <section class="card editor-card" aria-label="Your code">
           <div class="bar">
             <span class="faint">
-              Python{{ runner.version() ? ' ' + runner.version() : '' }}
+              {{ isSql() ? 'SQL · SQLite' : 'Python' + (runner.version() ? ' ' + runner.version() : '') }}
               @switch (runner.state()) {
-                @case ('loading') { · <span class="loading">loading Python…</span> }
+                @case ('loading') { · <span class="loading">loading the runner…</span> }
                 @case ('failed') { · couldn't load Python }
               }
             </span>
@@ -99,7 +112,7 @@
               <i class="ti ti-restore" aria-hidden="true"></i>Reset
             </button>
           </div>
-          <app-code-editor [(value)]="code" label="Your Python solution" (run)="execute('run')" (submit)="execute('submit')" />
+          <app-code-editor [(value)]="code" [language]="p.language" [label]="isSql() ? 'Your SQL query' : 'Your Python solution'" (run)="execute('run')" (submit)="execute('submit')" />
           <div class="actions">
             <button class="btn" (click)="execute('run')" [disabled]="!!busy()">
               <i class="ti ti-player-play" aria-hidden="true"></i>{{ busy() === 'run' ? 'Running…' : 'Run examples' }}
@@ -133,6 +146,9 @@
           } @else if (outcome(); as o) {
             <div class="summary">
               <h2>{{ o.mode === 'run' ? 'Examples' : 'All tests' }}</h2>
+              @if ((o.run.timedOut || o.run.compile_error || o.firstFail >= 0) && tutorParams(); as q) {
+                <a class="btn ghost small" routerLink="/tutor" [queryParams]="q"><i class="ti ti-message-circle" aria-hidden="true"></i>Ask the tutor</a>
+              }
               @if (o.run.timedOut) {
                 <span class="faint">Stopped</span>
               } @else if (!o.run.compile_error) {
@@ -158,12 +174,27 @@
                       <span class="faint ms">{{ r.ms }} ms</span>
                     </summary>
                     <dl>
-                      <dt>Input</dt><dd><code>{{ args(o.cases[i]) }}</code></dd>
-                      <dt>Expected</dt><dd><code>{{ show(o.cases[i].expected) }}</code></dd>
-                      @if (r.error) {
-                        <dt>Error</dt><dd><code class="err">{{ r.error }}</code></dd>
+                      @if (isSql()) {
+                        <dt>Tables</dt>
+                        <dd style="display: flex; flex-wrap: wrap; gap: 10px 18px">
+                          @for (tbl of tablesOf(o.cases[i]); track tbl.name) {
+                            <app-sql-table [caption]="tbl.name" [columns]="tbl.columns" [rows]="tbl.rows" />
+                          }
+                        </dd>
+                        <dt>Expected</dt><dd><app-sql-table [columns]="p.output_columns" [rows]="rowsOf(o.cases[i].expected)" /></dd>
+                        @if (r.error) {
+                          <dt>Error</dt><dd><code class="err">{{ r.error }}</code></dd>
+                        } @else {
+                          <dt>Got</dt><dd><app-sql-table [columns]="r.columns ?? []" [rows]="rowsOf(r.output)" /></dd>
+                        }
                       } @else {
-                        <dt>Got</dt><dd><code>{{ show(r.output) }}</code></dd>
+                        <dt>Input</dt><dd><code>{{ args(o.cases[i]) }}</code></dd>
+                        <dt>Expected</dt><dd><code>{{ show(o.cases[i].expected) }}</code></dd>
+                        @if (r.error) {
+                          <dt>Error</dt><dd><code class="err">{{ r.error }}</code></dd>
+                        } @else {
+                          <dt>Got</dt><dd><code>{{ show(r.output) }}</code></dd>
+                        }
                       }
                       @if (r.stdout) {
                         <dt>Printed</dt><dd><pre class="stdout">{{ r.stdout }}</pre></dd>
@@ -174,7 +205,7 @@
               </div>
             }
           } @else {
-            <p class="muted">Run the examples to check your idea, then submit to test every case, including hidden ones.</p>
+            <p class="muted">Run the examples to check your {{ isSql() ? 'query' : 'idea' }}, then submit to test every case, including hidden ones.</p>
           }
         </section>
 

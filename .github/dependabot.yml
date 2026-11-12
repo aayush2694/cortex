@@ -23,6 +23,11 @@ updates:
         patterns: ["codemirror", "@codemirror/*", "@lezer/*"]
       other:
         patterns: ["*"]
+    ignore:
+      # Each Angular release supports specific TypeScript versions; take TypeScript majors
+      # together with an Angular upgrade, not on their own.
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /

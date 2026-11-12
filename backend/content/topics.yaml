@@ -1056,6 +1056,88 @@ topics:
     phase: 3
     requires: [python-advanced]
 
+  # ---------------- Languages: SQL ----------------
+  - id: sql-basics
+    track: languages
+    title: SQL Fundamentals
+    summary: SELECT, WHERE, ORDER BY and LIMIT, and how NULL changes every comparison.
+    difficulty: 1
+    phase: 3
+    concepts:
+      - "A query runs in this order: FROM, WHERE, GROUP BY, HAVING, SELECT, ORDER BY, LIMIT."
+      - "NULL means unknown: NULL = NULL is not true. Use IS NULL and IS NOT NULL."
+      - "ORDER BY is the only way to guarantee row order; without it the database may return any order."
+      - "Dates stored as ISO text ('2026-03-01') sort and compare correctly as strings."
+    resources:
+      - { label: "PostgreSQL tutorial: querying a table", url: "https://www.postgresql.org/docs/current/tutorial-select.html" }
+      - { label: "SQLite: SELECT", url: "https://www.sqlite.org/lang_select.html" }
+
+  - id: sql-joins
+    track: languages
+    title: SQL Joins
+    summary: Combine tables with inner, left and self joins, and find rows with no match.
+    difficulty: 2
+    phase: 3
+    requires: [sql-basics]
+    concepts:
+      - "INNER JOIN keeps only matching rows; LEFT JOIN keeps every left row and fills NULLs."
+      - "An anti-join (LEFT JOIN ... WHERE right.id IS NULL) finds rows with no match."
+      - "NOT IN returns nothing if its list contains a NULL; prefer NOT EXISTS or an anti-join."
+      - "A self-join joins a table to itself under two aliases, e.g. employees and managers."
+    resources:
+      - { label: "PostgreSQL tutorial: joins", url: "https://www.postgresql.org/docs/current/tutorial-join.html" }
+      - { label: "PostgreSQL: table expressions", url: "https://www.postgresql.org/docs/current/queries-table-expressions.html" }
+
+  - id: sql-aggregation
+    track: languages
+    title: Grouping & Aggregation
+    summary: GROUP BY, COUNT, SUM, AVG, and filtering groups with HAVING.
+    difficulty: 2
+    phase: 3
+    requires: [sql-basics]
+    concepts:
+      - "GROUP BY makes one output row per group; every selected column must be grouped or aggregated."
+      - "WHERE filters rows before grouping; HAVING filters groups after."
+      - "COUNT(*) counts rows; COUNT(column) skips NULLs."
+      - "Aggregates ignore NULL values, so AVG of (10, NULL) is 10."
+    resources:
+      - { label: "PostgreSQL tutorial: aggregates", url: "https://www.postgresql.org/docs/current/tutorial-agg.html" }
+      - { label: "PostgreSQL: aggregate functions", url: "https://www.postgresql.org/docs/current/functions-aggregate.html" }
+
+  - id: sql-subqueries-ctes
+    track: languages
+    title: Subqueries & CTEs
+    summary: Queries inside queries, and WITH clauses that name each step.
+    difficulty: 3
+    phase: 3
+    requires: [sql-joins, sql-aggregation]
+    concepts:
+      - "A scalar subquery returns one value; if it finds no row, the value is NULL."
+      - "A correlated subquery refers to the outer row and runs once per row."
+      - "WITH (a CTE) names an intermediate result, making long queries readable step by step."
+      - "EXISTS stops at the first match and handles NULLs safely."
+    resources:
+      - { label: "PostgreSQL: subquery expressions", url: "https://www.postgresql.org/docs/current/functions-subquery.html" }
+      - { label: "PostgreSQL: WITH queries", url: "https://www.postgresql.org/docs/current/queries-with.html" }
+
+  - id: sql-window-functions
+    track: languages
+    title: Window Functions
+    summary: Running totals, rankings and comparisons with neighbouring rows, without GROUP BY.
+    difficulty: 3
+    phase: 3
+    requires: [sql-aggregation]
+    concepts:
+      - "A window function computes across related rows but keeps every row in the result."
+      - "PARTITION BY restarts the calculation per group; ORDER BY sets the order inside it."
+      - "ROW_NUMBER never ties, RANK leaves gaps after ties, DENSE_RANK doesn't."
+      - "LAG and LEAD read values from the previous and next rows."
+      - "Window functions can't be used in WHERE; filter them in an outer query."
+    resources:
+      - { label: "PostgreSQL tutorial: window functions", url: "https://www.postgresql.org/docs/current/tutorial-window.html" }
+      - { label: "PostgreSQL: window functions", url: "https://www.postgresql.org/docs/current/functions-window.html" }
+      - { label: "SQLite: window functions", url: "https://www.sqlite.org/windowfunctions.html" }
+
   # ---------------- Frameworks: Django ----------------
   - id: django-basics
     track: frameworks

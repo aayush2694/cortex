@@ -1581,3 +1581,491 @@ problems:
       The same table shape as longest common subsequence. Each cell looks up, left and
       diagonally: deleting from a, inserting into a, or replacing (free when the letters match).
     complexity: Time O(n · m) · Space O(n · m)
+
+  # ------------------------------------------------------------------ SQL
+  - id: recent-big-orders
+    topic_id: sql-basics
+    title: "Big orders this year"
+    difficulty: easy
+    language: sql
+    statement: |
+      `orders` has one row per order. `placed_on` is a date written as text, like `'2026-03-01'`.
+
+      Return the `id` and `customer` of every order worth at least 1000 that was placed in 2026.
+      Show the newest orders first; for orders on the same day, the smaller `id` comes first.
+    setup: |
+      CREATE TABLE orders (id INTEGER PRIMARY KEY, customer TEXT, amount INTEGER, placed_on TEXT);
+    output_columns: ["id", "customer"]
+    compare: exact
+    starter: |
+      -- Write one SELECT statement
+      SELECT *
+      FROM orders;
+    cases:
+      - {"args": [{"orders": [[1, "Asha", 1200, "2026-03-01"], [2, "Ravi", 800, "2026-03-02"], [3, "Meera", 1000, "2025-12-31"], [4, "Kabir", 1500, "2026-05-10"], [5, "Asha", 1000, "2026-05-10"]]}], "expected": [[4, "Kabir"], [5, "Asha"], [1, "Asha"]]}
+      - {"args": [{"orders": [[1, "Zoya", 999, "2026-01-01"]]}], "expected": []}
+      - {"args": [{"orders": [[1, "Dev", 2000, "2026-12-31"], [2, "Dev", 3000, "2027-01-01"]]}], "expected": [[1, "Dev"]]}
+      - {"args": [{"orders": []}], "expected": [], "hidden": true}
+      - {"args": [{"orders": [[7, "Ira", 5000, "2026-08-08"], [3, "Om", 1000, "2026-08-08"], [9, "Ira", 1001, "2026-01-01"], [2, "Om", 999, "2026-09-09"]]}], "expected": [[3, "Om"], [7, "Ira"], [9, "Ira"]], "hidden": true}
+    hints:
+      - "Two conditions on placed_on (from 1 Jan 2026, before 1 Jan 2027) select the year."
+      - "ORDER BY accepts several columns: the second one breaks ties in the first."
+    solution: |
+      SELECT id, customer
+      FROM orders
+      WHERE amount >= 1000
+        AND placed_on >= '2026-01-01'
+        AND placed_on < '2027-01-01'
+      ORDER BY placed_on DESC, id;
+    explanation: "Filter with WHERE, then sort. ISO dates compare correctly as text, so a range on placed_on picks out the year without any date functions, and it can use an index."
+    complexity: Depends on indexes · a full scan is O(n)
+
+  - id: customers-without-a-phone
+    topic_id: sql-basics
+    title: "Customers without a phone"
+    difficulty: easy
+    language: sql
+    statement: |
+      A missing phone number in `customers` is stored either as `NULL` or as an empty string `''`.
+
+      Return the `name` of every customer without a phone number, sorted alphabetically.
+    setup: |
+      CREATE TABLE customers (id INTEGER PRIMARY KEY, name TEXT, phone TEXT);
+    output_columns: ["name"]
+    compare: exact
+    starter: |
+      -- Write one SELECT statement
+      SELECT *
+      FROM customers;
+    cases:
+      - {"args": [{"customers": [[1, "Asha", "98765"], [2, "Ravi", null], [3, "Meera", ""], [4, "Anil", null]]}], "expected": [["Anil"], ["Meera"], ["Ravi"]]}
+      - {"args": [{"customers": [[1, "Zoya", "1"]]}], "expected": []}
+      - {"args": [{"customers": [[1, "Om", ""]]}], "expected": [["Om"]]}
+      - {"args": [{"customers": []}], "expected": [], "hidden": true}
+      - {"args": [{"customers": [[1, "b", null], [2, "a", " "], [3, "c", ""], [4, "A", null]]}], "expected": [["A"], ["b"], ["c"]], "hidden": true}
+    hints:
+      - "`phone = NULL` is never true. SQL has a special operator for NULL."
+    solution: |
+      SELECT name
+      FROM customers
+      WHERE phone IS NULL OR phone = ''
+      ORDER BY name;
+    explanation: "NULL isn't equal to anything, not even NULL, so `phone = NULL` never matches. Use IS NULL for missing values and check the empty string separately."
+    complexity: Depends on indexes · a full scan is O(n)
+
+  - id: employees-and-departments
+    topic_id: sql-joins
+    title: "Employees and their departments"
+    difficulty: easy
+    language: sql
+    statement: |
+      Return every employee's name as `employee`, with the name of their department as
+      `department`. Employees with no department, or a `dept_id` that doesn't exist, still
+      appear, with `NULL` as the department. Rows can be in any order.
+    setup: |
+      CREATE TABLE departments (id INTEGER PRIMARY KEY, name TEXT);
+      CREATE TABLE employees (id INTEGER PRIMARY KEY, name TEXT, dept_id INTEGER);
+    output_columns: ["employee", "department"]
+    compare: unordered
+    starter: |
+      -- Write one SELECT statement
+      SELECT *
+      FROM employees;
+    cases:
+      - {"args": [{"departments": [[1, "Engineering"], [2, "Sales"]], "employees": [[1, "Asha", 1], [2, "Ravi", 2], [3, "Meera", null]]}], "expected": [["Asha", "Engineering"], ["Ravi", "Sales"], ["Meera", null]]}
+      - {"args": [{"departments": [[1, "HR"]], "employees": [[1, "Om", 1]]}], "expected": [["Om", "HR"]]}
+      - {"args": [{"departments": [], "employees": [[1, "Zoya", 5]]}], "expected": [["Zoya", null]]}
+      - {"args": [{"departments": [[1, "Ops"]], "employees": []}], "expected": [], "hidden": true}
+      - {"args": [{"departments": [[1, "A"], [2, "B"]], "employees": [[1, "x", 2], [2, "y", 2], [3, "z", 9]]}], "expected": [["x", "B"], ["y", "B"], ["z", null]], "hidden": true}
+    hints:
+      - "Which kind of join keeps rows that have no match?"
+    solution: |
+      SELECT e.name AS employee, d.name AS department
+      FROM employees e
+      LEFT JOIN departments d ON d.id = e.dept_id;
+    explanation: "An inner JOIN drops employees without a matching department. LEFT JOIN keeps every row from the left table and fills the right side with NULL when nothing matches."
+    complexity: Depends on indexes · a full scan is O(n)
+
+  - id: products-never-ordered
+    topic_id: sql-joins
+    title: "Products nobody ordered"
+    difficulty: medium
+    language: sql
+    statement: |
+      `order_items` lists what each order contained. Some old rows have a `NULL` `product_id`.
+
+      Return the `name` of every product that has never been ordered, sorted alphabetically.
+    setup: |
+      CREATE TABLE products (id INTEGER PRIMARY KEY, name TEXT);
+      CREATE TABLE order_items (order_id INTEGER, product_id INTEGER, qty INTEGER);
+    output_columns: ["name"]
+    compare: exact
+    starter: |
+      -- Write one SELECT statement
+      SELECT *
+      FROM products;
+    cases:
+      - {"args": [{"products": [[1, "Pen"], [2, "Book"], [3, "Lamp"]], "order_items": [[10, 1, 2], [11, 1, 1]]}], "expected": [["Book"], ["Lamp"]]}
+      - {"args": [{"products": [[1, "Mug"]], "order_items": [[1, 1, 5]]}], "expected": []}
+      - {"args": [{"products": [[1, "Cup"], [2, "Bag"]], "order_items": []}], "expected": [["Bag"], ["Cup"]]}
+      - {"args": [{"products": [[1, "Pen"], [2, "Ink"], [3, "Pad"]], "order_items": [[1, 2, 1], [2, null, 3]]}], "expected": [["Pad"], ["Pen"]], "hidden": true}
+      - {"args": [{"products": [], "order_items": [[1, 1, 1]]}], "expected": [], "hidden": true}
+    hints:
+      - "Join every product to its order items and keep the products where no item matched."
+      - "If you use NOT IN, think about what happens when the list contains NULL."
+    solution: |
+      SELECT p.name
+      FROM products p
+      LEFT JOIN order_items oi ON oi.product_id = p.id
+      WHERE oi.product_id IS NULL
+      ORDER BY p.name;
+    explanation: "This is an anti-join: LEFT JOIN, then keep rows where the right side is missing. `NOT IN (SELECT product_id ...)` looks equivalent but returns nothing as soon as the subquery contains a NULL, which is why one of the hidden tests has one."
+    complexity: Depends on indexes · a full scan is O(n)
+
+  - id: who-is-the-manager
+    topic_id: sql-joins
+    title: "Who is the manager?"
+    difficulty: medium
+    language: sql
+    statement: |
+      Each employee's `manager_id` is the `id` of another employee, or `NULL` for the person at
+      the top.
+
+      Return each employee's name as `employee` and their manager's name as `manager` (`NULL`
+      when there is none). Rows can be in any order.
+    setup: |
+      CREATE TABLE employees (id INTEGER PRIMARY KEY, name TEXT, manager_id INTEGER);
+    output_columns: ["employee", "manager"]
+    compare: unordered
+    starter: |
+      -- Write one SELECT statement
+      SELECT *
+      FROM employees;
+    cases:
+      - {"args": [{"employees": [[1, "Asha", null], [2, "Ravi", 1], [3, "Meera", 1], [4, "Kabir", 2]]}], "expected": [["Asha", null], ["Ravi", "Asha"], ["Meera", "Asha"], ["Kabir", "Ravi"]]}
+      - {"args": [{"employees": [[1, "Solo", null]]}], "expected": [["Solo", null]]}
+      - {"args": [{"employees": [[1, "A", 2], [2, "B", 1]]}], "expected": [["A", "B"], ["B", "A"]]}
+      - {"args": [{"employees": []}], "expected": [], "hidden": true}
+      - {"args": [{"employees": [[5, "Top", null], [6, "Mid", 5], [7, "Low", 6], [8, "Lost", 99]]}], "expected": [["Top", null], ["Mid", "Top"], ["Low", "Mid"], ["Lost", null]], "hidden": true}
+    hints:
+      - "You can join a table to itself if you give each copy its own alias."
+    solution: |
+      SELECT e.name AS employee, m.name AS manager
+      FROM employees e
+      LEFT JOIN employees m ON m.id = e.manager_id;
+    explanation: "A self-join uses the same table twice under two aliases: one copy for the employee, one for the manager. LEFT JOIN keeps the person with no manager."
+    complexity: Depends on indexes · a full scan is O(n)
+
+  - id: revenue-per-category
+    topic_id: sql-aggregation
+    title: "Revenue per category"
+    difficulty: easy
+    language: sql
+    statement: |
+      Revenue for a sale is the product's `price` times the `qty` sold.
+
+      Return each `category` with its total `revenue`, highest revenue first (ties in category
+      order). Leave out categories with no sales.
+    setup: |
+      CREATE TABLE products (id INTEGER PRIMARY KEY, name TEXT, category TEXT, price INTEGER);
+      CREATE TABLE sales (id INTEGER PRIMARY KEY, product_id INTEGER, qty INTEGER);
+    output_columns: ["category", "revenue"]
+    compare: exact
+    starter: |
+      -- Write one SELECT statement
+      SELECT *
+      FROM sales;
+    cases:
+      - {"args": [{"products": [[1, "Pen", "Office", 10], [2, "Desk", "Furniture", 500], [3, "Ink", "Office", 25]], "sales": [[1, 1, 3], [2, 2, 1], [3, 3, 4]]}], "expected": [["Furniture", 500], ["Office", 130]]}
+      - {"args": [{"products": [[1, "Tea", "Food", 5]], "sales": [[1, 1, 2], [2, 1, 3]]}], "expected": [["Food", 25]]}
+      - {"args": [{"products": [[1, "A", "X", 1], [2, "B", "Y", 1]], "sales": [[1, 2, 7]]}], "expected": [["Y", 7]]}
+      - {"args": [{"products": [[1, "A", "B", 2], [2, "C", "A", 2]], "sales": [[1, 1, 5], [2, 2, 5]]}], "expected": [["A", 10], ["B", 10]], "hidden": true}
+      - {"args": [{"products": [[1, "A", "X", 9]], "sales": []}], "expected": [], "hidden": true}
+    hints:
+      - "Join first, then GROUP BY the category and SUM an expression."
+    solution: |
+      SELECT p.category, SUM(p.price * s.qty) AS revenue
+      FROM sales s
+      JOIN products p ON p.id = s.product_id
+      GROUP BY p.category
+      ORDER BY revenue DESC, p.category;
+    explanation: "Join to get each sale's price, then GROUP BY category so SUM adds up one total per group. Starting from sales (an inner join) naturally leaves out unsold categories."
+    complexity: Depends on indexes · a full scan is O(n)
+
+  - id: duplicate-emails
+    topic_id: sql-aggregation
+    title: "Duplicate emails"
+    difficulty: easy
+    language: sql
+    statement: |
+      Return every `email` that appears in `users` more than once, sorted alphabetically. Show each
+      such email once.
+    setup: |
+      CREATE TABLE users (id INTEGER PRIMARY KEY, email TEXT);
+    output_columns: ["email"]
+    compare: exact
+    starter: |
+      -- Write one SELECT statement
+      SELECT *
+      FROM users;
+    cases:
+      - {"args": [{"users": [[1, "a@x.com"], [2, "b@x.com"], [3, "a@x.com"]]}], "expected": [["a@x.com"]]}
+      - {"args": [{"users": [[1, "solo@x.com"]]}], "expected": []}
+      - {"args": [{"users": [[1, "z@x.com"], [2, "z@x.com"], [3, "m@x.com"], [4, "m@x.com"], [5, "m@x.com"]]}], "expected": [["m@x.com"], ["z@x.com"]]}
+      - {"args": [{"users": []}], "expected": [], "hidden": true}
+      - {"args": [{"users": [[1, "A@x.com"], [2, "a@x.com"], [3, "c@x.com"], [4, "c@x.com"]]}], "expected": [["c@x.com"]], "hidden": true}
+    hints:
+      - "WHERE runs before grouping. Which clause filters after it?"
+    solution: |
+      SELECT email
+      FROM users
+      GROUP BY email
+      HAVING COUNT(*) > 1
+      ORDER BY email;
+    explanation: "GROUP BY collapses equal emails into one group; HAVING filters groups (WHERE filters rows before grouping, so it can't see COUNT)."
+    complexity: Depends on indexes · a full scan is O(n)
+
+  - id: loyal-customers
+    topic_id: sql-aggregation
+    title: "Loyal customers"
+    difficulty: medium
+    language: sql
+    statement: |
+      A loyal customer has placed at least 3 orders worth more than 500 in total.
+
+      Return `customer_id`, their number of `orders` and their `total`, biggest total first
+      (ties by `customer_id`).
+    setup: |
+      CREATE TABLE orders (id INTEGER PRIMARY KEY, customer_id INTEGER, amount INTEGER);
+    output_columns: ["customer_id", "orders", "total"]
+    compare: exact
+    starter: |
+      -- Write one SELECT statement
+      SELECT *
+      FROM orders;
+    cases:
+      - {"args": [{"orders": [[1, 1, 200], [2, 1, 200], [3, 1, 200], [4, 2, 900], [5, 2, 10], [6, 3, 100], [7, 3, 100], [8, 3, 100]]}], "expected": [[1, 3, 600]]}
+      - {"args": [{"orders": [[1, 5, 1000], [2, 5, 1000]]}], "expected": []}
+      - {"args": [{"orders": [[1, 2, 300], [2, 2, 300], [3, 2, 300], [4, 1, 300], [5, 1, 300], [6, 1, 300]]}], "expected": [[1, 3, 900], [2, 3, 900]]}
+      - {"args": [{"orders": [[1, 9, 167], [2, 9, 167], [3, 9, 166]]}], "expected": [], "hidden": true}
+      - {"args": [{"orders": [[1, 4, 600], [2, 4, 1], [3, 4, 1], [4, 4, 1], [5, 3, 200], [6, 3, 200], [7, 3, 200]]}], "expected": [[4, 4, 603], [3, 3, 600]], "hidden": true}
+    hints:
+      - "Group by customer, then keep groups that pass two aggregate conditions."
+    solution: |
+      SELECT customer_id, COUNT(*) AS orders, SUM(amount) AS total
+      FROM orders
+      GROUP BY customer_id
+      HAVING COUNT(*) >= 3 AND SUM(amount) > 500
+      ORDER BY total DESC, customer_id;
+    explanation: "HAVING can combine several conditions on aggregates. Both the count and the sum are computed per customer group."
+    complexity: Depends on indexes · a full scan is O(n)
+
+  - id: second-highest-salary
+    topic_id: sql-subqueries-ctes
+    title: "Second highest salary"
+    difficulty: medium
+    language: sql
+    statement: |
+      Return a single row with one column, `second_highest`: the second highest *distinct* salary
+      in `employees`. If there isn't one, the value should be `NULL` (you still return one row).
+    setup: |
+      CREATE TABLE employees (id INTEGER PRIMARY KEY, name TEXT, salary INTEGER);
+    output_columns: ["second_highest"]
+    compare: exact
+    starter: |
+      -- Write one SELECT statement
+      SELECT *
+      FROM employees;
+    cases:
+      - {"args": [{"employees": [[1, "Asha", 100], [2, "Ravi", 200], [3, "Meera", 300]]}], "expected": [[200]]}
+      - {"args": [{"employees": [[1, "Solo", 500]]}], "expected": [[null]]}
+      - {"args": [{"employees": [[1, "A", 300], [2, "B", 300], [3, "C", 200]]}], "expected": [[200]]}
+      - {"args": [{"employees": [[1, "A", 50], [2, "B", 50]]}], "expected": [[null]], "hidden": true}
+      - {"args": [{"employees": []}], "expected": [[null]], "hidden": true}
+    hints:
+      - "LIMIT 1 OFFSET 1 skips the top value."
+      - "To get NULL instead of no rows, put the query inside another SELECT."
+    solution: |
+      SELECT (
+          SELECT DISTINCT salary
+          FROM employees
+          ORDER BY salary DESC
+          LIMIT 1 OFFSET 1
+      ) AS second_highest;
+    explanation: "A scalar subquery that finds no row evaluates to NULL, so wrapping the query in an outer SELECT guarantees exactly one row. DISTINCT makes ties count once."
+    complexity: Depends on indexes · a full scan is O(n)
+
+  - id: above-department-average
+    topic_id: sql-subqueries-ctes
+    title: "Paid above their department's average"
+    difficulty: medium
+    language: sql
+    statement: |
+      Return the `name` and `dept` of every employee who earns more than the average salary of
+      their own department. Sort by `dept`, then `name`.
+    setup: |
+      CREATE TABLE employees (id INTEGER PRIMARY KEY, name TEXT, dept TEXT, salary INTEGER);
+    output_columns: ["name", "dept"]
+    compare: exact
+    starter: |
+      -- Write one SELECT statement
+      SELECT *
+      FROM employees;
+    cases:
+      - {"args": [{"employees": [[1, "Asha", "Eng", 120], [2, "Ravi", "Eng", 80], [3, "Meera", "Sales", 60], [4, "Om", "Sales", 40], [5, "Ira", "Sales", 50]]}], "expected": [["Asha", "Eng"], ["Meera", "Sales"]]}
+      - {"args": [{"employees": [[1, "Solo", "Ops", 100]]}], "expected": []}
+      - {"args": [{"employees": [[1, "A", "X", 10], [2, "B", "X", 10]]}], "expected": []}
+      - {"args": [{"employees": [[1, "a", "D", 1], [2, "b", "D", 2], [3, "c", "D", 3], [4, "d", "C", 9], [5, "e", "C", 1]]}], "expected": [["d", "C"], ["c", "D"]], "hidden": true}
+      - {"args": [{"employees": []}], "expected": [], "hidden": true}
+    hints:
+      - "First compute one average per department, then compare each employee to theirs."
+    solution: |
+      WITH dept_avg AS (
+          SELECT dept, AVG(salary) AS avg_salary
+          FROM employees
+          GROUP BY dept
+      )
+      SELECT e.name, e.dept
+      FROM employees e
+      JOIN dept_avg a ON a.dept = e.dept
+      WHERE e.salary > a.avg_salary
+      ORDER BY e.dept, e.name;
+    explanation: "A CTE (WITH ...) names an intermediate result. Computing the averages once and joining them back is clearer than a correlated subquery, and does the same work."
+    complexity: Depends on indexes · a full scan is O(n)
+
+  - id: running-total
+    topic_id: sql-window-functions
+    title: "Running total"
+    difficulty: easy
+    language: sql
+    statement: |
+      Return every `day` with its `amount` and a `running_total`: the sum of all amounts up to and
+      including that day. Order by `day`.
+    setup: |
+      CREATE TABLE daily_sales (day TEXT PRIMARY KEY, amount INTEGER);
+    output_columns: ["day", "amount", "running_total"]
+    compare: exact
+    starter: |
+      -- Write one SELECT statement
+      SELECT *
+      FROM daily_sales;
+    cases:
+      - {"args": [{"daily_sales": [["2026-11-01", 100], ["2026-11-02", 50], ["2026-11-03", 25]]}], "expected": [["2026-11-01", 100, 100], ["2026-11-02", 50, 150], ["2026-11-03", 25, 175]]}
+      - {"args": [{"daily_sales": [["2026-01-01", 7]]}], "expected": [["2026-01-01", 7, 7]]}
+      - {"args": [{"daily_sales": [["2026-03-02", 5], ["2026-03-01", 10]]}], "expected": [["2026-03-01", 10, 10], ["2026-03-02", 5, 15]]}
+      - {"args": [{"daily_sales": []}], "expected": [], "hidden": true}
+      - {"args": [{"daily_sales": [["2026-05-01", -20], ["2026-05-02", 20], ["2026-05-03", 0]]}], "expected": [["2026-05-01", -20, -20], ["2026-05-02", 20, 0], ["2026-05-03", 0, 0]], "hidden": true}
+    hints:
+      - "SUM(...) OVER (ORDER BY ...) keeps every row and accumulates."
+    solution: |
+      SELECT day, amount,
+             SUM(amount) OVER (ORDER BY day) AS running_total
+      FROM daily_sales
+      ORDER BY day;
+    explanation: "A window function computes over related rows without collapsing them like GROUP BY. With ORDER BY inside OVER, SUM covers every row from the start up to the current one."
+    complexity: Depends on indexes · a full scan is O(n)
+
+  - id: top-earner-per-department
+    topic_id: sql-window-functions
+    title: "Top earner in each department"
+    difficulty: medium
+    language: sql
+    statement: |
+      Return the `dept`, `name` and `salary` of the highest-paid employee in each department. If
+      several people tie for the top salary, return all of them. Sort by `dept`, then `name`.
+    setup: |
+      CREATE TABLE employees (id INTEGER PRIMARY KEY, name TEXT, dept TEXT, salary INTEGER);
+    output_columns: ["dept", "name", "salary"]
+    compare: exact
+    starter: |
+      -- Write one SELECT statement
+      SELECT *
+      FROM employees;
+    cases:
+      - {"args": [{"employees": [[1, "Asha", "Eng", 120], [2, "Ravi", "Eng", 80], [3, "Meera", "Sales", 60], [4, "Om", "Sales", 40]]}], "expected": [["Eng", "Asha", 120], ["Sales", "Meera", 60]]}
+      - {"args": [{"employees": [[1, "A", "X", 50], [2, "B", "X", 50], [3, "C", "X", 10]]}], "expected": [["X", "A", 50], ["X", "B", 50]]}
+      - {"args": [{"employees": [[1, "Solo", "Ops", 1]]}], "expected": [["Ops", "Solo", 1]]}
+      - {"args": [{"employees": []}], "expected": [], "hidden": true}
+      - {"args": [{"employees": [[1, "z", "B", 5], [2, "y", "B", 9], [3, "x", "A", 9], [4, "w", "A", 9], [5, "v", "C", -1]]}], "expected": [["A", "w", 9], ["A", "x", 9], ["B", "y", 9], ["C", "v", -1]], "hidden": true}
+    hints:
+      - "RANK() OVER (PARTITION BY dept ORDER BY salary DESC) numbers people within each dept."
+      - "Window functions can't go in WHERE: compute them in a subquery first."
+    solution: |
+      SELECT dept, name, salary
+      FROM (
+          SELECT dept, name, salary,
+                 RANK() OVER (PARTITION BY dept ORDER BY salary DESC) AS pos
+          FROM employees
+      )
+      WHERE pos = 1
+      ORDER BY dept, name;
+    explanation: "PARTITION BY restarts the ranking for each department. RANK gives tied rows the same position, so every top earner gets 1. You can't filter on a window function in WHERE directly, hence the subquery."
+    complexity: Depends on indexes · a full scan is O(n)
+
+  - id: warmer-than-before
+    topic_id: sql-window-functions
+    title: "Warmer than the day before"
+    difficulty: medium
+    language: sql
+    statement: |
+      Return every `day` whose `temp` is higher than the temperature on the previous recorded day
+      (the closest earlier `day` in the table). Sort by `day`.
+    setup: |
+      CREATE TABLE temperatures (day TEXT PRIMARY KEY, temp INTEGER);
+    output_columns: ["day"]
+    compare: exact
+    starter: |
+      -- Write one SELECT statement
+      SELECT *
+      FROM temperatures;
+    cases:
+      - {"args": [{"temperatures": [["2026-01-01", 10], ["2026-01-02", 25], ["2026-01-03", 20], ["2026-01-04", 30]]}], "expected": [["2026-01-02"], ["2026-01-04"]]}
+      - {"args": [{"temperatures": [["2026-02-01", 5]]}], "expected": []}
+      - {"args": [{"temperatures": [["2026-03-03", 9], ["2026-03-01", 10], ["2026-03-05", 8]]}], "expected": []}
+      - {"args": [{"temperatures": [["2026-04-01", 1], ["2026-04-02", 1], ["2026-04-03", 2]]}], "expected": [["2026-04-03"]], "hidden": true}
+      - {"args": [{"temperatures": []}], "expected": [], "hidden": true}
+    hints:
+      - "LAG(temp) OVER (ORDER BY day) gives you yesterday's value on today's row."
+    solution: |
+      SELECT day
+      FROM (
+          SELECT day, temp, LAG(temp) OVER (ORDER BY day) AS prev_temp
+          FROM temperatures
+      )
+      WHERE temp > prev_temp
+      ORDER BY day;
+    explanation: "LAG reads a value from the previous row in the window's order. The first day has no previous row, so prev_temp is NULL and the comparison is not true."
+    complexity: Depends on indexes · a full scan is O(n)
+
+  - id: rank-the-scores
+    topic_id: sql-window-functions
+    title: "Rank the scores"
+    difficulty: medium
+    language: sql
+    statement: |
+      Return each `player`, their `score` and their `position`: 1 for the highest score, with tied
+      scores sharing a position and no gaps after ties (scores 90, 90, 80 get 1, 1, 2). Sort by
+      `position`, then `player`.
+    setup: |
+      CREATE TABLE scores (id INTEGER PRIMARY KEY, player TEXT, score INTEGER);
+    output_columns: ["player", "score", "position"]
+    compare: exact
+    starter: |
+      -- Write one SELECT statement
+      SELECT *
+      FROM scores;
+    cases:
+      - {"args": [{"scores": [[1, "Asha", 90], [2, "Ravi", 80], [3, "Meera", 90], [4, "Om", 70]]}], "expected": [["Asha", 90, 1], ["Meera", 90, 1], ["Ravi", 80, 2], ["Om", 70, 3]]}
+      - {"args": [{"scores": [[1, "Solo", 10]]}], "expected": [["Solo", 10, 1]]}
+      - {"args": [{"scores": [[1, "c", 5], [2, "b", 5], [3, "a", 5]]}], "expected": [["a", 5, 1], ["b", 5, 1], ["c", 5, 1]]}
+      - {"args": [{"scores": [[1, "p", 100], [2, "q", 99], [3, "r", 99], [4, "s", 98]]}], "expected": [["p", 100, 1], ["q", 99, 2], ["r", 99, 2], ["s", 98, 3]], "hidden": true}
+      - {"args": [{"scores": []}], "expected": [], "hidden": true}
+    hints:
+      - "Three ranking functions exist: ROW_NUMBER, RANK and DENSE_RANK. Which has no gaps?"
+    solution: |
+      SELECT player, score,
+             DENSE_RANK() OVER (ORDER BY score DESC) AS position
+      FROM scores
+      ORDER BY position, player;
+    explanation: "ROW_NUMBER never ties, RANK leaves gaps after a tie (1, 1, 3) and DENSE_RANK doesn't (1, 1, 2). Picking the right one is a common interview question."
+    complexity: Depends on indexes · a full scan is O(n)

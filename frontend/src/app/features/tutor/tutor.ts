@@ -45,6 +45,8 @@ export class Tutor {
   readonly sessionId = input<string>();
   /** Query param `?topic=binary-search` to start a chat about a topic. */
   readonly topic = input<string>();
+  /** Query param `?ask=...`: a message to start with (from "Ask the tutor" in Practice). */
+  readonly ask = input<string>();
 
   private readonly api = inject(Api);
   private readonly location = inject(Location);
@@ -74,7 +76,11 @@ export class Tutor {
     effect(() => {
       const id = this.sessionId() ?? null;
       const topic = this.topic() ?? null;
-      untracked(() => this.open(id, topic));
+      const ask = this.ask() ?? '';
+      untracked(() => {
+        void this.open(id, topic);
+        if (!id && ask) this.draft.set(ask);
+      });
     });
 
     // Keep the newest message in view.

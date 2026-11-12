@@ -161,6 +161,7 @@ export interface TestCase {
 }
 
 export interface CodingProblem extends CodingProblemSummary {
+  language: 'python' | 'sql';
   statement: string;
   function: string;
   params: string[];
@@ -171,6 +172,10 @@ export interface CodingProblem extends CodingProblemSummary {
   /** How the return value is read back: plain, list or tree. */
   returns: string;
   cases: TestCase[];
+  /** SQL problems: CREATE TABLE script, table -> columns, and the columns to return. */
+  setup: string | null;
+  tables: Record<string, string[]>;
+  output_columns: string[];
   hints: string[];
   complexity: string;
 }
@@ -189,4 +194,127 @@ export interface Submission {
   runtime_ms: number;
   accepted: boolean;
   created_at: string;
+}
+
+// ---------------------------------------------------------------- study tools
+
+export type Grade = 'again' | 'hard' | 'good' | 'easy';
+
+export interface Flashcard {
+  id: number;
+  topic_id: string | null;
+  kind: 'ideas' | 'signals' | 'template' | 'custom';
+  front: string;
+  back: string;
+  reps: number;
+  lapses: number;
+  interval_days: number;
+  due_at: string;
+  last_reviewed_at: string | null;
+  /** Days until the card comes back for each grade. */
+  next: Record<Grade, number>;
+}
+
+export interface TopicNote {
+  topic_id: string;
+  body: string;
+  updated_at: string | null;
+}
+
+export interface NoteSummary {
+  topic_id: string;
+  preview: string;
+  updated_at: string;
+}
+
+export interface ActivityDay {
+  date: string;
+  count: number;
+}
+
+export interface Activity {
+  days: ActivityDay[];
+  streak: number;
+  longest_streak: number;
+  active_days: number;
+  total: number;
+}
+
+export interface PrepPlan {
+  target_date: string | null;
+  daily_problems: number;
+  daily_cards: number;
+  updated_at?: string | null;
+}
+
+export interface Today {
+  date: string;
+  problem: {
+    id: string;
+    title: string;
+    topic_id: string;
+    topic_title: string;
+    difficulty: Difficulty;
+    reason: string;
+  } | null;
+  solved_today: number;
+  cards_due: number;
+  reviewed_today: number;
+  plan: PrepPlan;
+  days_left: number | null;
+  remaining_problems: number;
+  pace: number | null;
+  focus: { topic_id: string; title: string; reason: string } | null;
+}
+
+// ---------------------------------------------------------------- job search
+
+export type Stage = 'wishlist' | 'applied' | 'interview' | 'offer' | 'rejected';
+
+export interface ApplicationFields {
+  location: string | null;
+  url: string | null;
+  source: string | null;
+  notes: string;
+  applied_on: string | null;
+  next_step: string | null;
+  next_step_on: string | null;
+  /** Offer details, in lakhs per annum. */
+  fixed: number | null;
+  variable: number | null;
+  joining_bonus: number | null;
+  stock_per_year: number | null;
+}
+
+export interface JobApplication extends ApplicationFields {
+  id: number;
+  company: string;
+  role: string;
+  status: Stage;
+  position: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SkillMatch {
+  score: number;
+  matched: { name: string; category: string }[];
+  missing: { name: string; category: string }[];
+  extra: { name: string; category: string }[];
+}
+
+export interface InterviewQuestion {
+  id: string;
+  category: string;
+  difficulty: Difficulty;
+  question: string;
+  answer: string;
+  practised: boolean;
+  my_answer: string;
+  updated_at: string | null;
+}
+
+export interface QuestionBank {
+  categories: { id: string; label: string }[];
+  items: InterviewQuestion[];
 }

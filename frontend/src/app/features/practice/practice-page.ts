@@ -15,6 +15,11 @@ import { Solution, TestCase } from '../../core/api/models';
 import { LearningStore } from '../../core/learning-store';
 import { PythonRunner, RUN_TIMEOUT_MS, RunResult } from '../../core/practice/python-runner';
 import { CodeEditor } from './code-editor';
+import { paragraphs, show } from './practice-format';
+import { FailingCase, tutorPrompt } from './tutor-prompt';
+import { SqlTable } from './sql-table';
+
+export { paragraphs, show };
 
 type Mode = 'run' | 'submit';
 
@@ -46,37 +51,9 @@ function writeDraft(id: string, code: string | null): void {
   }
 }
 
-/** Show a value the way Python would print it: [1, 2], "abc", True, None, {"a": 1}. */
-export function show(value: unknown): string {
-  if (value === undefined) return '—';
-  if (value === null) return 'None';
-  if (value === true) return 'True';
-  if (value === false) return 'False';
-  if (Array.isArray(value)) return `[${value.map(show).join(', ')}]`;
-  if (typeof value === 'object') {
-    const items = Object.entries(value as Record<string, unknown>);
-    return `{${items.map(([k, v]) => `${JSON.stringify(k)}: ${show(v)}`).join(', ')}}`;
-  }
-  return typeof value === 'string' ? JSON.stringify(value) : String(value);
-}
-
-/** Split a statement into paragraphs, and each paragraph into text and `code` pieces. */
-export function paragraphs(text: string): { code: boolean; text: string }[][] {
-  return text
-    .trim()
-    .split(/\n\s*\n/)
-    .map((para) =>
-      para
-        .replace(/\s*\n\s*/g, ' ')
-        .split('`')
-        .map((piece, i) => ({ code: i % 2 === 1, text: piece }))
-        .filter((p) => p.text),
-    );
-}
-
 @Component({
   selector: 'app-practice-page',
-  imports: [RouterLink, CodeEditor],
+  imports: [RouterLink, CodeEditor, SqlTable],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './practice-page.html',
   styleUrl: './practice-page.scss',
@@ -98,6 +75,21 @@ export class PracticePage {
   });
   protected readonly statement = computed(() => paragraphs(this.problem()?.statement ?? ''));
   protected readonly examples = computed(() => (this.problem()?.cases ?? []).filter((c) => !c.hidden));
+  protected readonly isSql = computed(() => this.problem()?.language === 'sql');
+
+  /** A SQL case's input tables, with their column names, in the order the setup creates them. */
+  protected tablesOf(c: TestCase): { name: string; columns: string[]; rows: unknown[][] }[] {
+    const data = (c.args[0] ?? {}) as Record<string, unknown[][]>;
+    const tables = this.problem()?.tables ?? {};
+    return Object.keys(tables)
+      .filter((name) => name in data)
+      .map((name) => ({ name, columns: tables[name], rows: data[name] }));
+  }
+
+  protected rowsOf(value: unknown): unknown[][] {
+    return Array.isArray(value) ? (value as unknown[][]) : [];
+  }
+
   /** How linked lists and trees are written in the examples, when the problem uses them. */
   protected readonly notation = computed(() => {
     const p = this.problem();
@@ -158,6 +150,30 @@ export class PracticePage {
   protected args(c: TestCase): string {
     const names = this.problem()?.params ?? [];
     return c.args.map((a, i) => `${names[i] ?? `arg${i + 1}`} = ${show(a)}`).join(', ');
+  }
+
+  /** Query params for the tutor: this topic, plus a message describing what went wrong. */
+  protected tutorParams(): { topic: string; ask: string } | null {
+    const p = this.problem();
+    if (!p) return null;
+    return { topic: p.topic_id, ask: tutorPrompt(p, this.code(), this.failing()) };
+  }
+
+  private failing(): FailingCase | null {
+    const o = this.outcome();
+    if (!o) return null;
+    if (o.run.timedOut) {
+      return { input: 'every case', expected: 'an answer', error: `ran longer than ${this.timeoutSeconds} seconds` };
+    }
+    if (o.run.compile_error) return { input: '(the code did not run)', expected: '-', error: o.run.compile_error };
+    const i = o.firstFail;
+    if (i < 0) return null;
+    const c = o.cases[i];
+    const r = o.run.results[i];
+    const input = this.isSql() ? show(c.args[0]).slice(0, 400) : this.args(c);
+    return r.error
+      ? { input, expected: show(c.expected), error: r.error }
+      : { input, expected: show(c.expected), got: show(r.output) };
   }
 
   protected resetCode(): void {

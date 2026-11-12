@@ -12,15 +12,17 @@ import {
 } from '@angular/core';
 import { indentWithTab } from '@codemirror/commands';
 import { python } from '@codemirror/lang-python';
+import { SQLite, sql } from '@codemirror/lang-sql';
 import { HighlightStyle, indentUnit, syntaxHighlighting } from '@codemirror/language';
-import { EditorState } from '@codemirror/state';
+import { Compartment, EditorState } from '@codemirror/state';
 import { EditorView, keymap } from '@codemirror/view';
 import { tags as t } from '@lezer/highlight';
 import { basicSetup } from 'codemirror';
 
 /** Monochrome syntax colours: keywords bright, strings and comments dimmer. */
 const highlight = HighlightStyle.define([
-  { tag: [t.keyword, t.controlKeyword, t.definitionKeyword], color: 'var(--tone-1)', fontWeight: '600' },
+  { tag: [t.keyword, t.controlKeyword, t.definitionKeyword, t.operatorKeyword], color: 'var(--tone-1)', fontWeight: '600' },
+  { tag: [t.typeName, t.standard(t.name)], color: 'var(--tone-1)' },
   { tag: [t.function(t.variableName), t.function(t.definition(t.variableName))], color: 'var(--tone-1)' },
   { tag: [t.string, t.number, t.bool, t.null], color: 'var(--tone-2)' },
   { tag: t.comment, color: 'var(--text-3)', fontStyle: 'italic' },
@@ -46,7 +48,9 @@ const theme = EditorView.theme({
   },
 });
 
-/** A Python code editor (CodeMirror 6). `value` is two-way bound. Mod-Enter emits `submit`. */
+const languageFor = (lang: 'python' | 'sql') => (lang === 'sql' ? sql({ dialect: SQLite }) : python());
+
+/** A code editor (CodeMirror 6) for Python or SQL. `value` is two-way bound. */
 @Component({
   selector: 'app-code-editor',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -64,11 +68,13 @@ const theme = EditorView.theme({
 export class CodeEditor {
   readonly value = model.required<string>();
   readonly label = input('Code editor');
+  readonly language = input<'python' | 'sql'>('python');
   readonly submit = output<void>();
   readonly run = output<void>();
 
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private view: EditorView | null = null;
+  private readonly lang = new Compartment();
 
   constructor() {
     afterNextRender(() => {
@@ -78,7 +84,7 @@ export class CodeEditor {
           doc: this.value(),
           extensions: [
             basicSetup,
-            python(),
+            this.lang.of(languageFor(this.language())),
             indentUnit.of('    '),
             keymap.of([
               { key: 'Mod-Enter', run: () => (this.run.emit(), true) },
@@ -94,6 +100,12 @@ export class CodeEditor {
           ],
         }),
       });
+    });
+
+    // Switching between a Python and a SQL problem swaps the highlighting.
+    effect(() => {
+      const lang = this.language();
+      this.view?.dispatch({ effects: this.lang.reconfigure(languageFor(lang)) });
     });
 
     // Outside changes (Reset, a different problem) replace the document.

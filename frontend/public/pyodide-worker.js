@@ -13,7 +13,11 @@ const PYODIDE_URL = `https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full/`
 let runCasesJson = null;
 
 self.onmessage = async (event) => {
+  // Only the Cortex page that started this worker may talk to it. Messages from a dedicated
+  // worker's parent have an empty origin; anything with a different origin is ignored.
+  if (event.origin && event.origin !== self.location.origin) return;
   const msg = event.data;
+  if (!msg || (msg.type !== 'init' && msg.type !== 'run')) return;
   try {
     if (msg.type === 'init') {
       const { loadPyodide } = await import(PYODIDE_URL + 'pyodide.mjs');

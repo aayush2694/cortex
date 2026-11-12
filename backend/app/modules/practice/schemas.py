@@ -26,6 +26,7 @@ class CaseOut(BaseModel):
 
 
 class ProblemDetail(ProblemSummary):
+    language: str
     statement: str
     function: str
     params: list[str]
@@ -34,6 +35,10 @@ class ProblemDetail(ProblemSummary):
     arg_types: list[str] | None
     returns: str
     cases: list[CaseOut]
+    # SQL problems: the CREATE TABLE script, each table's columns and the expected columns.
+    setup: str | None
+    tables: dict[str, list[str]]
+    output_columns: list[str]
     hints: list[str]
     complexity: str
 

@@ -10,6 +10,7 @@ interface PatternGroup {
   topicId: string;
   title: string;
   group: string;
+  isPattern: boolean;
   problems: CodingProblemSummary[];
 }
 
@@ -24,7 +25,7 @@ interface PatternGroup {
         <div>
           <div class="eyebrow">DSA</div>
           <h1>Practice</h1>
-          <p>Write Python, run it against test cases, and see what passes. Your code runs in your browser.</p>
+          <p>Write Python or SQL, run it against test cases, and see what passes. Everything runs in your browser.</p>
         </div>
       </header>
 
@@ -53,7 +54,7 @@ interface PatternGroup {
         <div class="group-head">
           <span class="group-label">{{ g.group }} · {{ g.title }}</span>
           <a class="faint watch" [routerLink]="['/topics', g.topicId]">
-            <i class="ti ti-player-play" aria-hidden="true"></i>Watch the pattern
+            <i class="ti" [class.ti-player-play]="g.isPattern" [class.ti-book]="!g.isPattern" aria-hidden="true"></i>{{ g.isPattern ? 'Watch the pattern' : 'Read the topic' }}
           </a>
         </div>
         <div class="list" [style.--i]="gi">
@@ -157,7 +158,8 @@ export class PracticeList {
         g = {
           topicId: p.topic_id,
           title: topic?.title ?? p.topic_id,
-          group: topic?.pattern?.group ?? 'Patterns',
+          group: topic?.pattern?.group ?? (p.topic_id.startsWith('sql-') ? 'SQL' : 'Practice'),
+          isPattern: !!topic?.pattern,
           problems: [],
         };
         byTopic.set(p.topic_id, g);

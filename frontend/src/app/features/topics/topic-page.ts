@@ -15,6 +15,7 @@ import { Problem, Status, TRACK_LABELS, leetcodeUrl } from '../../core/api/model
 import { LearningStore } from '../../core/learning-store';
 import { StatusDot } from '../../shared/status-dot';
 import { TracePlayer } from '../visualizer/player/trace-player';
+import { TopicNotes } from './topic-notes';
 
 const STATUSES: { value: Status; label: string }[] = [
   { value: 'not_started', label: 'Not started' },
@@ -24,7 +25,7 @@ const STATUSES: { value: Status; label: string }[] = [
 
 @Component({
   selector: 'app-topic-page',
-  imports: [RouterLink, StatusDot, TracePlayer],
+  imports: [RouterLink, StatusDot, TracePlayer, TopicNotes],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page narrow">
@@ -46,6 +47,12 @@ const STATUSES: { value: Status; label: string }[] = [
             <a class="btn" routerLink="/tutor" [queryParams]="{ topic: t.id }">
               <i class="ti ti-message-circle"></i>Ask the tutor
             </a>
+            @if (t.concepts.length || t.pattern) {
+              <button class="btn" (click)="addToReview(t.id)" [disabled]="reviewState() === 'adding'">
+                <i class="ti" [class.ti-cards]="reviewState() !== 'done'" [class.ti-check]="reviewState() === 'done'" aria-hidden="true"></i>
+                {{ reviewLabel() }}
+              </button>
+            }
           </div>
         </header>
 
@@ -162,6 +169,8 @@ const STATUSES: { value: Status; label: string }[] = [
             <p class="error"><i class="ti ti-alert-circle"></i> {{ saveError() }}</p>
           }
         </div>
+
+        <app-topic-notes [topicId]="t.id" />
 
         @if (t.resources.length) {
           <span class="group-label">Docs & references</span>
@@ -465,6 +474,11 @@ export class TopicPage {
   );
 
   constructor() {
+    effect(() => {
+      this.id();
+      this.reviewState.set('idle');
+    });
+
     // Keep the browser tab title in sync with the topic.
     effect(() => {
       const title = this.topic.value()?.title;
@@ -474,6 +488,33 @@ export class TopicPage {
 
   protected readonly copied = signal(false);
   protected readonly solveError = signal('');
+
+  protected readonly reviewState = signal<'idle' | 'adding' | 'done' | 'error'>('idle');
+  private readonly reviewAdded = signal(0);
+  protected readonly reviewLabel = computed(() => {
+    switch (this.reviewState()) {
+      case 'adding':
+        return 'Adding…';
+      case 'done':
+        return this.reviewAdded()
+          ? `Added ${this.reviewAdded()} ${this.reviewAdded() === 1 ? 'card' : 'cards'}`
+          : 'Already in review';
+      case 'error':
+        return "Couldn't add. Retry";
+      default:
+        return 'Add to review';
+    }
+  });
+
+  protected async addToReview(topicId: string): Promise<void> {
+    this.reviewState.set('adding');
+    try {
+      this.reviewAdded.set((await this.api.addTopicCards(topicId)).added);
+      this.reviewState.set('done');
+    } catch {
+      this.reviewState.set('error');
+    }
+  }
 
   protected algorithmFor(key: string | null) {
     return key ? this.store.algorithmByKey().get(key) : undefined;

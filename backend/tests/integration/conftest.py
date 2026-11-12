@@ -44,7 +44,9 @@ async def clean_user_data() -> AsyncIterator[None]:
         await conn.execute(
             text(
                 "TRUNCATE users, progress, activity_events, solved_problems, chat_sessions, "
-                "chat_messages, submissions RESTART IDENTITY CASCADE"
+                "chat_messages, submissions, flashcards, card_reviews, notes, prep_plans, "
+                "applications, job_profiles, question_notes "
+                "RESTART IDENTITY CASCADE"
             )
         )
 

@@ -13,9 +13,12 @@ from app.core.config import get_settings
 from app.core.db import dispose_engine, get_sessionmaker
 from app.core.errors import register_error_handlers
 from app.core.logging import RequestContextMiddleware, setup_logging
+from app.modules.jobs.content import get_questions, get_skills
+from app.modules.jobs.router import router as jobs_router
 from app.modules.practice.catalog import get_practice, validate_practice
 from app.modules.practice.router import router as practice_router
 from app.modules.progress.router import router as progress_router
+from app.modules.study.router import router as study_router
 from app.modules.topics.catalog import load_catalog
 from app.modules.topics.repository import TopicRepository
 from app.modules.topics.router import router as topics_router
@@ -33,6 +36,7 @@ async def sync_topics() -> int:
         await session.commit()
     # Coding problems must point at real topics; fail fast at startup if not.
     validate_practice(get_practice(), {t.id for t in catalog.topics})
+    get_skills(), get_questions()  # load (and validate) the job-search content now
     return len(catalog.topics)
 
 
@@ -80,6 +84,8 @@ def create_app() -> FastAPI:
     api.include_router(topics_router)
     api.include_router(progress_router)
     api.include_router(practice_router)
+    api.include_router(study_router)
+    api.include_router(jobs_router)
     api.include_router(visualizer_router)
     api.include_router(tutor_router)
     app.include_router(api)

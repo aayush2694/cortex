@@ -23,6 +23,13 @@ import { APPEARANCES, ThemeService } from '../core/theme/theme';
     </div>
   `,
   styles: `
+    :host {
+      flex-shrink: 0;
+    }
+    /* In the top bar the three buttons must stay on one row, even on a phone. */
+    .compact {
+      flex-wrap: nowrap;
+    }
     .compact button {
       width: 32px;
       height: 26px;
