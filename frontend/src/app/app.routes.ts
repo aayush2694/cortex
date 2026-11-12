@@ -19,6 +19,18 @@ export const routes: Routes = [
     loadComponent: () => import('./features/patterns/patterns').then((m) => m.Patterns),
   },
   {
+    path: 'practice',
+    title: 'Practice · Cortex',
+    loadComponent: () =>
+      import('./features/practice/practice-list').then((m) => m.PracticeList),
+  },
+  {
+    path: 'practice/:id',
+    title: 'Practice · Cortex',
+    loadComponent: () =>
+      import('./features/practice/practice-page').then((m) => m.PracticePage),
+  },
+  {
     path: 'topics/:id',
     title: 'Topic · Cortex',
     loadComponent: () => import('./features/topics/topic-page').then((m) => m.TopicPage),

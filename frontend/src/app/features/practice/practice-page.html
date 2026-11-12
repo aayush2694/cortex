@@ -1,0 +1,198 @@
+<div class="page wide">
+  <a class="back faint" routerLink="/practice"><i class="ti ti-chevron-left" aria-hidden="true"></i>Practice</a>
+
+  @if (res.isLoading() && !problem()) {
+    <div class="skeleton" style="height: 420px"></div>
+  } @else if (res.error()) {
+    <div class="card" style="display: grid; justify-items: start; gap: 10px; padding: 24px">
+      <h2>We couldn't find that problem</h2>
+      <p class="muted">It may have been renamed. Pick another one from the list.</p>
+      <a class="btn primary" routerLink="/practice">Browse problems</a>
+    </div>
+  } @else if (problem(); as p) {
+    <header class="head">
+      <div>
+        <div class="eyebrow">Practice · {{ topic()?.title ?? p.topic_id }}</div>
+        <h1>{{ p.title }}</h1>
+      </div>
+      <div class="badges">
+        <span class="pill difficulty" [class.outline]="p.difficulty !== 'easy'">{{ p.difficulty }}</span>
+        @if (p.solved) {
+          <span class="pill strong"><i class="ti ti-check" aria-hidden="true"></i>Solved</span>
+        }
+      </div>
+    </header>
+
+    <div class="workspace">
+      <!-- Left: the problem -->
+      <section class="card problem" aria-label="Problem">
+        <h2>Problem</h2>
+        @for (para of statement(); track $index) {
+          <p>
+            @for (piece of para; track $index) {
+              @if (piece.code) { <code>{{ piece.text }}</code> } @else { {{ piece.text }} }
+            }
+          </p>
+        }
+
+        <h3>Examples</h3>
+        @for (c of examples(); track $index) {
+          <pre class="example">{{ args(c) }}
+→ {{ show(c.expected) }}</pre>
+        }
+
+        <div class="meta faint">
+          <span><i class="ti ti-clock" aria-hidden="true"></i>Aim for {{ p.complexity }}</span>
+          <a [routerLink]="['/topics', p.topic_id]"><i class="ti ti-player-play" aria-hidden="true"></i>Watch the pattern</a>
+        </div>
+
+        @if (p.hints.length) {
+          <h3>Hints</h3>
+          <div class="list hints">
+            @for (h of p.hints; track $index) {
+              @if ($index < hintsShown()) {
+                <div class="list-row hint"><span class="num">{{ $index + 1 }}</span><span>{{ h }}</span></div>
+              }
+            }
+            @if (hintsShown() < p.hints.length) {
+              <button class="list-row reveal" (click)="revealHint()">
+                <span class="num"><i class="ti ti-bulb" aria-hidden="true"></i></span>
+                <span>Show hint {{ hintsShown() + 1 }} of {{ p.hints.length }}</span>
+              </button>
+            }
+          </div>
+        }
+
+        <h3>Solution</h3>
+        @if (solution(); as s) {
+          <pre class="solution">{{ s.code }}</pre>
+          <p class="muted">{{ s.explanation }}</p>
+          <p class="faint">{{ s.complexity }}</p>
+        } @else {
+          <button class="btn" (click)="showSolution()">
+            <i class="ti ti-eye" aria-hidden="true"></i>
+            {{ confirmSolution() ? 'Show it anyway' : 'Show solution' }}
+          </button>
+          @if (confirmSolution()) {
+            <p class="faint" style="margin-top: 8px">You haven't solved this yet. A hint might be enough.</p>
+          }
+        }
+      </section>
+
+      <!-- Right: your code and the results -->
+      <div class="right">
+        <section class="card editor-card" aria-label="Your code">
+          <div class="bar">
+            <span class="faint">
+              Python{{ runner.version() ? ' ' + runner.version() : '' }}
+              @switch (runner.state()) {
+                @case ('loading') { · <span class="loading">loading Python…</span> }
+                @case ('failed') { · couldn't load Python }
+              }
+            </span>
+            <span class="faint keys" aria-hidden="true">⌘↵ run · ⌘⇧↵ submit</span>
+            <button class="btn ghost small" (click)="resetCode()" title="Go back to the starter code">
+              <i class="ti ti-restore" aria-hidden="true"></i>Reset
+            </button>
+          </div>
+          <app-code-editor [(value)]="code" label="Your Python solution" (run)="execute('run')" (submit)="execute('submit')" />
+          <div class="actions">
+            <button class="btn" (click)="execute('run')" [disabled]="!!busy()">
+              <i class="ti ti-player-play" aria-hidden="true"></i>{{ busy() === 'run' ? 'Running…' : 'Run examples' }}
+            </button>
+            <button class="btn primary" (click)="execute('submit')" [disabled]="!!busy()">
+              <i class="ti ti-send" aria-hidden="true"></i>{{ busy() === 'submit' ? 'Checking…' : 'Submit' }}
+            </button>
+          </div>
+        </section>
+
+        <section class="card results" aria-label="Results" aria-live="polite">
+          @if (justSolved()) {
+            <div class="solved-banner">
+              <i class="ti ti-circle-check" aria-hidden="true"></i>
+              <div>
+                <strong>Solved</strong>
+                <span class="faint">Every test passed. This counts toward your {{ topic()?.title }} mastery.</span>
+              </div>
+            </div>
+          }
+
+          @if (runner.loadError(); as e) {
+            <p class="error-box">Python didn't load: {{ e }}. Check your internet connection and try again.</p>
+          }
+          @if (runError(); as e) {
+            <p class="error-box">{{ e }}</p>
+          }
+
+          @if (busy() && runner.state() === 'loading') {
+            <p class="muted">Downloading Python for the first time (about 10 MB). Next time it's instant.</p>
+          } @else if (outcome(); as o) {
+            <div class="summary">
+              <h2>{{ o.mode === 'run' ? 'Examples' : 'All tests' }}</h2>
+              @if (o.run.timedOut) {
+                <span class="faint">Stopped</span>
+              } @else if (!o.run.compile_error) {
+                <span class="faint">{{ o.passed }} of {{ o.cases.length }} passed</span>
+              }
+            </div>
+
+            @if (o.run.timedOut) {
+              <p class="error-box">Your code ran for more than {{ timeoutSeconds }} seconds, so it was stopped. Look for a loop that never ends.</p>
+            } @else if (o.run.compile_error; as e) {
+              <pre class="error-box">{{ e }}</pre>
+              @if (o.run.stdout) {
+                <pre class="stdout">{{ o.run.stdout }}</pre>
+              }
+            } @else {
+              <div class="cases">
+                @for (r of o.run.results; track $index; let i = $index) {
+                  <details class="case" [class.pass]="r.passed" [open]="i === o.firstFail">
+                    <summary>
+                      <i class="ti" [class.ti-check]="r.passed" [class.ti-x]="!r.passed" aria-hidden="true"></i>
+                      <span>Case {{ i + 1 }}</span>
+                      @if (o.cases[i].hidden) { <span class="pill">hidden</span> }
+                      <span class="faint ms">{{ r.ms }} ms</span>
+                    </summary>
+                    <dl>
+                      <dt>Input</dt><dd><code>{{ args(o.cases[i]) }}</code></dd>
+                      <dt>Expected</dt><dd><code>{{ show(o.cases[i].expected) }}</code></dd>
+                      @if (r.error) {
+                        <dt>Error</dt><dd><code class="err">{{ r.error }}</code></dd>
+                      } @else {
+                        <dt>Got</dt><dd><code>{{ show(r.output) }}</code></dd>
+                      }
+                      @if (r.stdout) {
+                        <dt>Printed</dt><dd><pre class="stdout">{{ r.stdout }}</pre></dd>
+                      }
+                    </dl>
+                  </details>
+                }
+              </div>
+            }
+          } @else {
+            <p class="muted">Run the examples to check your idea, then submit to test every case, including hidden ones.</p>
+          }
+        </section>
+
+        @if (history().length) {
+          <section aria-label="Your submissions">
+            <span class="group-label">Your submissions</span>
+            <div class="list">
+              @for (s of history(); track s.id) {
+                <div class="list-row sub">
+                  <span class="tile" [class.done]="s.accepted">
+                    <i class="ti" [class.ti-check]="s.accepted" [class.ti-x]="!s.accepted" aria-hidden="true"></i>
+                  </span>
+                  <span class="row-main">
+                    <span>{{ s.accepted ? 'Accepted' : s.passed + ' of ' + s.total + ' passed' }}</span>
+                    <span class="faint">{{ ago(s.created_at) }} · {{ s.runtime_ms }} ms</span>
+                  </span>
+                </div>
+              }
+            </div>
+          </section>
+        }
+      </div>
+    </div>
+  }
+</div>

@@ -90,6 +90,22 @@ const STATUSES: { value: Status; label: string }[] = [
           </ol>
         }
 
+        @if (codingProblems().length) {
+          <span class="group-label">Practice in Cortex · write and run Python here</span>
+          <div class="list problems">
+            @for (cp of codingProblems(); track cp.id) {
+              <a class="list-row problem" [class.solved]="cp.solved" [routerLink]="['/practice', cp.id]">
+                <span class="tick" aria-hidden="true">
+                  <i class="ti" [class.ti-circle-check]="cp.solved" [class.ti-code]="!cp.solved"></i>
+                </span>
+                <span class="row-main"><span>{{ cp.title }}</span></span>
+                <span class="pill diff" [class.strong]="cp.difficulty === 'hard'" [class.outline]="cp.difficulty === 'medium'">{{ cp.difficulty }}</span>
+                <i class="ti ti-chevron-right chev" aria-hidden="true"></i>
+              </a>
+            }
+          </div>
+        }
+
         @if (t.pattern; as pat) {
           <span class="group-label">
             Practice on LeetCode · {{ solvedIn(pat.problems) }} of {{ pat.problems.length }} solved
@@ -433,6 +449,11 @@ export class TopicPage {
   protected readonly store = inject(LearningStore);
 
   protected readonly topic = this.api.topic(this.id);
+  private readonly practiceRes = this.api.practiceProblems();
+  /** Cortex coding problems for this topic (patterns only, for now). */
+  protected readonly codingProblems = computed(() =>
+    (this.practiceRes.value()?.items ?? []).filter((p) => p.topic_id === this.id()),
+  );
   protected readonly statuses = STATUSES;
   protected readonly trackLabel = TRACK_LABELS;
   protected readonly saving = signal(false);

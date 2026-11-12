@@ -17,6 +17,7 @@ export const NAV_SECTIONS: readonly NavSection[] = [
       { path: '/', label: 'Dashboard', icon: 'ti-layout-dashboard', exact: true },
       { path: '/map', label: 'Knowledge map', icon: 'ti-topology-star-3' },
       { path: '/patterns', label: 'Patterns', icon: 'ti-puzzle' },
+      { path: '/practice', label: 'Practice', icon: 'ti-code' },
       { path: '/visualizer', label: 'Visualizer', icon: 'ti-chart-bar' },
       { path: '/tutor', label: 'Tutor', icon: 'ti-message-circle' },
     ],

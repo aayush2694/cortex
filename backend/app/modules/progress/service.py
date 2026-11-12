@@ -4,6 +4,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import utcnow
 from app.core.errors import NotFound, ValidationFailed
+from app.modules.practice.catalog import get_practice
+from app.modules.practice.repository import SubmissionRepository
 from app.modules.progress.engine import compute_mastery, recommend_next
 from app.modules.progress.models import Progress
 from app.modules.progress.repository import ProgressRepository
@@ -27,13 +29,18 @@ def _days_since(ts: datetime | None, now: datetime) -> float:
 
 
 def _problem_count(topic: Topic | None) -> int:
-    return len((topic.pattern or {}).get("problems", [])) if topic else 0
+    """LeetCode problems listed on the pattern plus Cortex coding problems for the topic."""
+    if topic is None:
+        return 0
+    leetcode = len((topic.pattern or {}).get("problems", []))
+    return leetcode + get_practice().count_by_topic().get(topic.id, 0)
 
 
 class ProgressService:
     def __init__(self, session: AsyncSession) -> None:
         self.repo = ProgressRepository(session)
         self.topics = TopicRepository(session)
+        self.submissions = SubmissionRepository(session)
 
     async def overview(self, user: User) -> ProgressOut:
         """Every topic with your status; untouched topics show as not_started."""
@@ -150,10 +157,24 @@ class ProgressService:
             last_activity_at=row.last_activity_at,
         )
 
+    async def record_practice_solved(
+        self, user: User, topic_id: str, problem_id: str
+    ) -> ProgressItem:
+        """Called the first time all tests of a Cortex coding problem pass."""
+        await self._require_topic(topic_id)
+        row = await self.repo.get_or_create(user.id, topic_id)
+        if row.status == "not_started":
+            row.status = "learning"
+        await self.repo.add_event(user.id, topic_id, "practice_solved", {"problem": problem_id})
+        return await self._refresh(user, row)
+
     async def _solved_counts(self, user: User) -> dict[str, int]:
+        """Solved LeetCode problems plus solved Cortex coding problems, per topic."""
         counts: dict[str, int] = {}
         for r in await self.repo.solved(user.id):
             counts[r.topic_id] = counts.get(r.topic_id, 0) + 1
+        for topic_id, _ in await self.submissions.solved(user.id):
+            counts[topic_id] = counts.get(topic_id, 0) + 1
         return counts
 
     async def _require_topic(self, topic_id: str) -> None:

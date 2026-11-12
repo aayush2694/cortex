@@ -241,7 +241,8 @@ async def test_pattern_topic_and_solved_problems(client: httpx.AsyncClient) -> N
     assert t["pattern"]["group"] == "Arrays and strings"
     assert t["visualizer"] == "sliding_window"
     slug = t["pattern"]["problems"][0]["slug"]
-    total = len(t["pattern"]["problems"])
+    coding = (await client.get(f"{API}/practice/problems?topic_id=sliding-window")).json()
+    total = len(t["pattern"]["problems"]) + len(coding["items"])  # LeetCode + Cortex problems
 
     r = await client.put(f"{API}/progress/sliding-window/problems/{slug}", json={"solved": True})
     assert r.status_code == 200
@@ -272,3 +273,50 @@ async def test_pattern_walkthrough_is_listed(client: httpx.AsyncClient) -> None:
         f"{API}/visualizer/sliding_window/trace", json={"input": {"text": "pwwkew"}}
     )
     assert r.status_code == 200 and r.json()["result"]["best"] == 3
+
+
+# ---------------------------------------------------------------- practice (code runner)
+
+
+async def test_practice_list_detail_solution_and_runtime(client: httpx.AsyncClient) -> None:
+    items = (await client.get(f"{API}/practice/problems")).json()["items"]
+    assert len(items) >= 12
+    assert all(not i["solved"] and i["attempts"] == 0 for i in items)
+    mine = (await client.get(f"{API}/practice/problems?topic_id=sliding-window")).json()["items"]
+    assert {i["topic_id"] for i in mine} == {"sliding-window"}
+
+    detail = (await client.get(f"{API}/practice/problems/best-k-day-total")).json()
+    assert detail["function"] == "best_k_day_total"
+    assert any(c["hidden"] for c in detail["cases"]) and "solution" not in detail
+
+    sol = (await client.get(f"{API}/practice/problems/best-k-day-total/solution")).json()
+    assert "def best_k_day_total" in sol["code"]
+
+    r = await client.get(f"{API}/practice/runtime")
+    assert r.status_code == 200 and "def run_cases_json" in r.text
+
+    r = await client.get(f"{API}/practice/problems/nope")
+    assert r.status_code == 404 and r.json()["error"]["code"] == "problem_not_found"
+
+
+async def test_practice_submission_solves_and_raises_mastery(client: httpx.AsyncClient) -> None:
+    pid = "best-k-day-total"
+    total = len((await client.get(f"{API}/practice/problems/{pid}")).json()["cases"])
+    url = f"{API}/practice/problems/{pid}/submissions"
+
+    r = await client.post(url, json={"code": "x", "passed": 1, "total": total + 1, "runtime_ms": 1})
+    assert r.status_code == 422 and r.json()["error"]["code"] == "wrong_case_count"
+
+    r = await client.post(url, json={"code": "x", "passed": 2, "total": total, "runtime_ms": 3})
+    assert r.status_code == 201 and r.json()["accepted"] is False
+    r = await client.post(url, json={"code": "y", "passed": total, "total": total, "runtime_ms": 2})
+    assert r.status_code == 201 and r.json()["accepted"] is True
+
+    history = (await client.get(url)).json()["items"]
+    assert [h["accepted"] for h in history] == [True, False]  # newest first
+    summary = (await client.get(f"{API}/practice/problems/{pid}")).json()
+    assert summary["solved"] is True and summary["attempts"] == 2
+
+    progress = (await client.get(f"{API}/progress")).json()["items"]
+    sw = next(p for p in progress if p["topic_id"] == "sliding-window")
+    assert sw["status"] == "learning" and sw["mastery"] > 0.3  # base 0.3 + practice share

@@ -140,3 +140,49 @@ export function masteryTone(mastery: number): 'ok' | 'warn' | 'bad' | 'none' {
   if (mastery > 0) return 'bad';
   return 'none';
 }
+
+// ---------------------------------------------------------------- practice (code runner)
+
+export type Difficulty = 'easy' | 'medium' | 'hard';
+
+export interface CodingProblemSummary {
+  id: string;
+  topic_id: string;
+  title: string;
+  difficulty: Difficulty;
+  solved: boolean;
+  attempts: number;
+}
+
+export interface TestCase {
+  args: unknown[];
+  expected: unknown;
+  hidden: boolean;
+}
+
+export interface CodingProblem extends CodingProblemSummary {
+  statement: string;
+  function: string;
+  params: string[];
+  starter: string;
+  compare: string;
+  cases: TestCase[];
+  hints: string[];
+  complexity: string;
+}
+
+export interface Solution {
+  code: string;
+  explanation: string;
+  complexity: string;
+}
+
+export interface Submission {
+  id: number;
+  problem_id: string;
+  passed: number;
+  total: number;
+  runtime_ms: number;
+  accepted: boolean;
+  created_at: string;
+}

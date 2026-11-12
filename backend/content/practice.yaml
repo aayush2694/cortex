@@ -1,0 +1,492 @@
+# Cortex coding problems. Statements are original; every reference solution is checked
+# against every case by tests/unit/test_practice.py using the same harness the browser runs.
+#
+# compare: exact | unordered (order of a list doesn't matter)
+#          | unordered_nested (order of groups and of items inside each group doesn't matter)
+
+problems:
+  # ------------------------------------------------------------------ Two pointers
+  - id: pair-with-target-sum
+    topic_id: two-pointers
+    title: Pair with target sum
+    difficulty: easy
+    statement: |
+      You get a list `nums` sorted in increasing order and a number `target`.
+
+      Return the indices `[i, j]` (with `i < j`) of the two numbers that add up to `target`.
+      There is at most one such pair. If there is none, return `[]`.
+
+      Aim for O(n) time and O(1) extra space.
+    function: pair_with_target_sum
+    params: [nums, target]
+    starter: |
+      def pair_with_target_sum(nums, target):
+          # Your code here
+          pass
+    cases:
+      - {args: [[1, 3, 4, 6, 8], 10], expected: [2, 3]}
+      - {args: [[2, 5, 9, 11], 11], expected: [0, 2]}
+      - {args: [[1, 2, 3], 7], expected: []}
+      - {args: [[-4, -1, 0, 3, 10], -5], expected: [0, 1], hidden: true}
+      - {args: [[5], 5], expected: [], hidden: true}
+      - {args: [[], 0], expected: [], hidden: true}
+      - {args: [[1, 2, 4, 7, 11, 15], 26], expected: [4, 5], hidden: true}
+    hints:
+      - Start one pointer at each end of the list.
+      - If the sum is too small, which pointer should move to make it bigger?
+    solution: |
+      def pair_with_target_sum(nums, target):
+          left, right = 0, len(nums) - 1
+          while left < right:
+              total = nums[left] + nums[right]
+              if total == target:
+                  return [left, right]
+              if total < target:
+                  left += 1
+              else:
+                  right -= 1
+          return []
+    explanation: >-
+      Because the list is sorted, moving the left pointer right can only increase the sum and
+      moving the right pointer left can only decrease it. Each step rules out one number for
+      good, so the two pointers meet after at most n steps.
+    complexity: Time O(n) · Space O(1)
+
+  - id: closest-pair-sum
+    topic_id: two-pointers
+    title: Closest pair sum
+    difficulty: medium
+    statement: |
+      You get a sorted list `nums` with at least two numbers, and a number `target`.
+
+      Pick two different positions and add their numbers. Return the smallest possible
+      distance `abs(sum - target)`.
+    function: closest_pair_sum
+    params: [nums, target]
+    starter: |
+      def closest_pair_sum(nums, target):
+          # Your code here
+          pass
+    cases:
+      - {args: [[1, 4, 6, 9], 12], expected: 1}
+      - {args: [[2, 3, 8], 11], expected: 0}
+      - {args: [[-5, -2, 0, 7], 30], expected: 23}
+      - {args: [[1, 1], 0], expected: 2, hidden: true}
+      - {args: [[-10, -3, 2, 4, 9, 15], 0], expected: 1, hidden: true}
+      - {args: [[0, 100, 200, 300], 260], expected: 40, hidden: true}
+    hints:
+      - Same two pointers as the target-sum problem, but you never stop early unless the gap is 0.
+      - Keep the best distance seen so far.
+    solution: |
+      def closest_pair_sum(nums, target):
+          left, right = 0, len(nums) - 1
+          best = float("inf")
+          while left < right:
+              total = nums[left] + nums[right]
+              best = min(best, abs(total - target))
+              if total < target:
+                  left += 1
+              elif total > target:
+                  right -= 1
+              else:
+                  return 0
+          return best
+    explanation: >-
+      Every pointer move discards a pair that can't beat the current best on that side, so all
+      useful pairs are still visited. Track the smallest gap as you go.
+    complexity: Time O(n) · Space O(1)
+
+  # ------------------------------------------------------------------ Sliding window
+  - id: best-k-day-total
+    topic_id: sliding-window
+    title: Best k-day total
+    difficulty: easy
+    statement: |
+      `sales` holds a shop's sales for each day. Return the largest total of any `k`
+      consecutive days. You can assume `1 <= k <= len(sales)`.
+    function: best_k_day_total
+    params: [sales, k]
+    starter: |
+      def best_k_day_total(sales, k):
+          # Your code here
+          pass
+    cases:
+      - {args: [[3, 1, 4, 1, 5, 9, 2], 3], expected: 16}
+      - {args: [[5, 5, 5], 1], expected: 5}
+      - {args: [[2, 7, 1], 3], expected: 10}
+      - {args: [[-3, -1, -2], 2], expected: -3, hidden: true}
+      - {args: [[0, 0, 10, 0, 0, 10], 4], expected: 20, hidden: true}
+      - {args: [[8], 1], expected: 8, hidden: true}
+    hints:
+      - Add up the first k days once.
+      - To slide the window one day right, add the new day and subtract the one that left.
+    solution: |
+      def best_k_day_total(sales, k):
+          window = sum(sales[:k])
+          best = window
+          for i in range(k, len(sales)):
+              window += sales[i] - sales[i - k]
+              best = max(best, window)
+          return best
+    explanation: >-
+      Recomputing each window from scratch costs O(n·k). Updating the running sum with one add
+      and one subtract per step makes it O(n).
+    complexity: Time O(n) · Space O(1)
+
+  - id: longest-run-without-repeats
+    topic_id: sliding-window
+    title: Longest run without repeats
+    difficulty: medium
+    statement: |
+      Given a string `s`, return the length of the longest block of consecutive characters in
+      which no character appears twice.
+    function: longest_run_without_repeats
+    params: [s]
+    starter: |
+      def longest_run_without_repeats(s):
+          # Your code here
+          pass
+    cases:
+      - {args: ["abcabcbb"], expected: 3}
+      - {args: ["aaaa"], expected: 1}
+      - {args: ["pwwkew"], expected: 3}
+      - {args: [""], expected: 0, hidden: true}
+      - {args: ["abba"], expected: 2, hidden: true}
+      - {args: ["dvdf"], expected: 3, hidden: true}
+      - {args: ["abcdefg"], expected: 7, hidden: true}
+    hints:
+      - Grow the window to the right one character at a time.
+      - When a character repeats, move the left edge just past its previous position.
+      - Never move the left edge backwards (try "abba").
+    solution: |
+      def longest_run_without_repeats(s):
+          last_seen = {}
+          left = best = 0
+          for right, ch in enumerate(s):
+              if ch in last_seen and last_seen[ch] >= left:
+                  left = last_seen[ch] + 1
+              last_seen[ch] = right
+              best = max(best, right - left + 1)
+          return best
+    explanation: >-
+      The window [left, right] always holds distinct characters. Remembering where each
+      character was last seen lets the left edge jump forward in one step instead of shrinking
+      one character at a time.
+    complexity: Time O(n) · Space O(alphabet)
+
+  # ------------------------------------------------------------------ Prefix sum
+  - id: range-sum-queries
+    topic_id: prefix-sum
+    title: Range sum queries
+    difficulty: easy
+    statement: |
+      You get a list `nums` and a list of `queries`, where each query is `[left, right]`.
+
+      For each query, return the sum of `nums[left]` through `nums[right]` (both included).
+      Return the answers as a list, in query order.
+    function: range_sum_queries
+    params: [nums, queries]
+    starter: |
+      def range_sum_queries(nums, queries):
+          # Your code here
+          pass
+    cases:
+      - {args: [[2, 4, 1, 3], [[0, 1], [1, 3], [2, 2]]], expected: [6, 8, 1]}
+      - {args: [[5, -2, 7], [[0, 2]]], expected: [10]}
+      - {args: [[1, 2, 3], []], expected: []}
+      - {args: [[0, 0, 0, 9], [[3, 3], [0, 3], [0, 0]]], expected: [9, 9, 0], hidden: true}
+      - {args: [[-1, -1, -1, -1], [[1, 2], [0, 3]]], expected: [-2, -4], hidden: true}
+    hints:
+      - Build prefix where prefix[i] is the sum of the first i numbers.
+      - The sum from left to right is prefix[right + 1] - prefix[left].
+    solution: |
+      def range_sum_queries(nums, queries):
+          prefix = [0]
+          for x in nums:
+              prefix.append(prefix[-1] + x)
+          return [prefix[r + 1] - prefix[l] for l, r in queries]
+    explanation: >-
+      One pass builds the running totals. After that, any range sum is the difference of two
+      totals, so each query costs O(1) instead of O(length of the range).
+    complexity: Time O(n + q) · Space O(n)
+
+  - id: count-ranges-summing-to-k
+    topic_id: prefix-sum
+    title: Count ranges summing to k
+    difficulty: medium
+    statement: |
+      Given a list of integers `nums` (it can contain negatives) and an integer `k`, count how
+      many contiguous, non-empty ranges of `nums` add up to exactly `k`.
+    function: count_ranges_summing_to_k
+    params: [nums, k]
+    starter: |
+      def count_ranges_summing_to_k(nums, k):
+          # Your code here
+          pass
+    cases:
+      - {args: [[1, 1, 1], 2], expected: 2}
+      - {args: [[1, 2, 3], 3], expected: 2}
+      - {args: [[3, -1, 1, 2], 3], expected: 3}
+      - {args: [[0, 0, 0], 0], expected: 6, hidden: true}
+      - {args: [[1, -1, 1, -1], 0], expected: 4, hidden: true}
+      - {args: [[5], 4], expected: 0, hidden: true}
+      - {args: [[2, -2, 2, -2, 2], 2], expected: 6, hidden: true}
+    hints:
+      - A range (i, j] sums to k when prefix[j] - prefix[i] == k.
+      - While walking, count how many earlier prefix sums equal current - k.
+    solution: |
+      def count_ranges_summing_to_k(nums, k):
+          seen = {0: 1}
+          running = count = 0
+          for x in nums:
+              running += x
+              count += seen.get(running - k, 0)
+              seen[running] = seen.get(running, 0) + 1
+          return count
+    explanation: >-
+      Negatives rule out a sliding window. Instead, store how often each prefix sum has
+      appeared; every earlier prefix equal to running - k starts a range that ends here.
+    complexity: Time O(n) · Space O(n)
+
+  # ------------------------------------------------------------------ Hash map lookups
+  - id: first-repeated-word
+    topic_id: frequency-counting
+    title: First repeated word
+    difficulty: easy
+    statement: |
+      Given a list of `words`, return the first word whose second appearance comes earliest
+      while reading left to right. If no word appears twice, return `""`.
+    function: first_repeated_word
+    params: [words]
+    starter: |
+      def first_repeated_word(words):
+          # Your code here
+          pass
+    cases:
+      - {args: [["red", "blue", "green", "blue", "red"]], expected: "blue"}
+      - {args: [["a", "b", "c"]], expected: ""}
+      - {args: [["x", "x"]], expected: "x"}
+      - {args: [[]], expected: "", hidden: true}
+      - {args: [["cat", "dog", "bird", "dog", "cat", "bird"]], expected: "dog", hidden: true}
+      - {args: [["Hi", "hi", "HI", "hi"]], expected: "hi", hidden: true}
+    hints:
+      - Keep a set of words you've already read.
+    solution: |
+      def first_repeated_word(words):
+          seen = set()
+          for w in words:
+              if w in seen:
+                  return w
+              seen.add(w)
+          return ""
+    explanation: >-
+      A set answers "have I seen this before?" in O(1), so a single pass finds the first
+      repeat. Comparing every pair would be O(n²).
+    complexity: Time O(n) · Space O(n)
+
+  - id: group-anagrams
+    topic_id: frequency-counting
+    title: Group anagrams
+    difficulty: medium
+    statement: |
+      Group the `words` that are anagrams of each other (same letters, any order).
+
+      Return a list of groups. The order of the groups and of the words inside each group
+      doesn't matter.
+    function: group_anagrams
+    params: [words]
+    starter: |
+      def group_anagrams(words):
+          # Your code here
+          pass
+    compare: unordered_nested
+    cases:
+      - {args: [["eat", "tea", "tan", "ate", "nat", "bat"]], expected: [["eat", "tea", "ate"], ["tan", "nat"], ["bat"]]}
+      - {args: [["a"]], expected: [["a"]]}
+      - {args: [["ab", "ba", "abc"]], expected: [["ab", "ba"], ["abc"]]}
+      - {args: [[]], expected: [], hidden: true}
+      - {args: [["", ""]], expected: [["", ""]], hidden: true}
+      - {args: [["listen", "silent", "enlist", "google", "gogole"]], expected: [["listen", "silent", "enlist"], ["google", "gogole"]], hidden: true}
+    hints:
+      - Two words are anagrams when their sorted letters are equal.
+      - Use the sorted letters as a dictionary key.
+    solution: |
+      def group_anagrams(words):
+          groups = {}
+          for w in words:
+              groups.setdefault("".join(sorted(w)), []).append(w)
+          return list(groups.values())
+    explanation: >-
+      Sorting a word's letters gives the same key for every anagram, so a dictionary from key
+      to list collects each group in one pass.
+    complexity: Time O(n · m log m) · Space O(n · m)
+
+  # ------------------------------------------------------------------ Modified binary search
+  - id: first-position-at-least
+    topic_id: modified-binary-search
+    title: First position at least x
+    difficulty: easy
+    statement: |
+      Given a sorted list `nums` and a number `x`, return the index of the first element that is
+      greater than or equal to `x`. If every element is smaller, return `len(nums)`.
+
+      Aim for O(log n).
+    function: first_position_at_least
+    params: [nums, x]
+    starter: |
+      def first_position_at_least(nums, x):
+          # Your code here
+          pass
+    cases:
+      - {args: [[1, 3, 5, 7], 4], expected: 2}
+      - {args: [[1, 3, 5, 7], 5], expected: 2}
+      - {args: [[1, 3, 5, 7], 9], expected: 4}
+      - {args: [[2, 2, 2, 3], 2], expected: 0, hidden: true}
+      - {args: [[], 1], expected: 0, hidden: true}
+      - {args: [[-5, 0, 5], -10], expected: 0, hidden: true}
+      - {args: [[1, 4, 4, 4, 8], 5], expected: 4, hidden: true}
+    hints:
+      - Search the half-open range [lo, hi) with hi = len(nums).
+      - If nums[mid] < x, the answer is to the right of mid; otherwise mid might be the answer.
+    solution: |
+      def first_position_at_least(nums, x):
+          lo, hi = 0, len(nums)
+          while lo < hi:
+              mid = (lo + hi) // 2
+              if nums[mid] < x:
+                  lo = mid + 1
+              else:
+                  hi = mid
+          return lo
+    explanation: >-
+      The list splits into "smaller than x" then "at least x". Binary search finds the
+      boundary by keeping the answer inside [lo, hi) and halving that range each step.
+    complexity: Time O(log n) · Space O(1)
+
+  - id: smallest-in-rotated-list
+    topic_id: modified-binary-search
+    title: Smallest in a rotated list
+    difficulty: medium
+    statement: |
+      A sorted list of distinct numbers was rotated: some items from the front were moved to the
+      back, keeping their order. For example `[1, 2, 3, 4, 5]` could become `[4, 5, 1, 2, 3]`.
+
+      Given the rotated list `nums` (not empty), return its smallest number in O(log n).
+    function: smallest_in_rotated_list
+    params: [nums]
+    starter: |
+      def smallest_in_rotated_list(nums):
+          # Your code here
+          pass
+    cases:
+      - {args: [[4, 5, 1, 2, 3]], expected: 1}
+      - {args: [[1, 2, 3]], expected: 1}
+      - {args: [[2, 1]], expected: 1}
+      - {args: [[7]], expected: 7, hidden: true}
+      - {args: [[30, 40, 50, 10, 20]], expected: 10, hidden: true}
+      - {args: [[-3, -2, -1, -9, -8]], expected: -9, hidden: true}
+      - {args: [[3, 4, 5, 6, 7, 1]], expected: 1, hidden: true}
+    hints:
+      - Compare the middle number with the last number.
+      - If nums[mid] > nums[-1], the drop (and the minimum) is to the right of mid.
+    solution: |
+      def smallest_in_rotated_list(nums):
+          lo, hi = 0, len(nums) - 1
+          while lo < hi:
+              mid = (lo + hi) // 2
+              if nums[mid] > nums[hi]:
+                  lo = mid + 1
+              else:
+                  hi = mid
+          return nums[lo]
+    explanation: >-
+      Comparing with the right end tells you which half is still sorted. The minimum is
+      always in the other half (or at mid), so each step throws half the list away.
+    complexity: Time O(log n) · Space O(1)
+
+  # ------------------------------------------------------------------ Cyclic sort
+  - id: the-missing-number
+    topic_id: cyclic-sort
+    title: The missing number
+    difficulty: easy
+    statement: |
+      `nums` holds `n` distinct numbers taken from `0, 1, ..., n`, so exactly one number in that
+      range is missing. Return it.
+
+      Try to use O(1) extra space.
+    function: the_missing_number
+    params: [nums]
+    starter: |
+      def the_missing_number(nums):
+          # Your code here
+          pass
+    cases:
+      - {args: [[3, 0, 1]], expected: 2}
+      - {args: [[0, 1]], expected: 2}
+      - {args: [[1]], expected: 0}
+      - {args: [[0]], expected: 1, hidden: true}
+      - {args: [[9, 6, 4, 2, 3, 5, 7, 0, 1]], expected: 8, hidden: true}
+      - {args: [[1, 2, 3, 4]], expected: 0, hidden: true}
+    hints:
+      - Cyclic sort puts each number v at index v (skip n, it has no slot).
+      - After sorting, the first index i where nums[i] != i is the answer.
+    solution: |
+      def the_missing_number(nums):
+          i, n = 0, len(nums)
+          while i < n:
+              v = nums[i]
+              if v < n and nums[v] != v:
+                  nums[i], nums[v] = nums[v], nums[i]
+              else:
+                  i += 1
+          for i in range(n):
+              if nums[i] != i:
+                  return i
+          return n
+    explanation: >-
+      Every swap puts one number in its final slot, so the sort takes O(n) swaps in total. The
+      slot left without its number is the missing one. (Summing 0..n and subtracting works
+      too.)
+    complexity: Time O(n) · Space O(1)
+
+  - id: all-duplicates
+    topic_id: cyclic-sort
+    title: All duplicates
+    difficulty: medium
+    statement: |
+      Every number in `nums` is between `1` and `len(nums)`. Some numbers appear twice and the
+      rest appear once.
+
+      Return every number that appears twice, in any order, using O(1) extra space apart from
+      the answer.
+    function: all_duplicates
+    params: [nums]
+    starter: |
+      def all_duplicates(nums):
+          # Your code here
+          pass
+    compare: unordered
+    cases:
+      - {args: [[4, 3, 2, 7, 8, 2, 3, 1]], expected: [2, 3]}
+      - {args: [[1, 1, 2]], expected: [1]}
+      - {args: [[1]], expected: []}
+      - {args: [[2, 2, 1, 1]], expected: [1, 2], hidden: true}
+      - {args: [[5, 4, 3, 2, 1]], expected: [], hidden: true}
+      - {args: [[3, 3, 1, 1, 5, 5]], expected: [1, 3, 5], hidden: true}
+    hints:
+      - Cyclic sort each value v into index v - 1.
+      - Afterwards, any index i that doesn't hold i + 1 holds a duplicate.
+    solution: |
+      def all_duplicates(nums):
+          i = 0
+          while i < len(nums):
+              j = nums[i] - 1
+              if nums[i] != nums[j]:
+                  nums[i], nums[j] = nums[j], nums[i]
+              else:
+                  i += 1
+          return [nums[i] for i in range(len(nums)) if nums[i] != i + 1]
+    explanation: >-
+      Once every value sits in its own slot where possible, the extra copies are left in slots
+      that belong to missing numbers. Reading those slots gives exactly the duplicates.
+    complexity: Time O(n) · Space O(1)

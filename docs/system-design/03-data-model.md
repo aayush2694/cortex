@@ -67,6 +67,8 @@ erDiagram
 
 **`solved_problems`**: LeetCode practice problems you've marked solved (`user_id`, `slug` as the key, `topic_id`, `solved_at`). Each solved problem adds to that pattern's mastery.
 
+**`submissions`**: each time you submit code for a Cortex coding problem (`user_id`, `topic_id`, `problem_id`, `code`, `passed`, `total`, `runtime_ms`, `created_at`). The browser runs the tests in Pyodide and reports the result; a problem counts as solved once one submission passes every case. The problems themselves live in `content/practice.yaml`, not the database.
+
 **`activity_events`** — append-only log; mastery is computed from it.
 | Column | Type | Notes |
 |---|---|---|

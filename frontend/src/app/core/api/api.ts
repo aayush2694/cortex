@@ -6,6 +6,10 @@ import {
   Algorithm,
   ChatSession,
   ChatSessionDetail,
+  CodingProblem,
+  CodingProblemSummary,
+  Solution,
+  Submission,
   SolvedProblem,
   KnowledgeMap,
   ProgressItem,
@@ -51,6 +55,22 @@ export class Api {
     return httpResource<{ items: Algorithm[] }>(() => `${API}/visualizer/algorithms`);
   }
 
+  practiceProblems() {
+    return httpResource<{ items: CodingProblemSummary[] }>(() => `${API}/practice/problems`);
+  }
+
+  practiceProblem(id: Signal<string | undefined>) {
+    return httpResource<CodingProblem>(() =>
+      id() ? `${API}/practice/problems/${id()}` : undefined,
+    );
+  }
+
+  submissions(id: Signal<string | undefined>) {
+    return httpResource<{ items: Submission[] }>(() =>
+      id() ? `${API}/practice/problems/${id()}/submissions` : undefined,
+    );
+  }
+
   chatSessions() {
     return httpResource<{ items: ChatSession[] }>(() => `${API}/tutor/sessions`);
   }
@@ -77,6 +97,21 @@ export class Api {
 
   trace(key: string, input: Record<string, unknown>) {
     return firstValueFrom(this.http.post<Trace>(`${API}/visualizer/${key}/trace`, { input }));
+  }
+
+  practiceSolution(id: string) {
+    return firstValueFrom(this.http.get<Solution>(`${API}/practice/problems/${id}/solution`));
+  }
+
+  /** The Python harness that judges code; the browser runs it in Pyodide. */
+  practiceRuntime() {
+    return firstValueFrom(this.http.get(`${API}/practice/runtime`, { responseType: 'text' }));
+  }
+
+  submit(id: string, body: { code: string; passed: number; total: number; runtime_ms: number }) {
+    return firstValueFrom(
+      this.http.post<Submission>(`${API}/practice/problems/${id}/submissions`, body),
+    );
   }
 
   createChat(topicId: string | null) {
