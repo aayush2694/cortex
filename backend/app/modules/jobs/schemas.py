@@ -67,6 +67,7 @@ class MatchIn(BaseModel):
 class SkillOut(BaseModel):
     name: str
     category: str
+    required: bool  # False when the job lists it as nice to have
 
 
 class MatchOut(BaseModel):

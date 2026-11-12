@@ -59,3 +59,23 @@ def test_question_bank_rejects_unknown_categories_and_duplicates() -> None:
         QuestionBank.model_validate(
             {"categories": [{"id": "x", "label": "X"}], "questions": [q, q]}
         )
+
+
+def test_nice_to_have_skills_dont_lower_the_score() -> None:
+    resume = "Python, Django, PostgreSQL"
+    job = "Must have: Python, Django, PostgreSQL.\nNice to have: Kubernetes, React."
+    result = match(resume, job, BOOK)
+    assert result.score == 100  # every must-have is covered
+    assert names(result.missing) == ["React", "Kubernetes"]
+    assert not any(result.is_required(s) for s in result.missing)
+
+
+def test_a_skill_named_in_both_parts_is_required() -> None:
+    result = match("Python", "Python and Docker required. Bonus: Docker Swarm, AWS.", BOOK)
+    assert result.is_required(next(s for s in result.missing if s.name == "Docker"))
+    assert not result.is_required(next(s for s in result.missing if s.name == "AWS"))
+    assert result.score == 50  # Python of Python + Docker
+
+
+def test_without_a_nice_to_have_section_every_skill_counts() -> None:
+    assert match("Python", "Python, Redis", BOOK).score == 50

@@ -18,7 +18,7 @@ const APPLIED = APPLIED_STAGES;
         <div>
           <div class="eyebrow">Career</div>
           <h1>Job tracker</h1>
-          <p>Every application in one place. Drag a card to move it to the next stage.</p>
+          <p>Every application in one place. Drag a card to another stage, or focus it and press Alt + ← / →.</p>
         </div>
         <button class="btn primary" (click)="openNew('wishlist')"><i class="ti ti-plus" aria-hidden="true"></i>Add a job</button>
       </header>
@@ -66,7 +66,10 @@ const APPLIED = APPLIED_STAGES;
               @for (a of col.items; track a.id) {
                 <button
                   class="job"
+                  [id]="'job-' + a.id"
                   draggable="true"
+                  aria-keyshortcuts="Alt+ArrowLeft Alt+ArrowRight"
+                  (keydown)="onCardKey($event, a)"
                   [class.dragging]="dragging() === a.id"
                   (dragstart)="dragStart($event, a)"
                   (dragend)="dragging.set(null); dropTarget.set(null)"
@@ -116,14 +119,9 @@ const APPLIED = APPLIED_STAGES;
       gap: 12px;
       margin-bottom: 24px;
     }
-    .stat {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-    .value {
-      font: 600 26px var(--font-display);
-      letter-spacing: -0.03em;
+    /* Five stats share the row, so slightly smaller numbers. */
+    .stat .value {
+      font-size: 26px;
     }
     .upcoming {
       margin-bottom: 24px;
@@ -205,12 +203,6 @@ const APPLIED = APPLIED_STAGES;
       align-self: flex-start;
       margin-top: auto;
     }
-    @keyframes rise {
-      from {
-        opacity: 0;
-        transform: translateY(6px);
-      }
-    }
   `,
 })
 export class JobBoard {
@@ -284,7 +276,23 @@ export class JobBoard {
     this.dropTarget.set(null);
     const id = Number(event.dataTransfer?.getData('text/plain') || this.dragging());
     const job = this.jobs().find((a) => a.id === id);
-    if (!job || job.status === stage) return;
+    if (job) await this.move(job, stage);
+  }
+
+  /** Alt + ← / → on a focused card moves it one stage, for keyboard users. */
+  protected async onCardKey(event: KeyboardEvent, job: JobApplication): Promise<void> {
+    if (!event.altKey || (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight')) return;
+    event.preventDefault();
+    const i = STAGES.findIndex((s) => s.id === job.status) + (event.key === 'ArrowRight' ? 1 : -1);
+    if (i < 0 || i >= STAGES.length) return;
+    await this.move(job, STAGES[i].id);
+    // The card re-renders in its new column: keep keyboard focus on it.
+    setTimeout(() => document.getElementById(`job-${job.id}`)?.focus());
+  }
+
+  private async move(job: JobApplication, stage: Stage): Promise<void> {
+    const id = job.id;
+    if (job.status === stage) return;
     const last = Math.max(0, ...this.jobs().filter((a) => a.status === stage).map((a) => a.position));
     this.jobs.update((all) => all.map((a) => (a.id === id ? { ...a, status: stage, position: last + 1 } : a)));
     try {

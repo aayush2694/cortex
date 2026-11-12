@@ -83,21 +83,6 @@ interface PatternGroup {
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 12px;
     }
-    .stat {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-    .value {
-      font: 600 30px var(--font-display);
-      letter-spacing: -0.03em;
-      small {
-        font-size: 15px;
-        font-weight: 500;
-        color: var(--text-2);
-        letter-spacing: 0;
-      }
-    }
     .group-head {
       display: flex;
       justify-content: space-between;
@@ -126,12 +111,6 @@ interface PatternGroup {
     }
     .error {
       margin-top: 28px;
-    }
-    @keyframes rise {
-      from {
-        opacity: 0;
-        transform: translateY(8px);
-      }
     }
     @media (max-width: 640px) {
       .stats {

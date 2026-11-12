@@ -105,7 +105,10 @@ class JobsService:
         result = match(resume, job, self.skills)
 
         def out(skills: list) -> list[SkillOut]:  # type: ignore[type-arg]
-            return [SkillOut(name=s.name, category=s.category) for s in skills]
+            return [
+                SkillOut(name=s.name, category=s.category, required=result.is_required(s))
+                for s in skills
+            ]
 
         return MatchOut(
             score=result.score,

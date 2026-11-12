@@ -31,6 +31,13 @@ class CardIn(BaseModel):
     back: str = Field(min_length=1, max_length=5000)
 
 
+class CardPatch(BaseModel):
+    """Change a card's wording. Its review schedule is kept."""
+
+    front: str | None = Field(default=None, min_length=1, max_length=2000)
+    back: str | None = Field(default=None, min_length=1, max_length=5000)
+
+
 class AddedCards(BaseModel):
     added: int
     items: list[CardOut]

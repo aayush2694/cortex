@@ -147,21 +147,6 @@ const TRACK_ICONS: Record<Track, string> = {
       gap: 12px;
       margin-bottom: 28px;
     }
-    .stat {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-    .value {
-      font: 600 30px var(--font-display);
-      letter-spacing: -0.03em;
-      small {
-        font-size: 15px;
-        font-weight: 500;
-        color: var(--text-2);
-        letter-spacing: 0;
-      }
-    }
     .columns {
       display: grid;
       grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);

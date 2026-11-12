@@ -1,6 +1,16 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
 import { Frame } from '../../../core/api/models';
+import { Var, stateOf } from './view-state';
+
+interface TableState {
+  table: (string | number)[][];
+  tones: string[][];
+  row_labels: string[];
+  col_labels: string[];
+  active: [number, number] | null;
+  vars: Var[];
+}
 
 /**
  * A dynamic-programming table. The cell being computed is bright, the cells it reads from are
@@ -157,13 +167,12 @@ import { Frame } from '../../../core/api/models';
 export class TableView {
   readonly frame = input.required<Frame>();
 
-  protected readonly table = computed<(string | number)[][]>(() => this.frame().state['table'] ?? []);
-  protected readonly tones = computed<string[][]>(() => this.frame().state['tones'] ?? []);
-  protected readonly rowLabels = computed<string[]>(() => this.frame().state['row_labels'] ?? []);
-  protected readonly colLabels = computed<string[]>(() => this.frame().state['col_labels'] ?? []);
-  protected readonly activeRow = computed(() => this.frame().state['active']?.[0] ?? -1);
-  protected readonly activeCol = computed(() => this.frame().state['active']?.[1] ?? -1);
-  protected readonly vars = computed<{ name: string; value: string }[]>(
-    () => this.frame().state['vars'] ?? [],
-  );
+  private readonly st = computed(() => stateOf<TableState>(this.frame()));
+  protected readonly table = computed(() => this.st().table ?? []);
+  protected readonly tones = computed(() => this.st().tones ?? []);
+  protected readonly rowLabels = computed(() => this.st().row_labels ?? []);
+  protected readonly colLabels = computed(() => this.st().col_labels ?? []);
+  protected readonly activeRow = computed(() => this.st().active?.[0] ?? -1);
+  protected readonly activeCol = computed(() => this.st().active?.[1] ?? -1);
+  protected readonly vars = computed(() => this.st().vars ?? []);
 }

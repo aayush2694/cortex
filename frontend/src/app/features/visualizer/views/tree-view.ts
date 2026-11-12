@@ -1,12 +1,22 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
 import { Frame } from '../../../core/api/models';
+import { Panel, Var, stateOf } from './view-state';
 
 interface TreeNode {
   id: number;
   val: number | string;
   left: number | null;
   right: number | null;
+}
+
+interface TreeState {
+  nodes: TreeNode[];
+  root: number | null;
+  tones: string[];
+  labels: string[];
+  panel: Panel | null;
+  vars: Var[];
 }
 
 const X_STEP = 56;
@@ -203,20 +213,17 @@ export class TreeView {
 
   protected readonly r = R;
 
-  protected readonly panel = computed<{ label: string; items: (string | number)[] } | null>(
-    () => this.frame().state['panel'] ?? null,
-  );
-  protected readonly vars = computed<{ name: string; value: string }[]>(
-    () => this.frame().state['vars'] ?? [],
-  );
+  private readonly st = computed(() => stateOf<TreeState>(this.frame()));
+  protected readonly panel = computed(() => this.st().panel ?? null);
+  protected readonly vars = computed(() => this.st().vars ?? []);
 
   protected readonly layout = computed(() => {
-    const st = this.frame().state;
-    const nodes: TreeNode[] = st['nodes'] ?? [];
-    const tones: string[] = st['tones'] ?? [];
-    const labels: string[] = st['labels'] ?? [];
+    const st = this.st();
+    const nodes = st.nodes ?? [];
+    const tones = st.tones ?? [];
+    const labels = st.labels ?? [];
     const hot = new Set(this.frame().highlight as number[]);
-    const root: number | null = st['root'] ?? null;
+    const root = st.root ?? null;
     const byId = new Map(nodes.map((n) => [n.id, n]));
 
     // In-order index gives x, depth gives y: a tidy, non-overlapping binary tree layout.

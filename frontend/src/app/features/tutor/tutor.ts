@@ -121,6 +121,27 @@ export class Tutor {
     void this.open(null, null);
   }
 
+  /** A chat waiting for a second click to confirm deletion. */
+  protected readonly confirmDelete = signal<string | null>(null);
+
+  protected async deleteChat(id: string): Promise<void> {
+    if (this.confirmDelete() !== id) {
+      this.confirmDelete.set(id);
+      return;
+    }
+    this.confirmDelete.set(null);
+    try {
+      await this.api.deleteChat(id);
+      if (this.activeId() === id) this.newChat();
+      this.sessions.reload();
+    } catch (err) {
+      this.messages.update((m) => [
+        ...m,
+        { id: 'err', role: 'assistant', text: errorMessage(err, "Couldn't delete that chat."), state: 'error' },
+      ]);
+    }
+  }
+
   protected selectChat(id: string): void {
     this.location.replaceState(`/tutor/${id}`);
     void this.open(id);

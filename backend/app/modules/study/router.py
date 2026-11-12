@@ -9,6 +9,7 @@ from app.modules.study.schemas import (
     CardIn,
     CardList,
     CardOut,
+    CardPatch,
     NoteIn,
     NoteList,
     NoteOut,
@@ -80,6 +81,13 @@ async def add_topic_cards(topic_id: str, user: CurrentUser, session: DbSession) 
 @router.post("/cards/{card_id}/review", response_model=CardOut, summary="Grade a review")
 async def review(card_id: int, body: ReviewIn, user: CurrentUser, session: DbSession) -> CardOut:
     return await StudyService(session).review(user, card_id, body.grade)
+
+
+@router.patch("/cards/{card_id}", response_model=CardOut, summary="Edit a card's wording")
+async def edit_card(
+    card_id: int, body: CardPatch, user: CurrentUser, session: DbSession
+) -> CardOut:
+    return await StudyService(session).edit_card(user, card_id, body)
 
 
 @router.delete("/cards/{card_id}", status_code=204, summary="Delete a card")

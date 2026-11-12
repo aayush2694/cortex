@@ -1,9 +1,22 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 
 import { Frame } from '../../../core/api/models';
+import { Var, stateOf } from './view-state';
 
 type Cell = [number, number];
 const key = (c: Cell | null | undefined) => (c ? `${c[0]},${c[1]}` : '');
+
+interface GridState {
+  // BFS on a grid
+  visited: Cell[];
+  frontier: Cell[];
+  path: Cell[];
+  current: Cell | null;
+  // Islands (matrix mode)
+  matrix: string[][];
+  labels: string[][];
+  vars: Var[];
+}
 
 /** BFS on a grid. Click a cell to add or remove a wall. */
 @Component({
@@ -202,10 +215,11 @@ export class GridView {
   readonly input = input<{ rows: number; cols: number; walls: Cell[]; start: Cell; end: Cell } | null>(null);
   readonly toggleWall = output<Cell>();
 
-  protected readonly matrix = computed<string[][] | null>(() => this.frame().state['matrix'] ?? null);
-  protected readonly matrixLabels = computed<string[][]>(() => this.frame().state['labels'] ?? []);
+  private readonly st = computed(() => stateOf<GridState>(this.frame()));
+  protected readonly matrix = computed(() => this.st().matrix ?? null);
+  protected readonly matrixLabels = computed(() => this.st().labels ?? []);
   protected readonly vars = computed<{ name: string; value: string }[]>(
-    () => this.frame().state['vars'] ?? [],
+    () => this.st().vars ?? [],
   );
 
   protected readonly cols = computed(() => this.input()?.cols ?? 0);
@@ -214,12 +228,12 @@ export class GridView {
     const inp = this.input();
     if (!inp) return [];
     const { rows, cols, walls, start, end } = inp;
-    const s = this.frame().state;
+    const s = this.st();
     const wallSet = new Set(walls.map(key));
-    const visited = new Set((s['visited'] ?? []).map(key));
-    const frontier = new Set((s['frontier'] ?? []).map(key));
-    const path = new Set((s['path'] ?? []).map(key));
-    const current = key(s['current']);
+    const visited = new Set((s.visited ?? []).map(key));
+    const frontier = new Set((s.frontier ?? []).map(key));
+    const path = new Set((s.path ?? []).map(key));
+    const current = key(s.current);
     const out: { k: string; r: number; c: number; tone: string }[] = [];
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {

@@ -4,7 +4,7 @@
   @if (res.isLoading() && !problem()) {
     <div class="skeleton" style="height: 420px"></div>
   } @else if (res.error()) {
-    <div class="card" style="display: grid; justify-items: start; gap: 10px; padding: 24px">
+    <div class="card not-found">
       <h2>We couldn't find that problem</h2>
       <p class="muted">It may have been renamed. Pick another one from the list.</p>
       <a class="btn primary" routerLink="/practice">Browse problems</a>
@@ -38,7 +38,7 @@
         <h3>Examples</h3>
         @for (c of examples(); track $index) {
           @if (isSql()) {
-            <div class="example" style="display: flex; flex-wrap: wrap; gap: 12px 20px">
+            <div class="example tables">
               @for (tbl of tablesOf(c); track tbl.name) {
                 <app-sql-table [caption]="tbl.name" [columns]="tbl.columns" [rows]="tbl.rows" />
               }
@@ -51,7 +51,7 @@
         }
 
         @for (n of notation(); track n) {
-          <p class="faint" style="display: flex; gap: 6px; line-height: 1.5; margin: 8px 0 0"><i class="ti ti-info-circle" aria-hidden="true"></i>{{ n }}</p>
+          <p class="faint note"><i class="ti ti-info-circle" aria-hidden="true"></i>{{ n }}</p>
         }
 
         <div class="meta faint">
@@ -91,7 +91,7 @@
             {{ confirmSolution() ? 'Show it anyway' : 'Show solution' }}
           </button>
           @if (confirmSolution()) {
-            <p class="faint" style="margin-top: 8px">You haven't solved this yet. A hint might be enough.</p>
+            <p class="faint nudge">You haven't solved this yet. A hint might be enough.</p>
           }
         }
       </section>
@@ -176,7 +176,7 @@
                     <dl>
                       @if (isSql()) {
                         <dt>Tables</dt>
-                        <dd style="display: flex; flex-wrap: wrap; gap: 10px 18px">
+                        <dd class="tables">
                           @for (tbl of tablesOf(o.cases[i]); track tbl.name) {
                             <app-sql-table [caption]="tbl.name" [columns]="tbl.columns" [rows]="tbl.rows" />
                           }

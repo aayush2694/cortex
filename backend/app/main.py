@@ -23,6 +23,7 @@ from app.modules.topics.catalog import load_catalog
 from app.modules.topics.repository import TopicRepository
 from app.modules.topics.router import router as topics_router
 from app.modules.tutor.router import router as tutor_router
+from app.modules.users.export import router as export_router
 from app.modules.visualizer.router import router as visualizer_router
 
 log = logging.getLogger(__name__)
@@ -53,7 +54,7 @@ def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(
         title=settings.app_name,
-        version="0.1.0",
+        version="0.2.0",
         description="Backend for Cortex, an interactive learning platform.",
         lifespan=lifespan,
     )
@@ -88,6 +89,7 @@ def create_app() -> FastAPI:
     api.include_router(jobs_router)
     api.include_router(visualizer_router)
     api.include_router(tutor_router)
+    api.include_router(export_router)
     app.include_router(api)
     return app
 

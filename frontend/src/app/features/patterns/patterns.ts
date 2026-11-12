@@ -89,21 +89,6 @@ const COMING: { group: string; names: string[] }[] = [];
       gap: 12px;
       margin-bottom: 8px;
     }
-    .stat {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-    .value {
-      font: 600 30px var(--font-display);
-      letter-spacing: -0.03em;
-      small {
-        font-size: 15px;
-        font-weight: 500;
-        color: var(--text-2);
-        letter-spacing: 0;
-      }
-    }
     .group-label {
       margin-top: 28px;
     }
@@ -179,12 +164,6 @@ const COMING: { group: string; names: string[] }[] = [];
         flex-wrap: wrap;
         gap: 6px;
         margin-top: 8px;
-      }
-    }
-    @keyframes rise {
-      from {
-        opacity: 0;
-        transform: translateY(8px);
       }
     }
     @media (max-width: 560px) {

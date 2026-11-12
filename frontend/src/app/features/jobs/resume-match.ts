@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 
 import { Api, errorMessage } from '../../core/api/api';
-import { SkillMatch } from '../../core/api/models';
+import { MatchedSkill, SkillMatch } from '../../core/api/models';
 
 const RESUME_KEY = 'cortex.resume';
 
@@ -13,11 +13,15 @@ function readResume(): string {
   }
 }
 
+type SkillItem = { name: string; required: boolean };
+
 /** Group skills by category, keeping the order they arrive in. */
-export function byCategory(skills: { name: string; category: string }[]): { category: string; names: string[] }[] {
-  const groups = new Map<string, string[]>();
-  for (const s of skills) groups.set(s.category, [...(groups.get(s.category) ?? []), s.name]);
-  return [...groups].map(([category, names]) => ({ category, names }));
+export function byCategory(skills: MatchedSkill[]): { category: string; items: SkillItem[] }[] {
+  const groups = new Map<string, SkillItem[]>();
+  for (const s of skills) {
+    groups.set(s.category, [...(groups.get(s.category) ?? []), { name: s.name, required: s.required }]);
+  }
+  return [...groups].map(([category, items]) => ({ category, items }));
 }
 
 /** How much of a job description your resume covers, skill by skill. */
@@ -66,8 +70,9 @@ export function byCategory(skills: { name: string; category: string }[]): { cate
           <div class="summary">
             <h2>{{ headline(r) }}</h2>
             <p class="muted">
-              The job asks for {{ r.matched.length + r.missing.length }} skills Cortex recognises. Your resume mentions
-              {{ r.matched.length }}. If you have a missing skill, say so in your resume with a concrete example.
+              The job requires {{ requiredCount(r) }} skills Cortex recognises, and your resume mentions
+              {{ requiredMatched(r) }} of them. Nice-to-haves don't lower the score. If you have a missing skill,
+              say so in your resume with a concrete example.
             </p>
           </div>
         </section>
@@ -81,8 +86,10 @@ export function byCategory(skills: { name: string; category: string }[]): { cate
                 <div class="cat">
                   <span class="label">{{ c.category }}</span>
                   <div class="pills">
-                    @for (n of c.names; track n) {
-                      <span class="pill" [class.strong]="g.style === 'strong'" [class.outline]="g.style === 'outline'">{{ n }}</span>
+                    @for (n of c.items; track n.name) {
+                      <span class="pill" [class.strong]="g.style === 'strong'" [class.outline]="g.style === 'outline' && n.required">
+                        {{ n.name }}@if (g.title === 'Missing' && !n.required) { · nice to have }
+                      </span>
                     }
                   </div>
                 </div>
@@ -184,12 +191,6 @@ export function byCategory(skills: { name: string; category: string }[]): { cate
       gap: 6px;
       margin-top: 4px;
     }
-    @keyframes rise {
-      from {
-        opacity: 0;
-        transform: translateY(6px);
-      }
-    }
     @media (max-width: 900px) {
       .inputs,
       .groups {
@@ -225,6 +226,14 @@ export class ResumeMatch {
         // storage blocked: nothing to do
       }
     });
+  }
+
+  protected requiredCount(r: SkillMatch): number {
+    return [...r.matched, ...r.missing].filter((s) => s.required).length;
+  }
+
+  protected requiredMatched(r: SkillMatch): number {
+    return r.matched.filter((s) => s.required).length;
   }
 
   protected dash(score: number): number {

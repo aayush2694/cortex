@@ -161,6 +161,6 @@ CI (GitHub Actions) runs lint, type checks, unit and integration tests on every 
 | Component | How it runs locally |
 |---|---|
 | API | `uv run fastapi dev` on `http://localhost:8000` (auto-reload) |
-| Database | PostgreSQL 17 + pgvector via Homebrew |
+| Database | PostgreSQL 18 via Homebrew (pgvector arrives with RAG in Phase 3) |
 | Frontend | `ng serve` on `http://localhost:4200` |
 | API docs | Auto-generated at `http://localhost:8000/docs` |

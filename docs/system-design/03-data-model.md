@@ -1,6 +1,6 @@
 # 03 — Data Model
 
-One **PostgreSQL** database holds everything. The **pgvector** extension adds a `vector` column type for embeddings, so RAG search runs in the same database as everything else.
+One **PostgreSQL** database holds everything. When RAG arrives (Phase 3, not built yet), the **pgvector** extension will add a `vector` column type for embeddings, so search runs in the same database as everything else.
 
 ## Entity overview
 
@@ -110,6 +110,13 @@ Indexes: HNSW index on `embedding` (cosine), GIN index on `tsv`, b-tree on `user
 
 **`review_cards`** — spaced-repetition flashcards (`id`, `user_id`, `topic_id`, `front`, `back`, `source` (`generated` · `manual`), `stability`, `difficulty`, `due_at`, `last_review_at`, `reps`, `lapses`). The scheduling fields follow the FSRS algorithm (doc 07).
 
+> **As built** (study tools, before RAG): the tables are simpler than planned above.
+>
+> - **`flashcards`**: `id`, `user_id`, `topic_id` (null for your own cards), `kind` (`ideas` · `signals` · `template` · `custom`), `front`, `back`, `ease`, `interval_days`, `reps`, `lapses`, `due_at`, `last_reviewed_at`, `created_at`. Scheduling is a simplified SM-2 (doc 07). A partial unique index allows one generated card of each kind per topic.
+> - **`card_reviews`**: every grade you gave (`card_id`, `grade`, `reviewed_at`); feeds the heatmap and today's progress.
+> - **`notes`**: one Markdown note per topic, keyed by (`user_id`, `topic_id`), with `body` and `updated_at`. No chunks or embeddings yet.
+> - **`prep_plans`**: your interview target date and daily goals (`target_date`, `daily_problems`, `daily_cards`).
+
 ### Phase 4 — career
 
 **`job_targets`** — a pasted job description and its parsed form (`id`, `user_id`, `title`, `company`, `raw_text`, `parsed` jsonb, `created_at`).
@@ -117,6 +124,13 @@ Indexes: HNSW index on `embedding` (cosine), GIN index on `tsv`, b-tree on `user
 **`skill_gaps`** — one row per required skill per job target (`job_target_id`, `skill`, `topic_ids` text[], `required_level`, `current_level`, `priority`).
 
 **`interviews`** — mock interview sessions (`id`, `user_id`, `kind` (`dsa` · `system_design` · `behavioral`), `transcript` jsonb, `scores` jsonb, `feedback` text, `created_at`).
+
+> **As built** (career tools): `job_targets`, `skill_gaps` and `interviews` are not built yet. What exists:
+>
+> - **`applications`**: the job board (`company`, `role`, `status` (`wishlist` · `applied` · `interview` · `offer` · `rejected`), `position` within its column, `location`, `url`, `source`, `notes`, `applied_on`, `next_step`, `next_step_on`, and offer pay in lakhs per year: `fixed`, `variable`, `joining_bonus`, `stock_per_year`).
+> - **`job_profiles`**: your current CTC, for offer hikes.
+> - **`question_notes`**: per interview question, whether you practised it and your own answer. The questions live in `content/interview_questions.yaml`.
+> - The resume match stores nothing: it compares two texts against `content/skills.yaml` and returns the result.
 
 ## Design notes
 

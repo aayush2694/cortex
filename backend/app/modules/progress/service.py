@@ -117,12 +117,16 @@ class ProgressService:
         )
         return await self._refresh(user, row)
 
-    async def next_topics(self, user: User, limit: int = 3) -> NextOut:
+    async def next_topics(
+        self, user: User, limit: int = 3, overview: ProgressOut | None = None
+    ) -> NextOut:
+        """Pass `overview` if you already have it, to avoid computing it twice."""
         topics = list(await self.topics.list_topics())
         requires: dict[str, list[str]] = {}
         for e in await self.topics.list_edges():
             requires.setdefault(e.to_topic, []).append(e.from_topic)
-        mastery = {i.topic_id: i.mastery for i in (await self.overview(user)).items}
+        overview = overview or await self.overview(user)
+        mastery = {i.topic_id: i.mastery for i in overview.items}
         recs = recommend_next(
             topic_ids=[t.id for t in topics],
             titles={t.id: t.title for t in topics},

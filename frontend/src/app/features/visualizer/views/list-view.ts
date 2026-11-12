@@ -1,11 +1,20 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
 import { Frame } from '../../../core/api/models';
+import { stateOf } from './view-state';
 
 const STEP = 78; // distance between nodes
 const R = 22; // node radius
 const Y = 70; // node centre line
 const LEFT = 56; // x of the left "null" slot
+
+interface ListState {
+  values: number[];
+  tones: string[];
+  /** next[i] is the index node i points to; -1 is the null on the left, n the null on the right. */
+  next: number[];
+  pointers: Record<string, number>;
+}
 
 interface Arrow {
   key: string;
@@ -148,10 +157,11 @@ export class ListView {
   protected readonly y = Y;
   protected readonly left = LEFT;
 
-  protected readonly values = computed<number[]>(() => this.frame().state['values'] ?? []);
+  private readonly st = computed(() => stateOf<ListState>(this.frame()));
+  protected readonly values = computed(() => this.st().values ?? []);
   protected readonly n = computed(() => this.values().length);
   protected readonly width = computed(() => this.xOf(this.n()) + LEFT);
-  protected readonly tones = computed<string[]>(() => this.frame().state['tones'] ?? []);
+  protected readonly tones = computed(() => this.st().tones ?? []);
 
   /** x of node i; -1 is the left null slot and n the right one. */
   protected xOf(i: number): number {
@@ -159,7 +169,7 @@ export class ListView {
   }
 
   protected readonly arrows = computed<Arrow[]>(() => {
-    const next: number[] = this.frame().state['next'] ?? [];
+    const next = this.st().next ?? [];
     const n = this.n();
     const hot = new Set(this.frame().highlight as number[]);
     return next.map((to, from) => {
@@ -186,7 +196,7 @@ export class ListView {
 
   /** Pointers on the same node stack upwards. */
   protected readonly pointers = computed(() => {
-    const ptrs: Record<string, number> = this.frame().state['pointers'] ?? {};
+    const ptrs = this.st().pointers ?? {};
     const used = new Map<number, number>();
     return Object.entries(ptrs).map(([name, index]) => {
       const slot = used.get(index) ?? 0;

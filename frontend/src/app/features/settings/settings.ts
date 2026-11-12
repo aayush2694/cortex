@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 
+import { Api } from '../../core/api/api';
 import { APPEARANCES, ThemeService } from '../../core/theme/theme';
 import { PlanSettings } from './plan-settings';
 
@@ -61,9 +62,20 @@ const SHORTCUTS: { keys: string[]; action: string }[] = [
         }
       </div>
 
+      <span class="group-label">Your data</span>
+      <div class="list">
+        <a class="list-row plain" [href]="exportUrl" download>
+          <span class="row-main">
+            <span>Download my data</span>
+            <span class="faint">Progress, practice, flashcards, notes, job search and tutor chats as JSON</span>
+          </span>
+          <i class="ti ti-download chev" aria-hidden="true"></i>
+        </a>
+      </div>
+
       <span class="group-label">About</span>
       <div class="list">
-        <div class="list-row plain"><span class="row-main"><span>Version</span></span><span class="muted">0.1 · Phase 1</span></div>
+        <div class="list-row plain"><span class="row-main"><span>Version</span></span><span class="muted">0.2 · before Azure deployment</span></div>
         <a class="list-row plain" href="https://github.com/aayush2694/cortex" target="_blank" rel="noopener">
           <span class="row-main"><span>Source code</span></span>
           <span class="muted">GitHub</span><i class="ti ti-arrow-up-right chev" aria-hidden="true"></i>
@@ -177,6 +189,7 @@ const SHORTCUTS: { keys: string[]; action: string }[] = [
 })
 export class Settings {
   protected readonly theme = inject(ThemeService);
+  protected readonly exportUrl = inject(Api).exportUrl();
   protected readonly appearances = APPEARANCES;
   protected readonly shortcuts = SHORTCUTS;
 }

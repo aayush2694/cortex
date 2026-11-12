@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
 import { Frame } from '../../../core/api/models';
+import { Panel, Var, stateOf } from './view-state';
 
 interface SeqRow {
   label: string;
@@ -17,6 +18,12 @@ const GAP = 6;
  * Rows of cells with named pointers (L, R, mid...), a sliding window outline and a variables
  * panel. Used by the problem-solving pattern walkthroughs.
  */
+interface SequenceState {
+  rows: SeqRow[];
+  vars: Var[];
+  stack: Panel | null;
+}
+
 @Component({
   selector: 'app-sequence-view',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -236,14 +243,10 @@ export class SequenceView {
 
   protected readonly step = CELL + GAP;
   protected readonly gap = GAP;
-  protected readonly rows = computed<SeqRow[]>(() => this.frame().state['rows'] ?? []);
-  protected readonly vars = computed<{ name: string; value: string }[]>(
-    () => this.frame().state['vars'] ?? [],
-  );
-
-  protected readonly stack = computed<{ label: string; items: (string | number)[] } | null>(
-    () => this.frame().state['stack'] ?? null,
-  );
+  private readonly st = computed(() => stateOf<SequenceState>(this.frame()));
+  protected readonly rows = computed(() => this.st().rows ?? []);
+  protected readonly vars = computed(() => this.st().vars ?? []);
+  protected readonly stack = computed(() => this.st().stack ?? null);
 
   protected trackWidth(r: SeqRow): number {
     return Math.max(0, r.cells.length * this.step - GAP);

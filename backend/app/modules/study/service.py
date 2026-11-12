@@ -8,6 +8,7 @@ from app.core.db import utcnow
 from app.core.errors import NotFound, ValidationFailed
 from app.modules.practice.catalog import PracticeCatalog, get_practice
 from app.modules.practice.repository import SubmissionRepository
+from app.modules.progress.schemas import ProgressOut
 from app.modules.progress.service import ProgressService
 from app.modules.study.engine import CardState, Grade, preview_intervals, schedule, streaks
 from app.modules.study.models import Flashcard, Note
@@ -19,6 +20,7 @@ from app.modules.study.schemas import (
     CardIn,
     CardList,
     CardOut,
+    CardPatch,
     Focus,
     NoteList,
     NoteOut,
@@ -163,6 +165,14 @@ class StudyService:
         await self.repo.log_review(user.id, card.id, grade, now)
         return card_out(card, now)
 
+    async def edit_card(self, user: User, card_id: int, body: CardPatch) -> CardOut:
+        card = await self._card(user, card_id)
+        if body.front is not None:
+            card.front = body.front.strip()
+        if body.back is not None:
+            card.back = body.back.strip()
+        return card_out(card, utcnow())
+
     async def delete_card(self, user: User, card_id: int) -> None:
         await self.repo.delete(await self._card(user, card_id))
 
@@ -241,7 +251,8 @@ class StudyService:
             else None
         )
 
-        next_up = await self.progress.next_topics(user, 1)
+        overview = await self.progress.overview(user)  # shared by both picks below
+        next_up = await self.progress.next_topics(user, 1, overview)
         focus = (
             Focus(
                 topic_id=next_up.items[0].topic.id,
@@ -253,7 +264,7 @@ class StudyService:
         )
         return TodayOut(
             date=local_today,
-            problem=await self._pick_problem(user, solved),
+            problem=await self._pick_problem(overview, solved),
             solved_today=len(await self.repo.solved_between(user.id, start, end)),
             cards_due=await self.repo.count_due(user.id, now),
             reviewed_today=await self.repo.reviews_between(user.id, start, end),
@@ -264,9 +275,9 @@ class StudyService:
             focus=focus,
         )
 
-    async def _pick_problem(self, user: User, solved: set[str]) -> TodayProblem | None:
+    async def _pick_problem(self, overview: ProgressOut, solved: set[str]) -> TodayProblem | None:
         """The easiest unsolved problem in your weakest started topic (or the next new one)."""
-        progress = {p.topic_id: p for p in (await self.progress.overview(user)).items}
+        progress = {p.topic_id: p for p in overview.items}
         topics = {t.id: t for t in await self.topics.list_topics()}
         open_by_topic: dict[str, list[str]] = {}
         for p in self.practice.problems:

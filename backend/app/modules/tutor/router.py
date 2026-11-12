@@ -1,7 +1,7 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Response, status
 from fastapi.responses import StreamingResponse
 
 from app.clients.llm import LLMClient, get_llm
@@ -40,6 +40,16 @@ async def get_session(
     session_id: uuid.UUID, user: CurrentUser, session: DbSession
 ) -> SessionDetailOut:
     return await TutorService(session).get_session(user, session_id)
+
+
+@router.delete(
+    "/sessions/{session_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete a chat and its messages",
+)
+async def delete_session(session_id: uuid.UUID, user: CurrentUser, session: DbSession) -> Response:
+    await TutorService(session).delete_session(user, session_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post(

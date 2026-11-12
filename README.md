@@ -7,15 +7,24 @@ An interactive learning platform for switching jobs in tech: DSA, programming la
 frameworks (Django), AI and system design. Every concept is something you can play with, and
 an AI tutor knows what you've learned.
 
-**Stack:** Angular 22 · Python FastAPI · PostgreSQL + pgvector · Claude API · (Azure, Phase 2)
+**Stack:** Angular 22 · Python FastAPI · PostgreSQL 18 · Claude API · (Azure, Phase 2)
 
-## What's in Phase 1
+## What's in it
 
-- **Knowledge map:** 46 topics across 5 tracks, linked by prerequisites, coloured by your mastery
-- **DSA visualizer:** 7 algorithms run as real Python and play back step by step, with the
-  current code line highlighted
-- **AI tutor:** streaming chat that knows the topic and your progress, hints first
-- **5 themes:** Midnight, Graphite, Ocean, Ember, Daylight · ⌘K search everywhere
+- **Knowledge map:** 86 topics across 5 tracks (DSA, languages incl. SQL, Django, AI, system
+  design), linked by prerequisites and shaded by your mastery
+- **DSA patterns:** 18 patterns, each with an animated walkthrough, a template and 95 LeetCode
+  problems to tick off; plus 7 classic algorithms in the step-by-step visualizer
+- **Practice:** 50 coding problems (36 Python, 14 SQL) that run in your browser via Pyodide,
+  with hidden tests, hints and solutions
+- **Study tools:** a daily plan, spaced-repetition flashcards, notes on every topic, an
+  activity heatmap and a Big-O cheat sheet
+- **Career tools:** a job application board, 54 interview questions for a Python/Django/Angular
+  role, a resume-to-job match and an offer comparison
+- **AI tutor:** streaming chat that knows the topic and your progress, hints first, with a
+  daily message limit
+- **Developer tools:** JSON, regex, JWT, Base64/URL, timestamps and hashes, all in the browser
+- Monochrome Light / Dark / Auto design · ⌘K search everywhere · download all your data
 
 ## Repo layout
 

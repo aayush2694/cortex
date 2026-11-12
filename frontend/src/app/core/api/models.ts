@@ -89,8 +89,8 @@ export interface Frame {
   line: number;
   action: string;
   message: string;
-  state: Record<string, any>;
-  highlight: any[];
+  state: Record<string, unknown>;
+  highlight: unknown[];
   counters: Record<string, number>;
 }
 
@@ -98,9 +98,9 @@ export interface Trace {
   algorithm: string;
   view: View;
   source: string[];
-  input: Record<string, any>;
+  input: Record<string, unknown>;
   frames: Frame[];
-  result: Record<string, any>;
+  result: Record<string, unknown>;
   stats: Record<string, number>;
 }
 
@@ -296,11 +296,19 @@ export interface JobApplication extends ApplicationFields {
   updated_at: string;
 }
 
+export interface MatchedSkill {
+  name: string;
+  category: string;
+  /** False when the job lists it as nice to have. */
+  required: boolean;
+}
+
 export interface SkillMatch {
+  /** % of the job's required skills your resume mentions. */
   score: number;
-  matched: { name: string; category: string }[];
-  missing: { name: string; category: string }[];
-  extra: { name: string; category: string }[];
+  matched: MatchedSkill[];
+  missing: MatchedSkill[];
+  extra: MatchedSkill[];
 }
 
 export interface InterviewQuestion {

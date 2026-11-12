@@ -14,6 +14,7 @@ import { Api, errorMessage } from '../../core/api/api';
 import { Flashcard, Grade } from '../../core/api/models';
 import { LearningStore } from '../../core/learning-store';
 import { formatInterval } from '../../shared/format';
+import { CardManager } from './card-manager';
 
 const GRADES: { grade: Grade; label: string; key: string }[] = [
   { grade: 'again', label: 'Again', key: '1' },
@@ -38,7 +39,7 @@ export function answerParts(card: Pick<Flashcard, 'kind' | 'back'>):
 /** Spaced-repetition review: flip a card, grade how well you remembered, repeat. */
 @Component({
   selector: 'app-review',
-  imports: [RouterLink, FormsModule],
+  imports: [RouterLink, FormsModule, CardManager],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:keydown)': 'onKey($event)' },
   template: `
@@ -160,6 +161,11 @@ export function answerParts(card: Pick<Flashcard, 'kind' | 'back'>):
             <div class="list-row plain"><span class="row-main"><span>Due now</span></span><span class="muted">{{ queue().length - index() }}</span></div>
             <div class="list-row plain"><span class="row-main"><span>Learned (3+ reviews)</span></span><span class="muted">{{ mature() }}</span></div>
           </div>
+
+          <details class="manage">
+            <summary class="group-label">Manage cards</summary>
+            <app-card-manager [cards]="all.value()?.items ?? []" (edited)="onEdited($event)" (deleted)="onDeleted($event)" />
+          </details>
 
           @if (notes.value()?.items?.length) {
             <span class="group-label">Your notes</span>
@@ -307,6 +313,10 @@ export function answerParts(card: Pick<Flashcard, 'kind' | 'back'>):
         align-self: flex-start;
       }
     }
+    .manage summary {
+      cursor: pointer;
+      margin-top: 20px;
+    }
     aside .group-label {
       margin-top: 20px;
       &:first-child {
@@ -427,6 +437,19 @@ export class Review {
     } finally {
       this.adding.set(false);
     }
+  }
+
+  protected onEdited(card: Flashcard): void {
+    this.queue.update((q) => q.map((c) => (c.id === card.id ? card : c)));
+  }
+
+  /** Drop a deleted card from the session without skipping the card you're on. */
+  protected onDeleted(id: number): void {
+    const q = this.queue();
+    const before = q.slice(0, this.index()).filter((c) => c.id === id).length;
+    this.queue.set(q.filter((c) => c.id !== id));
+    this.index.update((i) => i - before);
+    this.all.reload();
   }
 
   protected onKey(e: KeyboardEvent): void {

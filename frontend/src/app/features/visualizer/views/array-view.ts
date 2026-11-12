@@ -1,8 +1,24 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
 import { Frame } from '../../../core/api/models';
+import { stateOf } from './view-state';
 
 type Tone = '' | 'cmp' | 'act' | 'done' | 'pivot' | 'out' | 'found';
+
+/** What sorting and searching frames carry (fields vary by algorithm). */
+interface ArrayState {
+  array: number[];
+  sorted: number[];
+  range: [number, number];
+  lo: number;
+  mid: number;
+  hi: number;
+  pivot: number;
+  sorted_until: number;
+  hole: number;
+  target: number;
+  key: number | null;
+}
 
 const ACTION_TONE: Record<string, Tone> = {
   compare: 'cmp',
@@ -28,14 +44,14 @@ const ACTION_TONE: Record<string, Tone> = {
             <div class="box {{ tones()[$index] }}">{{ v }}</div>
             <div class="idx faint">{{ $index }}</div>
             <div class="ptrs">
-              @if ($index === state()['lo']) { <span class="ptr">lo</span> }
-              @if ($index === state()['mid']) { <span class="ptr accent">mid</span> }
-              @if ($index === state()['hi']) { <span class="ptr">hi</span> }
+              @if ($index === state().lo) { <span class="ptr">lo</span> }
+              @if ($index === state().mid) { <span class="ptr accent">mid</span> }
+              @if ($index === state().hi) { <span class="ptr">hi</span> }
             </div>
           </div>
         }
       </div>
-      <p class="aside muted">Looking for <strong>{{ state()['target'] }}</strong></p>
+      <p class="aside muted">Looking for <strong>{{ state().target }}</strong></p>
     } @else {
       <div class="bars">
         @for (v of values(); track $index) {
@@ -45,8 +61,8 @@ const ACTION_TONE: Record<string, Tone> = {
           </div>
         }
       </div>
-      @if (state()['key'] !== undefined && state()['key'] !== null) {
-        <p class="aside muted">Holding <strong>key = {{ state()['key'] }}</strong></p>
+      @if (state().key !== undefined && state().key !== null) {
+        <p class="aside muted">Holding <strong>key = {{ state().key }}</strong></p>
       }
       <div class="legend faint">
         <span><i class="sw cmp"></i>Active</span>
@@ -178,8 +194,8 @@ export class ArrayView {
   readonly frame = input.required<Frame>();
   readonly boxes = input(false);
 
-  protected readonly state = computed(() => this.frame().state);
-  protected readonly values = computed<number[]>(() => this.state()['array'] ?? []);
+  protected readonly state = computed(() => stateOf<ArrayState>(this.frame()));
+  protected readonly values = computed(() => this.state().array ?? []);
 
   protected readonly heights = computed(() => {
     const vals = this.values();
@@ -189,21 +205,20 @@ export class ArrayView {
   });
 
   protected readonly tones = computed<Tone[]>(() => {
-    const { state, highlight, action } = this.frame();
+    const { highlight, action } = this.frame();
+    const state = this.state();
     const n = this.values().length;
     if (action === 'done') return Array(n).fill('done');
 
-    const sorted = new Set<number>(state['sorted'] ?? []);
-    const range: [number, number] | undefined = state['range'];
-    const lo: number | undefined = state['lo'];
-    const hi: number | undefined = state['hi'];
-    const hl = new Set<number>(highlight);
+    const sorted = new Set(state.sorted ?? []);
+    const { range, lo, hi } = state;
+    const hl = new Set(highlight as number[]);
 
     return Array.from({ length: n }, (_, i): Tone => {
       if (hl.has(i)) return ACTION_TONE[action] ?? 'cmp';
-      if (i === state['pivot']) return 'pivot';
+      if (i === state.pivot) return 'pivot';
       if (sorted.has(i)) return 'done';
-      if (state['sorted_until'] !== undefined && i < state['sorted_until'] && i !== state['hole'])
+      if (state.sorted_until !== undefined && i < state.sorted_until && i !== state.hole)
         return 'done';
       if (range && (i < range[0] || i > range[1])) return 'out';
       if (lo !== undefined && hi !== undefined && (i < lo || i > hi)) return 'out';

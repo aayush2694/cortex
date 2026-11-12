@@ -86,6 +86,33 @@
   animation: fade 0.3s var(--ease);
 }
 
+.not-found {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  padding: 24px;
+}
+
+/* SQL input tables, side by side, wrapping on narrow screens. */
+.tables {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+}
+
+.problem p.note {
+  display: flex;
+  gap: 6px;
+  line-height: 1.5;
+  margin: 8px 0 0;
+  color: var(--text-2);
+}
+
+.problem p.nudge {
+  margin-top: 8px;
+  color: var(--text-2);
+}
+
 .meta {
   display: flex;
   flex-wrap: wrap;

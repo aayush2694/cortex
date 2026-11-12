@@ -107,6 +107,12 @@ class TutorService:
         limit = get_settings().tutor_history_turns * 2
         return system, to_api_messages(history[-limit:])
 
+    async def delete_session(self, user: User, session_id: uuid.UUID) -> None:
+        """Delete a chat and all its messages (the database cascades to messages)."""
+        chat = await self._owned(user, session_id)
+        await self.session.delete(chat)
+        await self.session.flush()
+
     async def _owned(self, user: User, session_id: uuid.UUID) -> ChatSession:
         chat = await self.repo.get_session(user.id, session_id)
         if chat is None:

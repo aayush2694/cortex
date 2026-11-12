@@ -437,7 +437,7 @@ async def test_profile_match_and_questions(client: httpx.AsyncClient) -> None:
         f"{API}/jobs/match", json={"resume": "Python and Django", "job": "Python, Redis"}
     )
     assert r.json()["score"] == 50
-    assert [s["name"] for s in r.json()["missing"]] == ["Redis"]
+    assert [(s["name"], s["required"]) for s in r.json()["missing"]] == [("Redis", True)]
 
     bank = (await client.get(f"{API}/jobs/questions")).json()
     assert {c["id"] for c in bank["categories"]} >= {"python", "django", "behavioral"}
@@ -518,3 +518,73 @@ async def test_tutor_limit_resets_the_next_day(
             text("UPDATE chat_messages SET created_at = created_at - interval '1 day'")
         )
     assert (await client.post(url, json={"text": "new day"})).status_code == 200
+
+
+async def test_edit_a_card_keeps_its_schedule(client: httpx.AsyncClient) -> None:
+    card = (await client.post(f"{API}/study/cards", json={"front": "Q", "back": "A"})).json()
+    reviewed = (
+        await client.post(f"{API}/study/cards/{card['id']}/review", json={"grade": "good"})
+    ).json()
+
+    r = await client.patch(f"{API}/study/cards/{card['id']}", json={"back": "Better answer"})
+    assert r.status_code == 200
+    edited = r.json()
+    assert (edited["front"], edited["back"]) == ("Q", "Better answer")
+    assert edited["due_at"] == reviewed["due_at"] and edited["reps"] == 1
+
+    assert (
+        await client.patch(f"{API}/study/cards/{card['id']}", json={"front": ""})
+    ).status_code == 422
+    assert (await client.patch(f"{API}/study/cards/999999", json={"front": "x"})).status_code == 404
+
+
+async def test_delete_a_chat(client: httpx.AsyncClient, fake_llm: FakeLLM) -> None:
+    fake_llm.events = done_event()
+    s = (await client.post(f"{API}/tutor/sessions", json={})).json()
+    await client.post(f"{API}/tutor/sessions/{s['id']}/messages", json={"text": "hi"})
+
+    assert (await client.delete(f"{API}/tutor/sessions/{s['id']}")).status_code == 204
+    assert (await client.get(f"{API}/tutor/sessions/{s['id']}")).status_code == 404
+    assert (await client.get(f"{API}/tutor/sessions")).json()["items"] == []
+    assert (await client.delete(f"{API}/tutor/sessions/{s['id']}")).status_code == 404
+
+
+async def test_export_everything_you_saved(client: httpx.AsyncClient, fake_llm: FakeLLM) -> None:
+    fake_llm.events = done_event()
+    await client.put(f"{API}/progress/two-pointers", json={"status": "learning"})
+    await client.put(f"{API}/study/notes/two-pointers", json={"body": "my note"})
+    await client.post(f"{API}/study/cards", json={"front": "Q", "back": "A"})
+    await client.post(f"{API}/jobs/applications", json={"company": "Zoho", "role": "SDE"})
+    s = (await client.post(f"{API}/tutor/sessions", json={})).json()
+    await client.post(f"{API}/tutor/sessions/{s['id']}/messages", json={"text": "hi"})
+
+    r = await client.get(f"{API}/me/export")
+    assert r.status_code == 200
+    assert "attachment" in r.headers["content-disposition"]
+    data = r.json()
+    assert data["format"] == "cortex-export-v1" and data["exported_at"]
+    assert [p["topic_id"] for p in data["progress"]] == ["two-pointers"]
+    assert data["notes"][0]["body"] == "my note"
+    assert data["flashcards"][0]["front"] == "Q"
+    assert data["applications"][0]["company"] == "Zoho"
+    assert [m["role"] for m in data["chats"][0]["messages"]] == ["user", "assistant"]
+    for key in ["solved_problems", "submissions", "plan", "job_profile", "question_notes"]:
+        assert key in data
+
+
+async def test_today_works_out_progress_only_once(
+    client: httpx.AsyncClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from app.modules.progress.service import ProgressService
+
+    calls = 0
+    original = ProgressService.overview
+
+    async def counting(self: ProgressService, user: Any) -> Any:
+        nonlocal calls
+        calls += 1
+        return await original(self, user)
+
+    monkeypatch.setattr(ProgressService, "overview", counting)
+    assert (await client.get(f"{API}/study/today?tz=Asia/Kolkata")).status_code == 200
+    assert calls == 1

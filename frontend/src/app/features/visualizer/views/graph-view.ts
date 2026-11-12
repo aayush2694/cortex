@@ -1,11 +1,33 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
 import { Frame } from '../../../core/api/models';
+import { Panel, Var, stateOf } from './view-state';
 
 interface GraphData {
   nodes: string[];
   edges: { source: string; target: string; label: string }[];
   directed: boolean;
+}
+
+/** Dijkstra's input: the graph comes from here, not from the frames. */
+interface DijkstraInput {
+  nodes: string[];
+  edges: { source: string; target: string; weight: number }[];
+  directed?: boolean;
+}
+
+interface GraphState {
+  graph: GraphData;
+  done: string[];
+  labels: Record<string, string>;
+  dist: Record<string, number | null>;
+  current: string;
+  edge: string[] | null;
+  prev: Record<string, string | null>;
+  tree_edges: string[][];
+  queue: Panel | null;
+  heap: [number, string][];
+  vars: Var[];
 }
 
 const W = 600;
@@ -199,19 +221,21 @@ const R = 22;
 export class GraphView {
   readonly frame = input.required<Frame>();
   /** Only used by Dijkstra, whose frames don't carry the graph itself. */
-  readonly input = input<any>(null);
+  readonly input = input<DijkstraInput | null>(null);
 
   protected readonly w = W;
   protected readonly h = H;
   protected readonly r = R;
 
+  private readonly st = computed(() => stateOf<GraphState>(this.frame()));
+
   protected readonly graph = computed<GraphData>(() => {
-    const fromFrame = this.frame().state['graph'];
+    const fromFrame = this.st().graph;
     if (fromFrame) return fromFrame;
     const inp = this.input() ?? { nodes: [], edges: [] };
     return {
       nodes: inp.nodes,
-      edges: inp.edges.map((e: any) => ({ source: e.source, target: e.target, label: String(e.weight) })),
+      edges: inp.edges.map((e) => ({ source: e.source, target: e.target, label: String(e.weight) })),
       directed: !!inp.directed,
     };
   });
@@ -222,14 +246,14 @@ export class GraphView {
   });
 
   protected readonly nodes = computed(() => {
-    const s = this.frame().state;
-    const done = new Set<string>(s['done'] ?? []);
-    const labels: Record<string, string> | undefined = s['labels'];
+    const s = this.st();
+    const done = new Set(s.done ?? []);
+    const labels = s.labels;
     return this.graph().nodes.map((id) => {
       const p = this.positions().get(id)!;
       let label = labels?.[id] ?? '';
-      if (!labels && s['dist']) {
-        const d = s['dist'][id];
+      if (!labels && s.dist) {
+        const d = s.dist[id];
         label = d === null || d === undefined ? '∞' : String(d);
       }
       return {
@@ -237,16 +261,16 @@ export class GraphView {
         short: id.length > 6 ? id.slice(0, 5) + '…' : id,
         ...p,
         label,
-        tone: id === s['current'] ? 'current' : done.has(id) ? 'done' : '',
+        tone: id === s.current ? 'current' : done.has(id) ? 'done' : '',
       };
     });
   });
 
   protected readonly edges = computed(() => {
-    const s = this.frame().state;
-    const lit: string[] | null = s['edge'];
-    const prev: Record<string, string | null> = s['prev'] ?? {};
-    const tree: string[][] = s['tree_edges'] ?? [];
+    const s = this.st();
+    const lit = s.edge ?? null;
+    const prev = s.prev ?? {};
+    const tree = s.tree_edges ?? [];
     const { edges, directed } = this.graph();
     const same = (a: string[], b: string, c: string) =>
       (a[0] === b && a[1] === c) || (!directed && a[0] === c && a[1] === b);
@@ -277,16 +301,16 @@ export class GraphView {
   });
 
   protected readonly queue = computed<{ label: string; items: (string | number)[] } | null>(() => {
-    const s = this.frame().state;
-    if (s['queue'] !== undefined) return s['queue'];
-    if (s['heap']) {
-      return { label: 'Priority queue', items: (s['heap'] as [number, string][]).map(([d, n]) => `${n}: ${d}`) };
+    const s = this.st();
+    if (s.queue !== undefined) return s.queue;
+    if (s.heap) {
+      return { label: 'Priority queue', items: s.heap.map(([d, n]) => `${n}: ${d}`) };
     }
     return null;
   });
 
   protected readonly vars = computed<{ name: string; value: string }[]>(
-    () => this.frame().state['vars'] ?? [],
+    () => this.st().vars ?? [],
   );
 }
 

@@ -1,6 +1,15 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
 import { Frame } from '../../../core/api/models';
+import { stateOf } from './view-state';
+
+interface IntervalsState {
+  intervals: number[][];
+  merged: number[][];
+  tones: string[];
+  current: number | null;
+  axis: [number, number];
+}
 
 /** Intervals as bars on a shared timeline, with the merged result growing on its own lane. */
 @Component({
@@ -137,12 +146,13 @@ import { Frame } from '../../../core/api/models';
 export class IntervalsView {
   readonly frame = input.required<Frame>();
 
-  protected readonly intervals = computed<number[][]>(() => this.frame().state['intervals'] ?? []);
-  protected readonly merged = computed<number[][]>(() => this.frame().state['merged'] ?? []);
-  protected readonly tones = computed<string[]>(() => this.frame().state['tones'] ?? []);
-  protected readonly current = computed<number | null>(() => this.frame().state['current'] ?? null);
+  private readonly st = computed(() => stateOf<IntervalsState>(this.frame()));
+  protected readonly intervals = computed(() => this.st().intervals ?? []);
+  protected readonly merged = computed(() => this.st().merged ?? []);
+  protected readonly tones = computed(() => this.st().tones ?? []);
+  protected readonly current = computed(() => this.st().current ?? null);
   private readonly axis = computed<[number, number]>(() => {
-    const [lo, hi] = this.frame().state['axis'] ?? [0, 10];
+    const [lo, hi] = this.st().axis ?? [0, 10];
     return [Math.max(0, lo - 1), hi + 1];
   });
 

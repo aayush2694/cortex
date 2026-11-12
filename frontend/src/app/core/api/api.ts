@@ -171,6 +171,11 @@ export class Api {
     );
   }
 
+  /** Everything you've saved, as a JSON file download. */
+  exportUrl(): string {
+    return `${API}/me/export`;
+  }
+
   saveNote(topicId: string, body: string) {
     return firstValueFrom(this.http.put<TopicNote>(`${API}/study/notes/${topicId}`, { body }));
   }
@@ -190,6 +195,10 @@ export class Api {
 
   reviewCard(id: number, grade: Grade) {
     return firstValueFrom(this.http.post<Flashcard>(`${API}/study/cards/${id}/review`, { grade }));
+  }
+
+  editCard(id: number, body: { front: string; back: string }) {
+    return firstValueFrom(this.http.patch<Flashcard>(`${API}/study/cards/${id}`, body));
   }
 
   deleteCard(id: number) {
@@ -232,6 +241,10 @@ export class Api {
     return firstValueFrom(
       this.http.post<ChatSession>(`${API}/tutor/sessions`, { topic_id: topicId }),
     );
+  }
+
+  deleteChat(id: string) {
+    return firstValueFrom(this.http.delete<void>(`${API}/tutor/sessions/${id}`));
   }
 
   chat(id: string) {

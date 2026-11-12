@@ -4,10 +4,21 @@
     <div class="label head">Recent</div>
     <div class="list">
       @for (s of sessions.value()?.items ?? []; track s.id) {
-        <button class="chat" [class.on]="s.id === activeId()" (click)="selectChat(s.id)">
-          <span class="title">{{ s.title }}</span>
-          <span class="faint">{{ relativeTime(s.updated_at) }}</span>
-        </button>
+        <div class="chat-row">
+          <button class="chat" [class.on]="s.id === activeId()" (click)="selectChat(s.id)">
+            <span class="title">{{ s.title }}</span>
+            <span class="faint">{{ relativeTime(s.updated_at) }}</span>
+          </button>
+          <button
+            class="remove"
+            [class.confirm]="confirmDelete() === s.id"
+            [attr.aria-label]="(confirmDelete() === s.id ? 'Click again to delete ' : 'Delete chat ') + s.title"
+            [title]="confirmDelete() === s.id ? 'Click again to delete' : 'Delete chat'"
+            (click)="deleteChat(s.id)"
+          >
+            <i class="ti" [class.ti-trash]="confirmDelete() !== s.id" [class.ti-check]="confirmDelete() === s.id" aria-hidden="true"></i>
+          </button>
+        </div>
       } @empty {
         <p class="faint pad">Your chats will show up here.</p>
       }
