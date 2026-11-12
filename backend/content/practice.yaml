@@ -490,3 +490,1094 @@ problems:
       Once every value sits in its own slot where possible, the extra copies are left in slots
       that belong to missing numbers. Reading those slots gives exactly the duplicates.
     complexity: Time O(n) · Space O(1)
+
+  # ------------------------------------------------------------------ Fast and slow pointers
+  - id: list-has-a-loop
+    topic_id: fast-slow-pointers
+    title: Does the list loop?
+    difficulty: easy
+    statement: |
+      You get the `head` of a linked list (a chain of `ListNode`s, each with `val` and `next`).
+      The last node may point back to an earlier node, making the list loop forever.
+
+      Return `True` if the list loops and `False` if it ends. Try to use O(1) extra space.
+
+      In the examples a list is written as its `values`, and `pos` is the index the last node
+      points back to (`-1` means it doesn't loop).
+    function: has_loop
+    params: [head]
+    arg_types: [cycle_list]
+    starter: |
+      def has_loop(head):
+          # head is a ListNode (or None). Each node has .val and .next
+          pass
+    cases:
+      - {args: [{values: [3, 2, 0, -4], pos: 1}], expected: true}
+      - {args: [{values: [1, 2], pos: 0}], expected: true}
+      - {args: [{values: [1], pos: -1}], expected: false}
+      - {args: [{values: [], pos: -1}], expected: false, hidden: true}
+      - {args: [{values: [1], pos: 0}], expected: true, hidden: true}
+      - {args: [{values: [1, 2, 3, 4, 5], pos: -1}], expected: false, hidden: true}
+      - {args: [{values: [1, 2, 3, 4, 5, 6], pos: 5}], expected: true, hidden: true}
+    hints:
+      - Move one pointer one step at a time and another two steps at a time.
+      - If there's a loop, the fast pointer eventually lands on the slow one.
+    solution: |
+      def has_loop(head):
+          slow = fast = head
+          while fast and fast.next:
+              slow = slow.next
+              fast = fast.next.next
+              if slow is fast:
+                  return True
+          return False
+    explanation: >-
+      Inside a loop the fast pointer gains one node per step on the slow pointer, so it must
+      catch it. Without a loop the fast pointer simply reaches the end. No set of visited nodes
+      is needed.
+    complexity: Time O(n) · Space O(1)
+
+  - id: find-the-repeated-number
+    topic_id: fast-slow-pointers
+    title: Find the repeated number
+    difficulty: medium
+    statement: |
+      `nums` has `n + 1` numbers, each between `1` and `n`, so at least one value repeats.
+      Exactly one value repeats (possibly more than twice). Return it.
+
+      Don't change `nums`, and use O(1) extra space.
+    function: find_repeated
+    params: [nums]
+    starter: |
+      def find_repeated(nums):
+          # Your code here
+          pass
+    cases:
+      - {args: [[1, 3, 4, 2, 2]], expected: 2}
+      - {args: [[3, 1, 3, 4, 2]], expected: 3}
+      - {args: [[1, 1]], expected: 1}
+      - {args: [[2, 2, 2, 2]], expected: 2, hidden: true}
+      - {args: [[1, 4, 4, 2, 4]], expected: 4, hidden: true}
+      - {args: [[2, 5, 9, 6, 9, 3, 8, 9, 7, 1]], expected: 9, hidden: true}
+    hints:
+      - "Treat each value as a pointer to an index: i -> nums[i]. That forms a linked list."
+      - The repeated value is where that list's loop begins. Find it with fast and slow pointers.
+    solution: |
+      def find_repeated(nums):
+          slow = fast = nums[0]
+          while True:
+              slow = nums[slow]
+              fast = nums[nums[fast]]
+              if slow == fast:
+                  break
+          slow = nums[0]
+          while slow != fast:
+              slow = nums[slow]
+              fast = nums[fast]
+          return slow
+    explanation: >-
+      Two indices point at the repeated value, so following i -> nums[i] from index 0 enters a
+      loop whose entrance is that value. After the pointers meet, restarting one from the
+      beginning and moving both one step at a time makes them meet at the entrance.
+    complexity: Time O(n) · Space O(1)
+
+  # ------------------------------------------------------------------ In-place reversal
+  - id: reverse-a-linked-list
+    topic_id: linked-list-reversal
+    title: Reverse a linked list
+    difficulty: easy
+    statement: |
+      Reverse the linked list starting at `head` and return the new head. Change the `next`
+      pointers in place rather than building new nodes.
+
+      Lists are shown as their values, for example `[1, 2, 3]`.
+    function: reverse_list
+    params: [head]
+    arg_types: [list]
+    returns: list
+    starter: |
+      def reverse_list(head):
+          # head is a ListNode (or None). Return the new head.
+          pass
+    cases:
+      - {args: [[1, 2, 3, 4, 5]], expected: [5, 4, 3, 2, 1]}
+      - {args: [[1, 2]], expected: [2, 1]}
+      - {args: [[]], expected: []}
+      - {args: [[7]], expected: [7], hidden: true}
+      - {args: [[1, 1, 2]], expected: [2, 1, 1], hidden: true}
+      - {args: [[9, 8, 7, 6, 5, 4]], expected: [4, 5, 6, 7, 8, 9], hidden: true}
+    hints:
+      - Keep three pointers - previous, current and next.
+      - Save current.next before you overwrite it.
+    solution: |
+      def reverse_list(head):
+          prev = None
+          while head:
+              nxt = head.next
+              head.next = prev
+              prev, head = head, nxt
+          return prev
+    explanation: >-
+      Walk the list once, turning each arrow around as you pass it. When you fall off the end,
+      the last node you touched is the new head.
+    complexity: Time O(n) · Space O(1)
+
+  - id: reverse-a-stretch
+    topic_id: linked-list-reversal
+    title: Reverse a stretch of the list
+    difficulty: medium
+    statement: |
+      Reverse only the nodes from position `left` to position `right` (counting from 1, both
+      included) and return the head of the whole list. You can assume
+      `1 <= left <= right <= length`.
+    function: reverse_stretch
+    params: [head, left, right]
+    arg_types: [list, plain, plain]
+    returns: list
+    starter: |
+      def reverse_stretch(head, left, right):
+          # Your code here
+          pass
+    cases:
+      - {args: [[1, 2, 3, 4, 5], 2, 4], expected: [1, 4, 3, 2, 5]}
+      - {args: [[5], 1, 1], expected: [5]}
+      - {args: [[1, 2, 3], 1, 3], expected: [3, 2, 1]}
+      - {args: [[1, 2, 3, 4], 1, 2], expected: [2, 1, 3, 4], hidden: true}
+      - {args: [[1, 2, 3, 4], 3, 4], expected: [1, 2, 4, 3], hidden: true}
+      - {args: [[10, 20, 30, 40, 50, 60], 2, 5], expected: [10, 50, 40, 30, 20, 60], hidden: true}
+    hints:
+      - A dummy node in front of head means left = 1 needs no special case.
+      - Walk to the node just before the stretch, reverse right - left + 1 nodes, then reconnect
+        both ends.
+    solution: |
+      def reverse_stretch(head, left, right):
+          dummy = ListNode(0, head)
+          before = dummy
+          for _ in range(left - 1):
+              before = before.next
+          prev, cur = None, before.next
+          for _ in range(right - left + 1):
+              nxt = cur.next
+              cur.next = prev
+              prev, cur = cur, nxt
+          before.next.next = cur  # the old first node is now the stretch's tail
+          before.next = prev
+          return dummy.next
+    explanation: >-
+      Reverse the stretch exactly like a whole list, then fix the two seams: the node before
+      the stretch points at its new first node, and the old first node points at whatever came
+      after the stretch.
+    complexity: Time O(n) · Space O(1)
+
+  # ------------------------------------------------------------------ Monotonic stack
+  - id: next-bigger-number
+    topic_id: monotonic-stack
+    title: Next bigger number
+    difficulty: easy
+    statement: |
+      For each number in `nums`, find the first number to its right that is strictly bigger.
+      Return those numbers as a list, using `-1` where there is none.
+    function: next_bigger
+    params: [nums]
+    starter: |
+      def next_bigger(nums):
+          # Your code here
+          pass
+    cases:
+      - {args: [[2, 1, 3]], expected: [3, 3, -1]}
+      - {args: [[4, 3, 2, 1]], expected: [-1, -1, -1, -1]}
+      - {args: [[1, 5, 2, 6]], expected: [5, 6, 6, -1]}
+      - {args: [[]], expected: [], hidden: true}
+      - {args: [[7]], expected: [-1], hidden: true}
+      - {args: [[2, 2, 3]], expected: [3, 3, -1], hidden: true}
+      - {args: [[5, 1, 4, 2, 3]], expected: [-1, 4, -1, 3, -1], hidden: true}
+    hints:
+      - Keep a stack of indices still waiting for their bigger number.
+      - When a new number is bigger than the one on top, it answers that index - pop it.
+    solution: |
+      def next_bigger(nums):
+          out = [-1] * len(nums)
+          waiting = []
+          for i, x in enumerate(nums):
+              while waiting and nums[waiting[-1]] < x:
+                  out[waiting.pop()] = x
+              waiting.append(i)
+          return out
+    explanation: >-
+      The stack holds indices whose numbers are in decreasing order, all still waiting. Each
+      index is pushed once and popped at most once, so the whole pass is O(n).
+    complexity: Time O(n) · Space O(n)
+
+  - id: price-streak
+    topic_id: monotonic-stack
+    title: Price streak
+    difficulty: medium
+    statement: |
+      `prices` lists a stock's price for each day. For every day, count how many consecutive
+      days, ending with that day, had a price less than or equal to that day's price
+      (the day itself counts).
+
+      Return the counts as a list.
+    function: price_streak
+    params: [prices]
+    starter: |
+      def price_streak(prices):
+          # Your code here
+          pass
+    cases:
+      - {args: [[100, 80, 60, 70, 60, 75, 85]], expected: [1, 1, 1, 2, 1, 4, 6]}
+      - {args: [[1, 2, 3]], expected: [1, 2, 3]}
+      - {args: [[3, 3, 3]], expected: [1, 2, 3]}
+      - {args: [[]], expected: [], hidden: true}
+      - {args: [[5, 4, 3]], expected: [1, 1, 1], hidden: true}
+      - {args: [[2, 1, 2, 1, 3]], expected: [1, 1, 3, 1, 5], hidden: true}
+    hints:
+      - Looking back day by day is O(n²). What can you forget once a higher price arrives?
+      - Keep a stack of (price, streak). Pop every entry not higher than today and add its streak.
+    solution: |
+      def price_streak(prices):
+          stack, out = [], []
+          for p in prices:
+              streak = 1
+              while stack and stack[-1][0] <= p:
+                  streak += stack.pop()[1]
+              stack.append((p, streak))
+              out.append(streak)
+          return out
+    explanation: >-
+      A day covered by a later, higher price can never end a future streak early, so it is
+      merged into that higher day's streak. The stack stays in decreasing price order.
+    complexity: Time O(n) · Space O(n)
+
+  # ------------------------------------------------------------------ Merge intervals
+  - id: total-covered-length
+    topic_id: merge-intervals
+    title: Total covered length
+    difficulty: easy
+    statement: |
+      Each item in `intervals` is `[start, end]` with `start < end`, marking a stretch of the
+      number line. Return the total length covered by at least one interval (overlaps count
+      once).
+    function: covered_length
+    params: [intervals]
+    starter: |
+      def covered_length(intervals):
+          # Your code here
+          pass
+    cases:
+      - {args: [[[1, 3], [2, 5], [7, 8]]], expected: 5}
+      - {args: [[[0, 10]]], expected: 10}
+      - {args: [[[1, 2], [3, 4]]], expected: 2}
+      - {args: [[]], expected: 0, hidden: true}
+      - {args: [[[5, 6], [1, 10]]], expected: 9, hidden: true}
+      - {args: [[[1, 4], [4, 6]]], expected: 5, hidden: true}
+      - {args: [[[2, 3], [2, 3], [2, 3]]], expected: 1, hidden: true}
+    hints:
+      - Sort by start. Then overlapping intervals sit next to each other.
+      - Grow the current block while the next start is inside it; add its length when it ends.
+    solution: |
+      def covered_length(intervals):
+          total = 0
+          cur_start = cur_end = None
+          for start, end in sorted(intervals):
+              if cur_end is None or start > cur_end:
+                  if cur_end is not None:
+                      total += cur_end - cur_start
+                  cur_start, cur_end = start, end
+              else:
+                  cur_end = max(cur_end, end)
+          if cur_end is not None:
+              total += cur_end - cur_start
+          return total
+    explanation: >-
+      After sorting, one pass merges each run of overlapping intervals into a block. Summing
+      block lengths counts every covered point exactly once.
+    complexity: Time O(n log n) · Space O(n)
+
+  - id: insert-an-interval
+    topic_id: merge-intervals
+    title: Insert an interval
+    difficulty: medium
+    statement: |
+      `intervals` is sorted by start and no two of them overlap. Insert `new` (also
+      `[start, end]`) and return the list, still sorted and with overlaps merged. Intervals
+      that only touch, like `[1, 2]` and `[2, 3]`, merge too.
+    function: insert_interval
+    params: [intervals, new]
+    starter: |
+      def insert_interval(intervals, new):
+          # Your code here
+          pass
+    cases:
+      - {args: [[[1, 3], [6, 9]], [2, 5]], expected: [[1, 5], [6, 9]]}
+      - {args: [[[1, 2], [3, 5], [6, 7], [8, 10], [12, 16]], [4, 8]], expected: [[1, 2], [3, 10], [12, 16]]}
+      - {args: [[], [5, 7]], expected: [[5, 7]]}
+      - {args: [[[1, 5]], [6, 8]], expected: [[1, 5], [6, 8]], hidden: true}
+      - {args: [[[3, 5]], [1, 2]], expected: [[1, 2], [3, 5]], hidden: true}
+      - {args: [[[1, 2], [5, 6]], [2, 5]], expected: [[1, 6]], hidden: true}
+      - {args: [[[1, 5]], [2, 3]], expected: [[1, 5]], hidden: true}
+    hints:
+      - Three phases - copy intervals that end before new starts, absorb the ones that overlap,
+        copy the rest.
+    solution: |
+      def insert_interval(intervals, new):
+          out, i, n = [], 0, len(intervals)
+          start, end = new
+          while i < n and intervals[i][1] < start:
+              out.append(intervals[i])
+              i += 1
+          while i < n and intervals[i][0] <= end:
+              start = min(start, intervals[i][0])
+              end = max(end, intervals[i][1])
+              i += 1
+          out.append([start, end])
+          out.extend(intervals[i:])
+          return out
+    explanation: >-
+      The list is already sorted, so no sort is needed. Everything before the new interval is
+      untouched, everything overlapping it is folded into one block, and everything after is
+      untouched.
+    complexity: Time O(n) · Space O(n)
+
+  # ------------------------------------------------------------------ Tree BFS
+  - id: level-averages
+    topic_id: tree-bfs
+    title: Average of each level
+    difficulty: easy
+    statement: |
+      Given the `root` of a binary tree (`TreeNode`s with `val`, `left` and `right`), return
+      the average value of the nodes on each level, from the top down.
+
+      Trees are written in level order, with `None` for a missing child:
+      `[3, 9, 20, None, None, 15, 7]` is 3 with children 9 and 20, and 20 has children 15 and 7.
+    function: level_averages
+    params: [root]
+    arg_types: [tree]
+    starter: |
+      def level_averages(root):
+          # root is a TreeNode (or None) with .val, .left and .right
+          pass
+    cases:
+      - {args: [[3, 9, 20, null, null, 15, 7]], expected: [3.0, 14.5, 11.0]}
+      - {args: [[1]], expected: [1.0]}
+      - {args: [[]], expected: []}
+      - {args: [[1, 2, 3, 4, 5, 6, 7]], expected: [1.0, 2.5, 5.5], hidden: true}
+      - {args: [[5, null, 8, null, 9]], expected: [5.0, 8.0, 9.0], hidden: true}
+      - {args: [[2, 1, 3, 0]], expected: [2.0, 2.0, 0.0], hidden: true}
+    hints:
+      - Use a queue. At the start of each level, its length is the number of nodes on it.
+    solution: |
+      from collections import deque
+
+      def level_averages(root):
+          if root is None:
+              return []
+          out, queue = [], deque([root])
+          while queue:
+              size = len(queue)
+              total = 0
+              for _ in range(size):
+                  node = queue.popleft()
+                  total += node.val
+                  if node.left:
+                      queue.append(node.left)
+                  if node.right:
+                      queue.append(node.right)
+              out.append(total / size)
+          return out
+    explanation: >-
+      Breadth-first search visits the tree one level at a time. Snapshotting the queue length
+      before each level tells you exactly which nodes belong to it.
+    complexity: Time O(n) · Space O(w), w = widest level
+
+  - id: right-side-view
+    topic_id: tree-bfs
+    title: View from the right
+    difficulty: medium
+    statement: |
+      Imagine standing to the right of a binary tree. Return the values you can see, from top to
+      bottom: the rightmost node of each level.
+    function: right_side_view
+    params: [root]
+    arg_types: [tree]
+    starter: |
+      def right_side_view(root):
+          # Your code here
+          pass
+    cases:
+      - {args: [[1, 2, 3, null, 5, null, 4]], expected: [1, 3, 4]}
+      - {args: [[1, null, 3]], expected: [1, 3]}
+      - {args: [[]], expected: []}
+      - {args: [[1, 2, 3, 4]], expected: [1, 3, 4], hidden: true}
+      - {args: [[1, 2]], expected: [1, 2], hidden: true}
+      - {args: [[1, 2, 3, 4, 5, 6, 7, 8]], expected: [1, 3, 7, 8], hidden: true}
+    hints:
+      - A left node is visible when nothing on its level is to its right.
+      - Level-order traversal - keep the last node of each level.
+    solution: |
+      from collections import deque
+
+      def right_side_view(root):
+          if root is None:
+              return []
+          out, queue = [], deque([root])
+          while queue:
+              for i in range(len(queue)):
+                  node = queue.popleft()
+                  if node.left:
+                      queue.append(node.left)
+                  if node.right:
+                      queue.append(node.right)
+              out.append(node.val)
+          return out
+    explanation: >-
+      Process the tree level by level. The last node taken from the queue on each level is the
+      rightmost one, whichever side of the tree it hangs from.
+    complexity: Time O(n) · Space O(w)
+
+  # ------------------------------------------------------------------ Tree DFS
+  - id: tree-height
+    topic_id: tree-dfs
+    title: Height of a tree
+    difficulty: easy
+    statement: |
+      Return the number of nodes on the longest path from the `root` down to a leaf. An empty
+      tree has height `0`.
+    function: tree_height
+    params: [root]
+    arg_types: [tree]
+    starter: |
+      def tree_height(root):
+          # Your code here
+          pass
+    cases:
+      - {args: [[3, 9, 20, null, null, 15, 7]], expected: 3}
+      - {args: [[1, null, 2]], expected: 2}
+      - {args: [[]], expected: 0}
+      - {args: [[1]], expected: 1, hidden: true}
+      - {args: [[1, 2, null, 3, null, 4]], expected: 4, hidden: true}
+      - {args: [[1, 2, 3, 4, 5, null, 6, 7]], expected: 4, hidden: true}
+    hints:
+      - The height of a tree is 1 plus the taller of its two subtrees.
+    solution: |
+      def tree_height(root):
+          if root is None:
+              return 0
+          return 1 + max(tree_height(root.left), tree_height(root.right))
+    explanation: >-
+      Depth-first recursion asks each subtree for its height and combines the answers on the
+      way back up. Every node is visited once.
+    complexity: Time O(n) · Space O(h), h = height
+
+  - id: paths-to-a-target
+    topic_id: tree-dfs
+    title: Paths that add up to a target
+    difficulty: medium
+    statement: |
+      Return every path from the `root` down to a leaf whose values add up to `target`. Give each
+      path as a list of values from top to bottom. The paths can be in any order.
+    function: paths_to_target
+    params: [root, target]
+    arg_types: [tree, plain]
+    compare: unordered
+    starter: |
+      def paths_to_target(root, target):
+          # Your code here
+          pass
+    cases:
+      - {args: [[5, 4, 8, 11, null, 13, 4, 7, 2, null, null, 5, 1], 22], expected: [[5, 4, 11, 2], [5, 8, 4, 5]]}
+      - {args: [[1, 2, 3], 5], expected: []}
+      - {args: [[1, 2], 1], expected: []}
+      - {args: [[1, 2, 3], 4], expected: [[1, 3]], hidden: true}
+      - {args: [[], 0], expected: [], hidden: true}
+      - {args: [[-2, null, -3], -5], expected: [[-2, -3]], hidden: true}
+      - {args: [[1, 2, 2, 3, null, null, 3], 6], expected: [[1, 2, 3], [1, 2, 3]], hidden: true}
+    hints:
+      - Carry the current path and the remaining amount down the recursion.
+      - Only a leaf (no children) can finish a path. Pop the node off the path when you return.
+    solution: |
+      def paths_to_target(root, target):
+          out, path = [], []
+
+          def walk(node, remaining):
+              if node is None:
+                  return
+              path.append(node.val)
+              remaining -= node.val
+              if node.left is None and node.right is None and remaining == 0:
+                  out.append(path[:])
+              walk(node.left, remaining)
+              walk(node.right, remaining)
+              path.pop()
+
+          walk(root, target)
+          return out
+    explanation: >-
+      Depth-first search keeps one shared path. Adding a node on the way down and removing it on
+      the way up means the path always matches where you are, and a copy is saved at each
+      matching leaf.
+    complexity: Time O(n · h) · Space O(h)
+
+  # ------------------------------------------------------------------ Grid traversal
+  - id: flood-fill
+    topic_id: grid-traversal
+    title: Paint bucket
+    difficulty: easy
+    statement: |
+      `grid` is a picture made of numbers (colours). Use the paint bucket at `row`, `col`: that
+      cell and every cell connected to it up, down, left or right through the same colour
+      becomes `color`.
+
+      Return the grid.
+    function: paint_bucket
+    params: [grid, row, col, color]
+    starter: |
+      def paint_bucket(grid, row, col, color):
+          # Your code here
+          pass
+    cases:
+      - {args: [[[1, 1, 1], [1, 1, 0], [1, 0, 1]], 1, 1, 2], expected: [[2, 2, 2], [2, 2, 0], [2, 0, 1]]}
+      - {args: [[[0, 0, 0], [0, 0, 0]], 0, 0, 0], expected: [[0, 0, 0], [0, 0, 0]]}
+      - {args: [[[5]], 0, 0, 7], expected: [[7]]}
+      - {args: [[[1, 2], [2, 1]], 0, 0, 3], expected: [[3, 2], [2, 1]], hidden: true}
+      - {args: [[[1, 1], [1, 1]], 1, 0, 9], expected: [[9, 9], [9, 9]], hidden: true}
+      - {args: [[[0, 1, 0], [1, 1, 1], [0, 1, 0]], 1, 1, 4], expected: [[0, 4, 0], [4, 4, 4], [0, 4, 0]], hidden: true}
+    hints:
+      - Remember the starting colour, then spread to neighbours that still have it.
+      - If the new colour equals the old one there is nothing to do (and spreading would never stop).
+    solution: |
+      def paint_bucket(grid, row, col, color):
+          old = grid[row][col]
+          if old == color:
+              return grid
+          stack = [(row, col)]
+          while stack:
+              r, c = stack.pop()
+              if 0 <= r < len(grid) and 0 <= c < len(grid[0]) and grid[r][c] == old:
+                  grid[r][c] = color
+                  stack.extend([(r + 1, c), (r - 1, c), (r, c + 1), (r, c - 1)])
+          return grid
+    explanation: >-
+      Repainting a cell marks it as visited, so each cell is handled once. A stack gives
+      depth-first order; a queue would work just as well.
+    complexity: Time O(rows × cols) · Space O(rows × cols)
+
+  - id: infection-spread
+    topic_id: grid-traversal
+    title: How long until everyone is infected?
+    difficulty: medium
+    statement: |
+      In `grid`, `0` is an empty cell, `1` is a healthy plant and `2` is an infected plant. Every
+      minute, each infected plant infects the healthy plants directly above, below, left and
+      right of it.
+
+      Return the number of minutes until no healthy plant is left, or `-1` if some can never be
+      reached.
+    function: minutes_to_spread
+    params: [grid]
+    starter: |
+      def minutes_to_spread(grid):
+          # Your code here
+          pass
+    cases:
+      - {args: [[[2, 1, 1], [1, 1, 0], [0, 1, 1]]], expected: 4}
+      - {args: [[[2, 1, 1], [0, 1, 1], [1, 0, 1]]], expected: -1}
+      - {args: [[[0, 2]]], expected: 0}
+      - {args: [[[1]]], expected: -1, hidden: true}
+      - {args: [[[0]]], expected: 0, hidden: true}
+      - {args: [[[2, 2], [1, 1]]], expected: 1, hidden: true}
+      - {args: [[[2, 1, 1, 1, 1]]], expected: 4, hidden: true}
+      - {args: [[[1, 1, 2, 1, 1]]], expected: 2, hidden: true}
+    hints:
+      - Start a breadth-first search from every infected plant at once.
+      - Each BFS level is one minute. Count healthy plants and check none remain at the end.
+    solution: |
+      from collections import deque
+
+      def minutes_to_spread(grid):
+          rows, cols = len(grid), len(grid[0])
+          queue = deque()
+          healthy = 0
+          for r in range(rows):
+              for c in range(cols):
+                  if grid[r][c] == 2:
+                      queue.append((r, c))
+                  elif grid[r][c] == 1:
+                      healthy += 1
+          minutes = 0
+          while queue and healthy:
+              for _ in range(len(queue)):
+                  r, c = queue.popleft()
+                  for nr, nc in ((r + 1, c), (r - 1, c), (r, c + 1), (r, c - 1)):
+                      if 0 <= nr < rows and 0 <= nc < cols and grid[nr][nc] == 1:
+                          grid[nr][nc] = 2
+                          healthy -= 1
+                          queue.append((nr, nc))
+              minutes += 1
+          return minutes if healthy == 0 else -1
+    explanation: >-
+      A multi-source BFS spreads from all infected plants in parallel, exactly like the real
+      process. The number of levels processed is the time taken.
+    complexity: Time O(rows × cols) · Space O(rows × cols)
+
+  # ------------------------------------------------------------------ Topological sort
+  - id: can-you-finish
+    topic_id: topological-sort
+    title: Can you finish every task?
+    difficulty: easy
+    statement: |
+      There are `n` tasks numbered `0` to `n - 1`. Each pair `[a, b]` in `rules` means task `b`
+      must be done before task `a`.
+
+      Return `True` if there is an order that does every task, and `False` if the rules go in a
+      circle.
+    function: can_finish
+    params: [n, rules]
+    starter: |
+      def can_finish(n, rules):
+          # Your code here
+          pass
+    cases:
+      - {args: [2, [[1, 0]]], expected: true}
+      - {args: [2, [[1, 0], [0, 1]]], expected: false}
+      - {args: [3, []], expected: true}
+      - {args: [4, [[1, 0], [2, 1], [3, 2]]], expected: true, hidden: true}
+      - {args: [3, [[0, 1], [1, 2], [2, 0]]], expected: false, hidden: true}
+      - {args: [1, [[0, 0]]], expected: false, hidden: true}
+      - {args: [5, [[1, 0], [2, 0], [3, 1], [3, 2], [4, 3]]], expected: true, hidden: true}
+    hints:
+      - Count, for each task, how many tasks must come before it.
+      - Repeatedly do a task whose count is 0. If you get stuck before doing all n, there's a circle.
+    solution: |
+      from collections import deque
+
+      def can_finish(n, rules):
+          after = [[] for _ in range(n)]
+          waiting = [0] * n
+          for a, b in rules:
+              after[b].append(a)
+              waiting[a] += 1
+          ready = deque(i for i in range(n) if waiting[i] == 0)
+          done = 0
+          while ready:
+              task = ready.popleft()
+              done += 1
+              for nxt in after[task]:
+                  waiting[nxt] -= 1
+                  if waiting[nxt] == 0:
+                      ready.append(nxt)
+          return done == n
+    explanation: >-
+      This is Kahn's algorithm. Tasks inside a circle never reach zero remaining prerequisites,
+      so they are never done, and the count comes up short.
+    complexity: Time O(n + rules) · Space O(n + rules)
+
+  - id: smallest-first-order
+    topic_id: topological-sort
+    title: Task order, smallest first
+    difficulty: medium
+    statement: |
+      Tasks are numbered `0` to `n - 1`, and each pair `[a, b]` in `rules` means `b` must come
+      before `a`. Return an order that does every task. Whenever several tasks are ready, do the
+      smallest-numbered one first, so the answer is unique.
+
+      Return `[]` if no order is possible.
+    function: task_order
+    params: [n, rules]
+    starter: |
+      def task_order(n, rules):
+          # Your code here
+          pass
+    cases:
+      - {args: [4, [[1, 0], [2, 0], [3, 1], [3, 2]]], expected: [0, 1, 2, 3]}
+      - {args: [3, [[0, 2], [1, 2]]], expected: [2, 0, 1]}
+      - {args: [2, [[0, 1], [1, 0]]], expected: []}
+      - {args: [3, []], expected: [0, 1, 2], hidden: true}
+      - {args: [5, [[0, 4], [1, 3], [3, 4]]], expected: [2, 4, 0, 3, 1], hidden: true}
+      - {args: [1, []], expected: [0], hidden: true}
+      - {args: [3, [[1, 0], [1, 2]]], expected: [0, 2, 1], hidden: true}
+    hints:
+      - This is Kahn's algorithm, but the "ready" set must always hand you its smallest task.
+      - A min-heap gives you the smallest ready task in O(log n).
+    solution: |
+      import heapq
+
+      def task_order(n, rules):
+          after = [[] for _ in range(n)]
+          waiting = [0] * n
+          for a, b in rules:
+              after[b].append(a)
+              waiting[a] += 1
+          ready = [i for i in range(n) if waiting[i] == 0]
+          heapq.heapify(ready)
+          order = []
+          while ready:
+              task = heapq.heappop(ready)
+              order.append(task)
+              for nxt in after[task]:
+                  waiting[nxt] -= 1
+                  if waiting[nxt] == 0:
+                      heapq.heappush(ready, nxt)
+          return order if len(order) == n else []
+    explanation: >-
+      Swapping Kahn's queue for a min-heap keeps every step valid while always choosing the
+      smallest available task, which pins down one specific order.
+    complexity: Time O((n + rules) log n) · Space O(n + rules)
+
+  # ------------------------------------------------------------------ Union-find
+  - id: count-the-groups
+    topic_id: union-find
+    title: Count the groups
+    difficulty: easy
+    statement: |
+      There are `n` people numbered `0` to `n - 1`. Each pair `[a, b]` in `links` means `a` and
+      `b` know each other, and friends of friends end up in the same group.
+
+      Return the number of separate groups.
+    function: count_groups
+    params: [n, links]
+    starter: |
+      def count_groups(n, links):
+          # Your code here
+          pass
+    cases:
+      - {args: [5, [[0, 1], [1, 2], [3, 4]]], expected: 2}
+      - {args: [3, []], expected: 3}
+      - {args: [4, [[0, 1], [1, 2], [2, 3], [3, 0]]], expected: 1}
+      - {args: [1, []], expected: 1, hidden: true}
+      - {args: [6, [[0, 1], [2, 3], [4, 5], [1, 0]]], expected: 3, hidden: true}
+      - {args: [4, [[2, 2]]], expected: 4, hidden: true}
+    hints:
+      - Start with n groups. Every link that joins two different groups removes one.
+      - Union-find tells you quickly whether two people are already in the same group.
+    solution: |
+      def count_groups(n, links):
+          parent = list(range(n))
+
+          def find(x):
+              while parent[x] != x:
+                  parent[x] = parent[parent[x]]
+                  x = parent[x]
+              return x
+
+          groups = n
+          for a, b in links:
+              ra, rb = find(a), find(b)
+              if ra != rb:
+                  parent[ra] = rb
+                  groups -= 1
+          return groups
+    explanation: >-
+      Each group is a tree with one root. A link between two different roots merges the trees
+      and lowers the count; a link inside one tree changes nothing. Path halving keeps the trees
+      flat.
+    complexity: Time ≈ O(n + links) · Space O(n)
+
+  - id: the-extra-cable
+    topic_id: union-find
+    title: The extra cable
+    difficulty: medium
+    statement: |
+      Computers `1` to `n` were wired as a tree (every pair connected, no loops). Then one extra
+      cable was added. `cables` lists every cable as `[a, b]`, in the order they were plugged in.
+
+      Return the cable you can remove to get a tree back. If several would work, return the one
+      that appears last in `cables`.
+    function: extra_cable
+    params: [cables]
+    starter: |
+      def extra_cable(cables):
+          # Your code here
+          pass
+    cases:
+      - {args: [[[1, 2], [1, 3], [2, 3]]], expected: [2, 3]}
+      - {args: [[[1, 2], [2, 3], [3, 4], [1, 4], [1, 5]]], expected: [1, 4]}
+      - {args: [[[1, 2], [1, 2]]], expected: [1, 2]}
+      - {args: [[[3, 4], [1, 2], [2, 4], [3, 5], [2, 5]]], expected: [2, 5], hidden: true}
+      - {args: [[[1, 4], [3, 4], [1, 3], [1, 2], [4, 5]]], expected: [1, 3], hidden: true}
+      - {args: [[[2, 3], [5, 2], [1, 5], [4, 1], [3, 4]]], expected: [3, 4], hidden: true}
+    hints:
+      - Plug cables in one by one with union-find.
+      - The first cable whose two ends are already connected closes the loop. That's the answer.
+    solution: |
+      def extra_cable(cables):
+          parent = list(range(len(cables) + 1))
+
+          def find(x):
+              while parent[x] != x:
+                  parent[x] = parent[parent[x]]
+                  x = parent[x]
+              return x
+
+          for a, b in cables:
+              ra, rb = find(a), find(b)
+              if ra == rb:
+                  return [a, b]
+              parent[ra] = rb
+          return []
+    explanation: >-
+      A tree with n nodes has n - 1 cables, so exactly one cable closes a loop. Among the loop's
+      cables, the one plugged in last is the first that finds both ends already connected.
+    complexity: Time ≈ O(n) · Space O(n)
+
+  # ------------------------------------------------------------------ Top-k elements
+  - id: k-largest-numbers
+    topic_id: top-k-elements
+    title: The k largest numbers
+    difficulty: easy
+    statement: |
+      Return the `k` largest numbers in `nums`, sorted from largest to smallest. You can assume
+      `1 <= k <= len(nums)`.
+
+      Try to beat sorting the whole list when `k` is small.
+    function: k_largest
+    params: [nums, k]
+    starter: |
+      def k_largest(nums, k):
+          # Your code here
+          pass
+    cases:
+      - {args: [[3, 1, 5, 12, 2, 11], 3], expected: [12, 11, 5]}
+      - {args: [[5, 5, 1], 2], expected: [5, 5]}
+      - {args: [[7], 1], expected: [7]}
+      - {args: [[-1, -5, -3], 2], expected: [-1, -3], hidden: true}
+      - {args: [[1, 2, 3, 4], 4], expected: [4, 3, 2, 1], hidden: true}
+      - {args: [[9, 8, 9, 1, 9], 3], expected: [9, 9, 9], hidden: true}
+    hints:
+      - Keep a min-heap of at most k numbers. Its smallest is the weakest of the current top k.
+    solution: |
+      import heapq
+
+      def k_largest(nums, k):
+          heap = []
+          for x in nums:
+              heapq.heappush(heap, x)
+              if len(heap) > k:
+                  heapq.heappop(heap)
+          return sorted(heap, reverse=True)
+    explanation: >-
+      The heap never holds more than k numbers, so each push and pop costs O(log k). Anything
+      smaller than the heap's minimum can't be in the top k and is thrown out.
+    complexity: Time O(n log k) · Space O(k)
+
+  - id: most-common-words
+    topic_id: top-k-elements
+    title: Most common words
+    difficulty: medium
+    statement: |
+      Return the `k` words that appear most often in `words`, most frequent first. Words with the
+      same count are ordered alphabetically. You can assume `k` is at most the number of
+      different words.
+    function: most_common_words
+    params: [words, k]
+    starter: |
+      def most_common_words(words, k):
+          # Your code here
+          pass
+    cases:
+      - {args: [["i", "love", "code", "i", "love", "coding"], 2], expected: ["i", "love"]}
+      - {args: [["the", "day", "is", "sunny", "the", "the", "the", "sunny", "is", "is"], 4], expected: ["the", "is", "sunny", "day"]}
+      - {args: [["b", "a", "c"], 2], expected: ["a", "b"]}
+      - {args: [["x"], 1], expected: ["x"], hidden: true}
+      - {args: [["a", "b", "a", "b", "c"], 3], expected: ["a", "b", "c"], hidden: true}
+      - {args: [["z", "y", "z", "y", "x", "x", "w"], 2], expected: ["x", "y"], hidden: true}
+    hints:
+      - Count the words first.
+      - Sort or pick by the key (-count, word) so higher counts come first and ties go
+        alphabetically.
+    solution: |
+      import heapq
+      from collections import Counter
+
+      def most_common_words(words, k):
+          counts = Counter(words)
+          return heapq.nsmallest(k, counts, key=lambda w: (-counts[w], w))
+    explanation: >-
+      A hash map counts every word in one pass. Picking the k smallest by (-count, word) uses a
+      heap of size k under the hood, so you never sort all the distinct words.
+    complexity: Time O(n + m log k) · Space O(m), m = distinct words
+
+  # ------------------------------------------------------------------ Backtracking
+  - id: letter-case-variants
+    topic_id: backtracking
+    title: Letter case variants
+    difficulty: easy
+    statement: |
+      `s` contains letters and digits. Return every string you can make by writing each letter in
+      lower or upper case. Digits stay as they are. The strings can be in any order.
+    function: case_variants
+    params: [s]
+    compare: unordered
+    starter: |
+      def case_variants(s):
+          # Your code here
+          pass
+    cases:
+      - {args: ["a1b2"], expected: ["a1b2", "a1B2", "A1b2", "A1B2"]}
+      - {args: ["3z4"], expected: ["3z4", "3Z4"]}
+      - {args: ["12"], expected: ["12"]}
+      - {args: [""], expected: [""], hidden: true}
+      - {args: ["C"], expected: ["c", "C"], hidden: true}
+      - {args: ["aB"], expected: ["ab", "aB", "Ab", "AB"], hidden: true}
+    hints:
+      - Build the string one character at a time.
+      - A letter is a choice with two branches; a digit has only one.
+    solution: |
+      def case_variants(s):
+          out, path = [], []
+
+          def build(i):
+              if i == len(s):
+                  out.append("".join(path))
+                  return
+              options = {s[i].lower(), s[i].upper()} if s[i].isalpha() else {s[i]}
+              for ch in sorted(options):
+                  path.append(ch)
+                  build(i + 1)
+                  path.pop()
+
+          build(0)
+          return out
+    explanation: >-
+      Every letter doubles the number of results, so there are 2^letters strings. Backtracking
+      walks the decision tree, choosing a case, recursing, then undoing the choice.
+    complexity: Time O(n · 2^letters) · Space O(n) besides the output
+
+  - id: combination-sum
+    topic_id: backtracking
+    title: Ways to make a total
+    difficulty: medium
+    statement: |
+      `coins` holds distinct positive values, and each can be used as many times as you like.
+      Return every different combination of coins that adds up to `target`.
+
+      Two combinations are the same if they use the same coins the same number of times. Order
+      doesn't matter, inside or between combinations.
+    function: ways_to_make
+    params: [coins, target]
+    compare: unordered_nested
+    starter: |
+      def ways_to_make(coins, target):
+          # Your code here
+          pass
+    cases:
+      - {args: [[2, 3, 6, 7], 7], expected: [[2, 2, 3], [7]]}
+      - {args: [[2, 3, 5], 8], expected: [[2, 2, 2, 2], [2, 3, 3], [3, 5]]}
+      - {args: [[2], 1], expected: []}
+      - {args: [[1], 2], expected: [[1, 1]], hidden: true}
+      - {args: [[3, 4], 11], expected: [[3, 4, 4]], hidden: true}
+      - {args: [[5, 10], 15], expected: [[5, 5, 5], [5, 10]], hidden: true}
+    hints:
+      - To avoid listing [2, 3] and [3, 2], only ever pick coins at or after the last one you picked.
+      - Sorting the coins lets you stop early once a coin is bigger than what's left.
+    solution: |
+      def ways_to_make(coins, target):
+          coins = sorted(coins)
+          out, path = [], []
+
+          def pick(start, remaining):
+              if remaining == 0:
+                  out.append(path[:])
+                  return
+              for i in range(start, len(coins)):
+                  if coins[i] > remaining:
+                      break
+                  path.append(coins[i])
+                  pick(i, remaining - coins[i])
+                  path.pop()
+
+          pick(0, target)
+          return out
+    explanation: >-
+      Passing i (not i + 1) lets a coin be reused, and never going back to earlier coins means
+      each combination is built in only one order. The sorted early exit prunes dead branches.
+    complexity: Time exponential in target / smallest coin · Space O(target / smallest coin)
+
+  # ------------------------------------------------------------------ DP on grids
+  - id: paths-around-walls
+    topic_id: dp-grid
+    title: Paths around walls
+    difficulty: easy
+    statement: |
+      In `grid`, `0` is open and `1` is a wall. Starting in the top-left cell and moving only
+      right or down, count the paths that reach the bottom-right cell without stepping on a wall.
+
+      Return `0` if the start or the end is a wall.
+    function: count_paths
+    params: [grid]
+    starter: |
+      def count_paths(grid):
+          # Your code here
+          pass
+    cases:
+      - {args: [[[0, 0, 0], [0, 1, 0], [0, 0, 0]]], expected: 2}
+      - {args: [[[0, 1], [0, 0]]], expected: 1}
+      - {args: [[[1]]], expected: 0}
+      - {args: [[[0]]], expected: 1, hidden: true}
+      - {args: [[[0, 0], [0, 0]]], expected: 2, hidden: true}
+      - {args: [[[0, 0, 0, 0]]], expected: 1, hidden: true}
+      - {args: [[[0, 0, 0], [0, 0, 0], [0, 0, 0]]], expected: 6, hidden: true}
+      - {args: [[[0, 0], [1, 1], [0, 0]]], expected: 0, hidden: true}
+    hints:
+      - The number of ways to reach a cell is (ways to the cell above) + (ways to the cell to the left).
+      - A wall cell has 0 ways.
+    solution: |
+      def count_paths(grid):
+          cols = len(grid[0])
+          ways = [0] * cols
+          ways[0] = 1
+          for row in grid:
+              for c in range(cols):
+                  if row[c] == 1:
+                      ways[c] = 0
+                  elif c > 0:
+                      ways[c] += ways[c - 1]
+          return ways[-1]
+    explanation: >-
+      Fill the table row by row. A single row is enough because ways[c] still holds the value
+      from the row above when you add the value from the left.
+    complexity: Time O(rows × cols) · Space O(cols)
+
+  - id: edit-distance
+    topic_id: dp-grid
+    title: Fewest edits
+    difficulty: medium
+    statement: |
+      Return the fewest single-character edits that turn string `a` into string `b`. An edit is
+      inserting a character, deleting one, or replacing one with another.
+    function: fewest_edits
+    params: [a, b]
+    starter: |
+      def fewest_edits(a, b):
+          # Your code here
+          pass
+    cases:
+      - {args: ["horse", "ros"], expected: 3}
+      - {args: ["intention", "execution"], expected: 5}
+      - {args: ["", "abc"], expected: 3}
+      - {args: ["abc", "abc"], expected: 0, hidden: true}
+      - {args: ["kitten", "sitting"], expected: 3, hidden: true}
+      - {args: ["a", ""], expected: 1, hidden: true}
+      - {args: ["flaw", "lawn"], expected: 2, hidden: true}
+    hints:
+      - Let dp[i][j] be the answer for the first i letters of a and the first j letters of b.
+      - If a[i-1] == b[j-1] it's dp[i-1][j-1]; otherwise 1 + the best of delete, insert or replace.
+    solution: |
+      def fewest_edits(a, b):
+          n, m = len(a), len(b)
+          dp = [[0] * (m + 1) for _ in range(n + 1)]
+          for i in range(n + 1):
+              dp[i][0] = i
+          for j in range(m + 1):
+              dp[0][j] = j
+          for i in range(1, n + 1):
+              for j in range(1, m + 1):
+                  if a[i - 1] == b[j - 1]:
+                      dp[i][j] = dp[i - 1][j - 1]
+                  else:
+                      dp[i][j] = 1 + min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1])
+          return dp[n][m]
+    explanation: >-
+      The same table shape as longest common subsequence. Each cell looks up, left and
+      diagonally: deleting from a, inserting into a, or replacing (free when the letters match).
+    complexity: Time O(n · m) · Space O(n · m)

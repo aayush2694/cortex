@@ -166,6 +166,10 @@ export interface CodingProblem extends CodingProblemSummary {
   params: string[];
   starter: string;
   compare: string;
+  /** How each argument is built: plain, list (linked list), cycle_list or tree. */
+  arg_types: string[] | null;
+  /** How the return value is read back: plain, list or tree. */
+  returns: string;
   cases: TestCase[];
   hints: string[];
   complexity: string;

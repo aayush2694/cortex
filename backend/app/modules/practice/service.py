@@ -75,6 +75,8 @@ class PracticeService:
             params=p.params,
             starter=p.starter,
             compare=p.compare,
+            arg_types=list(p.arg_types) if p.arg_types else None,
+            returns=p.returns,
             cases=[CaseOut(args=c.args, expected=c.expected, hidden=c.hidden) for c in p.cases],
             hints=p.hints,
             complexity=p.complexity,

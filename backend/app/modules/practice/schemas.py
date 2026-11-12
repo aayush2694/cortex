@@ -31,6 +31,8 @@ class ProblemDetail(ProblemSummary):
     params: list[str]
     starter: str
     compare: str
+    arg_types: list[str] | None
+    returns: str
     cases: list[CaseOut]
     hints: list[str]
     complexity: str

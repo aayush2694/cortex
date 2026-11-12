@@ -46,10 +46,18 @@ function writeDraft(id: string, code: string | null): void {
   }
 }
 
-/** Compact JSON for showing values: [1, 2, 3], "abc", {"a": 1}. */
+/** Show a value the way Python would print it: [1, 2], "abc", True, None, {"a": 1}. */
 export function show(value: unknown): string {
   if (value === undefined) return '—';
-  return JSON.stringify(value, null, 0)?.replace(/,(?=\S)/g, ', ') ?? String(value);
+  if (value === null) return 'None';
+  if (value === true) return 'True';
+  if (value === false) return 'False';
+  if (Array.isArray(value)) return `[${value.map(show).join(', ')}]`;
+  if (typeof value === 'object') {
+    const items = Object.entries(value as Record<string, unknown>);
+    return `{${items.map(([k, v]) => `${JSON.stringify(k)}: ${show(v)}`).join(', ')}}`;
+  }
+  return typeof value === 'string' ? JSON.stringify(value) : String(value);
 }
 
 /** Split a statement into paragraphs, and each paragraph into text and `code` pieces. */
@@ -90,6 +98,22 @@ export class PracticePage {
   });
   protected readonly statement = computed(() => paragraphs(this.problem()?.statement ?? ''));
   protected readonly examples = computed(() => (this.problem()?.cases ?? []).filter((c) => !c.hidden));
+  /** How linked lists and trees are written in the examples, when the problem uses them. */
+  protected readonly notation = computed(() => {
+    const p = this.problem();
+    const kinds = new Set([...(p?.arg_types ?? []), p?.returns ?? 'plain']);
+    const notes: string[] = [];
+    if (kinds.has('list') || kinds.has('cycle_list')) {
+      notes.push('A linked list is shown as its values in order; your code gets the head ListNode (.val, .next).');
+    }
+    if (kinds.has('cycle_list')) {
+      notes.push('pos is the index the last node links back to, or -1 if the list ends.');
+    }
+    if (kinds.has('tree')) {
+      notes.push('A tree is shown level by level, with None for a missing child; your code gets the root TreeNode (.val, .left, .right).');
+    }
+    return notes;
+  });
   protected readonly history = computed(() => (this.historyRes.value()?.items ?? []).slice(0, 5));
 
   /** Your code: the saved draft if there is one, otherwise the starter. */
@@ -149,7 +173,7 @@ export class PracticePage {
     this.runError.set(null);
     this.justSolved.set(false);
     try {
-      const run = await this.runner.run(this.code(), p.function, cases, p.compare);
+      const run = await this.runner.run(this.code(), p.function, cases, p.compare, p);
       const passed = run.results.filter((r) => r.passed).length;
       const firstFail = run.results.findIndex((r) => !r.passed);
       this.outcome.set({ mode, run, cases, passed, firstFail });

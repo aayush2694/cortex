@@ -41,6 +41,10 @@
 → {{ show(c.expected) }}</pre>
         }
 
+        @for (n of notation(); track n) {
+          <p class="faint" style="display: flex; gap: 6px; line-height: 1.5; margin: 8px 0 0"><i class="ti ti-info-circle" aria-hidden="true"></i>{{ n }}</p>
+        }
+
         <div class="meta faint">
           <span><i class="ti ti-clock" aria-hidden="true"></i>Aim for {{ p.complexity }}</span>
           <a [routerLink]="['/topics', p.topic_id]"><i class="ti ti-player-play" aria-hidden="true"></i>Watch the pattern</a>

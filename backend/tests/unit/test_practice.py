@@ -29,7 +29,14 @@ def test_problems_point_at_real_pattern_topics() -> None:
 @pytest.mark.parametrize("problem", CASES)
 def test_reference_solution_passes_every_case(problem) -> None:  # type: ignore[no-untyped-def]
     cases = [c.model_dump() for c in problem.cases]
-    run = run_cases(problem.solution, problem.function, cases, problem.compare)
+    run = run_cases(
+        problem.solution,
+        problem.function,
+        cases,
+        problem.compare,
+        problem.arg_types,
+        problem.returns,
+    )
     assert run["compile_error"] is None
     failed = [i for i, r in enumerate(run["results"]) if not r["passed"]]
     assert not failed, f"{problem.id}: cases {failed} fail: {run['results']}"
@@ -38,7 +45,14 @@ def test_reference_solution_passes_every_case(problem) -> None:  # type: ignore[
 @pytest.mark.parametrize("problem", CASES)
 def test_starter_code_does_not_pass(problem) -> None:  # type: ignore[no-untyped-def]
     cases = [c.model_dump() for c in problem.cases]
-    run = run_cases(problem.starter, problem.function, cases, problem.compare)
+    run = run_cases(
+        problem.starter,
+        problem.function,
+        cases,
+        problem.compare,
+        problem.arg_types,
+        problem.returns,
+    )
     assert run["compile_error"] is None
     assert not all(r["passed"] for r in run["results"])
 
@@ -98,3 +112,44 @@ def test_json_entry_point_round_trips() -> None:
     }
     out = json.loads(run_cases_json(json.dumps(payload)))
     assert out["results"][0]["passed"] is True
+
+
+def test_harness_builds_linked_lists_and_trees() -> None:
+    reverse = (
+        "def f(head):\n    prev = None\n    while head:\n"
+        "        head.next, prev, head = prev, head, head.next\n    return prev\n"
+    )
+    run = run_cases(
+        reverse, "f", [{"args": [[1, 2, 3]], "expected": [3, 2, 1]}], "exact", ["list"], "list"
+    )
+    assert run["results"][0]["passed"]
+
+    has_cycle = (
+        "def f(head):\n    seen = set()\n    while head:\n"
+        "        if head in seen:\n            return True\n"
+        "        seen.add(head)\n        head = head.next\n    return False\n"
+    )
+    cases = [
+        {"args": [{"values": [1, 2, 3], "pos": 0}], "expected": True},
+        {"args": [{"values": [1, 2], "pos": -1}], "expected": False},
+    ]
+    run = run_cases(has_cycle, "f", cases, "exact", ["cycle_list"])
+    assert [r["passed"] for r in run["results"]] == [True, True]
+
+    mirror = (
+        "def f(root):\n    if root:\n        root.left, root.right = f(root.right), f(root.left)\n"
+        "    return root\n"
+    )
+    case = {"args": [[1, 2, 3, None, 4]], "expected": [1, 3, 2, None, None, 4]}
+    run = run_cases(mirror, "f", [case], "exact", ["tree"], "tree")
+    assert run["results"][0]["passed"], run
+
+    # A returned list with a cycle fails cleanly instead of hanging.
+    loop = "def f(head):\n    head.next = head\n    return head\n"
+    run = run_cases(loop, "f", [{"args": [[1, 2]], "expected": [1]}], "exact", ["list"], "list")
+    assert "never ends" in run["results"][0]["error"]
+
+    # ListNode and TreeNode are ready to use in your code.
+    make = "def f(n):\n    return TreeNode(n, TreeNode(n - 1))\n"
+    run = run_cases(make, "f", [{"args": [5], "expected": [5, 4]}], "exact", None, "tree")
+    assert run["results"][0]["passed"]

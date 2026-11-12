@@ -47,7 +47,13 @@ export class PythonRunner {
     this.start().catch(() => undefined);
   }
 
-  async run(code: string, fn: string, cases: TestCase[], compare: string): Promise<RunResult> {
+  async run(
+    code: string,
+    fn: string,
+    cases: TestCase[],
+    compare: string,
+    types: { arg_types: string[] | null; returns: string } = { arg_types: null, returns: 'plain' },
+  ): Promise<RunResult> {
     const worker = await this.start();
     const id = ++this.seq;
     this.state.set('running');
@@ -55,6 +61,8 @@ export class PythonRunner {
       code,
       function: fn,
       compare,
+      arg_types: types.arg_types,
+      returns: types.returns,
       cases: cases.map((c) => ({ args: c.args, expected: c.expected })),
     });
     try {

@@ -10,6 +10,8 @@ from pydantic import BaseModel, Field
 from app.core.config import get_settings
 
 Compare = Literal["exact", "unordered", "unordered_nested"]
+ArgType = Literal["plain", "list", "cycle_list", "tree"]  # see harness.py
+ReturnType = Literal["plain", "list", "tree"]
 
 
 class Case(BaseModel):
@@ -28,6 +30,9 @@ class CodingProblem(BaseModel):
     params: list[str] = Field(min_length=1)
     starter: str
     compare: Compare = "exact"
+    # How each argument is built (linked lists and trees arrive as plain JSON lists).
+    arg_types: list[ArgType] | None = None
+    returns: ReturnType = "plain"
     cases: list[Case] = Field(min_length=3)
     hints: list[Annotated[str, Field(max_length=240)]] = []
     solution: str
@@ -64,6 +69,8 @@ def validate_practice(catalog: PracticeCatalog, topic_ids: set[str] | None = Non
             raise PracticeCatalogError(f"Starter code for '{p.id}' must define {p.function}()")
         if not any(not c.hidden for c in p.cases) or not any(c.hidden for c in p.cases):
             raise PracticeCatalogError(f"'{p.id}' needs both visible and hidden test cases")
+        if p.arg_types is not None and len(p.arg_types) != len(p.params):
+            raise PracticeCatalogError(f"'{p.id}' needs one arg type per parameter")
         for c in p.cases:
             if len(c.args) != len(p.params):
                 raise PracticeCatalogError(
