@@ -5,6 +5,8 @@ import httpx
 import pytest
 
 from app.clients.llm import LLMEvent
+from app.modules.topics import service as topic_service
+from app.modules.topics.guides import parse_guide
 from tests.integration.conftest import FakeLLM
 
 API = "/api/v1"
@@ -77,6 +79,18 @@ async def test_topic_detail_and_404(client: httpx.AsyncClient) -> None:
     assert {t["id"] for t in d["requires"]} == {"bfs", "heaps"}
     r = await client.get(f"{API}/topics/heapsortt")
     assert r.status_code == 404 and r.json()["error"]["code"] == "topic_not_found"
+
+
+async def test_topic_detail_includes_guide(
+    client: httpx.AsyncClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    guide = parse_guide("binary-search", "## In short\n\nHalve the range each step.\n")
+    monkeypatch.setattr(topic_service, "get_guides", lambda: {"binary-search": guide})
+    d = (await client.get(f"{API}/topics/binary-search")).json()
+    assert d["guide"].startswith("## In short")
+    assert (await client.get(f"{API}/topics/arrays")).json()["guide"] is None
+    knowledge_map = (await client.get(f"{API}/topics")).json()
+    assert all("guide" not in t for t in knowledge_map["topics"])
 
 
 # ---------------------------------------------------------------- progress

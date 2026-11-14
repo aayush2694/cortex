@@ -1,6 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import NotFound
+from app.modules.topics.guides import get_guides
 from app.modules.topics.repository import TopicRepository
 from app.modules.topics.schemas import EdgeOut, KnowledgeMapOut, TopicDetailOut, TopicOut
 
@@ -31,4 +32,5 @@ class TopicService:
             **TopicOut.model_validate(topic).model_dump(),
             requires=[TopicOut.model_validate(t) for t in requires],
             unlocks=[TopicOut.model_validate(t) for t in unlocks],
+            guide=guide.markdown if (guide := get_guides().get(topic_id)) else None,
         )

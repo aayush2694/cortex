@@ -22,6 +22,11 @@ It runs locally today. Sign-in and the Azure deployment are not built yet.
 - **Database:** PostgreSQL 18 (Homebrew service). Tests use a separate `cortex_test` database.
 - **Content is YAML in git**, not database rows: `backend/content/*.yaml`. Topics sync to the
   database on startup; problems, questions and skills are loaded into memory and validated.
+- **Topic guides** are Markdown files, one per topic: `backend/content/guides/<topic-id>.md`.
+  `topics/guides.py` checks them at startup (allowed `##` sections in order, required sections
+  per track, at least 600 prose words, a ` ```python run ` block for DSA and ` ```sql run ` for
+  SQL topics). Every `run` block is executed by `tests/unit/test_guide_content.py`. Topic links
+  may only use hosts in `topics/links.py`. Spec: `docs/superpowers/specs/2026-11-14-topic-guides-design.md`.
 - **Code practice runs in the browser.** `frontend/public/pyodide-worker.js` loads Pyodide
   (Python 3.14 in WebAssembly) in a module Web Worker. It judges code with
   `backend/app/modules/practice/harness.py`, served at `GET /api/v1/practice/runtime`. The
@@ -52,6 +57,8 @@ backend/
       tutor/           chat sessions, prompts, SSE streaming, daily limit
       users/           user model, data export
   content/             topics.yaml, practice.yaml, interview_questions.yaml, skills.yaml
+  content/guides/      one Markdown guide per topic (86)
+  scripts/             check_links.py (opens every topic link; CI runs it weekly)
   alembic/versions/    migrations (auto-generated, not linted)
   tests/unit/          pure logic, no I/O
   tests/integration/   real database, fake Claude (conftest.py has the FakeLLM)
@@ -106,6 +113,9 @@ npx ng build                         # must finish with no errors and no warning
 
 cd .. && uvx pre-commit run --all-files
 ```
+
+After adding or changing topic links (needs the internet; CI also runs it weekly):
+`cd backend && uv run python -m scripts.check_links`.
 
 After changing a model: `uv run alembic revision --autogenerate -m "what changed"`, read the
 generated file, then `uv run alembic upgrade head`.
@@ -232,6 +242,13 @@ Tests:
     Every changed line should trace to the request. Mention unrelated problems; do not fix
     them unasked.
 22. **Saying "done" without evidence.** See the checklist.
+23. **Styling `[innerHTML]` content with scoped component styles.** Angular's encapsulation
+    never reaches injected HTML. Nest the rules under the element name with
+    `ViewEncapsulation.None`, as `features/topics/topic-guide.ts` does.
+24. **Writing guide content from memory without checking it.** Every claimed result must come
+    from running the code: `python run` blocks are tests, but SQL blocks only prove the query
+    runs, so print each query's rows and compare them with the text. Check facts about recent
+    library versions against the official docs before writing them.
 
 ## Before you say a task is done
 
@@ -251,10 +268,10 @@ Tests:
 - [ ] Nothing is committed or pushed unless he asked. If he did, CI and CodeQL passed.
 - [ ] Your report states what changed, how you checked it, and what you did not verify.
 
-## Open work (as of 2026-11-13)
+## Open work (as of 2026-11-15)
 
-- **Sign-in:** design in progress, not built. Decided so far: GitHub and Google, anyone can
-  sign up, the AI tutor is invite-only, the API issues its own access and refresh tokens, and
-  the live site starts with empty data. It needs a written spec and his approval before code.
+- **Sign-in:** spec written (`docs/superpowers/specs/2026-11-14-sign-in-design.md`), not yet
+  approved or built. GitHub and Google, anyone can sign up, the AI tutor is invite-only, the API
+  issues its own access and refresh tokens, and the live site starts with empty data.
 - **Azure deployment:** waiting for his Azure account.
 - **Design cleanup:** a type scale, fewer corner radii and breakpoints, a shorter sidebar.

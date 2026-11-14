@@ -21,6 +21,15 @@ topics:
     summary: How to describe the time and memory an algorithm needs as input grows.
     difficulty: 1
     phase: 1
+    resources:
+      - { label: "Time complexity of Python operations", url: "https://wiki.python.org/moin/TimeComplexity" }
+      - { label: "Analysis of algorithms (Algorithms, 4th ed.)", url: "https://algs4.cs.princeton.edu/14analysis/" }
+    concepts:
+      - "Big-O describes how work grows with input size, ignoring constants and smaller terms."
+      - "Nested loops multiply, sequential blocks add, and halving the input each step gives O(log n)."
+      - "Count extra memory too, including recursion depth."
+      - "Amortized O(1) means occasional expensive steps averaged over many cheap ones, like list append."
+      - "Read the input limits to guess the expected complexity; n up to 10^5 usually rules out O(n²)."
 
   - id: arrays
     track: dsa
@@ -29,6 +38,15 @@ topics:
     difficulty: 1
     phase: 1
     requires: [big-o]
+    resources:
+      - { label: "More on lists", url: "https://docs.python.org/3/tutorial/datastructures.html" }
+      - { label: "Time complexity of Python operations", url: "https://wiki.python.org/moin/TimeComplexity" }
+    concepts:
+      - "Indexing is O(1) because an item's address is computed from its position."
+      - "Inserting or deleting anywhere but the end is O(n) because later items shift."
+      - "A dynamic array grows by copying into a bigger block, so append is O(1) amortized."
+      - "The read/write two-pointer trick filters an array in place without O(n) deletes."
+      - "Contiguous memory makes arrays cache-friendly and fast to scan in practice."
 
   - id: recursion
     track: dsa
@@ -37,6 +55,15 @@ topics:
     difficulty: 2
     phase: 1
     requires: [big-o]
+    resources:
+      - { label: "functools.cache", url: "https://docs.python.org/3/library/functools.html#functools.cache" }
+      - { label: "sys.setrecursionlimit", url: "https://docs.python.org/3/library/sys.html#sys.setrecursionlimit" }
+    concepts:
+      - "Every recursive function needs a base case and a step that moves toward it."
+      - "Trust the recursive call for smaller inputs instead of tracing every call."
+      - "Each pending call uses stack space, so recursion depth is part of the space cost."
+      - "Repeated subcalls make naive recursion exponential; caching the results (memoization) fixes it."
+      - "Python's default recursion limit is about 1,000; use a loop and an explicit stack for deep inputs."
 
   - id: bubble-sort
     track: dsa
@@ -46,6 +73,14 @@ topics:
     phase: 1
     visualizer: bubble_sort
     requires: [arrays]
+    resources:
+      - { label: "Elementary sorts (Algorithms, 4th ed.)", url: "https://algs4.cs.princeton.edu/21elementary/" }
+      - { label: "Sorting techniques in Python", url: "https://docs.python.org/3/howto/sorting.html" }
+    concepts:
+      - "Each pass swaps out-of-order neighbours, moving the largest remaining item to the end."
+      - "O(n²) comparisons in general; O(n) on sorted input if you stop after a pass with no swaps."
+      - "It is stable and in place, as long as you only swap when the left item is strictly bigger."
+      - "The number of swaps equals the number of inversions in the input."
 
   - id: insertion-sort
     track: dsa
@@ -55,6 +90,14 @@ topics:
     phase: 1
     visualizer: insertion_sort
     requires: [arrays]
+    resources:
+      - { label: "Elementary sorts (Algorithms, 4th ed.)", url: "https://algs4.cs.princeton.edu/21elementary/" }
+      - { label: "How CPython's list sort works", url: "https://github.com/python/cpython/blob/main/Objects/listsort.txt" }
+    concepts:
+      - "Keep a sorted prefix and slide each new item left into its place."
+      - "Cost is O(n + inversions), so it is nearly linear on almost-sorted data."
+      - "Stable, in place and online; libraries use it for small pieces inside faster sorts."
+      - "Binary search reduces comparisons, but shifting still makes it O(n²) on arrays."
 
   - id: merge-sort
     track: dsa
@@ -64,6 +107,14 @@ topics:
     phase: 1
     visualizer: merge_sort
     requires: [arrays, recursion]
+    resources:
+      - { label: "Mergesort (Algorithms, 4th ed.)", url: "https://algs4.cs.princeton.edu/22mergesort/" }
+      - { label: "How CPython's list sort works", url: "https://github.com/python/cpython/blob/main/Objects/listsort.txt" }
+    concepts:
+      - "Split in half, sort each half recursively, then merge two sorted halves in linear time."
+      - "O(n log n) in every case, because there are log n levels of O(n) merging."
+      - "Stable if the merge takes from the left half on ties; needs O(n) extra memory for arrays."
+      - "The merge step also counts inversions and merges sorted lists."
 
   - id: quick-sort
     track: dsa
@@ -73,6 +124,14 @@ topics:
     phase: 1
     visualizer: quick_sort
     requires: [arrays, recursion]
+    resources:
+      - { label: "Quicksort (Algorithms, 4th ed.)", url: "https://algs4.cs.princeton.edu/23quicksort/" }
+      - { label: "K-th order statistic in O(n)", url: "https://cp-algorithms.com/sequences/k-th.html" }
+    concepts:
+      - "Partition around a pivot, then sort each side; no merge step is needed."
+      - "O(n log n) on average, O(n²) when pivots keep landing at the ends; a random pivot avoids that."
+      - "In place but not stable; three-way partitioning handles many equal keys."
+      - "Quickselect reuses partitioning to find the k-th smallest item in O(n) on average."
 
   - id: binary-search
     track: dsa
@@ -82,6 +141,15 @@ topics:
     phase: 1
     visualizer: binary_search
     requires: [arrays]
+    concepts:
+      - Only works on sorted data, or when a yes/no check flips from no to yes exactly once.
+      - Each step halves the range, so it takes about log₂(n) steps; O(1) extra memory.
+      - "Decide whether the range is closed [lo, hi] or half-open [lo, hi) and keep every line consistent."
+      - The boundary form (first index with value ≥ x) handles duplicates and insert positions.
+      - "Binary search on the answer: the smallest value that works, when you can check any guess."
+    resources:
+      - { label: bisect — array bisection, url: "https://docs.python.org/3/library/bisect.html" }
+      - { label: Binary search, url: "https://cp-algorithms.com/num_methods/binary_search.html" }
 
   # ---------------- DSA problem-solving patterns (batch 1: arrays and strings) ----------------
   - id: two-pointers
@@ -93,6 +161,9 @@ topics:
     visualizer: two_pointers
     requires:
     - arrays
+    resources:
+      - { label: "3-sum and analysis (Algorithms, 4th ed.)", url: "https://algs4.cs.princeton.edu/14analysis/" }
+      - { label: "Sorting techniques in Python", url: "https://docs.python.org/3/howto/sorting.html" }
     concepts:
     - Each step rules out one element for good, so the whole scan is O(n).
     - Opposite-end pointers work on sorted data; same-direction pointers (read/write) work for in-place filtering.
@@ -145,6 +216,9 @@ topics:
     requires:
     - two-pointers
     - hash-maps
+    resources:
+      - { label: "collections.deque", url: "https://docs.python.org/3/library/collections.html#collections.deque" }
+      - { label: "Minimum stack and minimum queue", url: "https://cp-algorithms.com/data_structures/stack_queue_modification.html" }
     concepts:
     - Fixed-size windows move both ends together; variable windows grow right and shrink left.
     - Track what's inside the window with a counter or hash map, updating it in O(1) per step.
@@ -196,6 +270,9 @@ topics:
     requires:
     - arrays
     - hash-maps
+    resources:
+      - { label: "itertools.accumulate", url: "https://docs.python.org/3/library/itertools.html#itertools.accumulate" }
+      - { label: "Fenwick tree", url: "https://cp-algorithms.com/data_structures/fenwick.html" }
     concepts:
     - sum(i..j) = prefix[j + 1] - prefix[i], so every range sum costs O(1) after O(n) setup.
     - Pair prefix sums with a hash map to count subarrays with a target sum in one pass.
@@ -242,6 +319,9 @@ topics:
     visualizer: frequency_counting
     requires:
     - hash-maps
+    resources:
+      - { label: "collections.Counter", url: "https://docs.python.org/3/library/collections.html#collections.Counter" }
+      - { label: "Mapping types — dict", url: "https://docs.python.org/3/library/stdtypes.html#mapping-types-dict" }
     concepts:
     - A hash map turns an O(n) search into an O(1) lookup on average.
     - Counting with Counter or a dict solves anagram and 'most frequent' questions.
@@ -287,6 +367,9 @@ topics:
     visualizer: modified_binary_search
     requires:
     - binary-search
+    resources:
+      - { label: "Binary search", url: "https://cp-algorithms.com/num_methods/binary_search.html" }
+      - { label: "bisect — array bisection", url: "https://docs.python.org/3/library/bisect.html" }
     concepts:
     - You only need a rule that says which half can't hold the answer, not a fully sorted array.
     - In a rotated array, one side of mid is always sorted; check whether the target is in it.
@@ -336,6 +419,9 @@ topics:
     visualizer: cyclic_sort
     requires:
     - arrays
+    resources:
+      - { label: "Elementary sorts (Algorithms, 4th ed.)", url: "https://algs4.cs.princeton.edu/21elementary/" }
+      - { label: "Floyd's cycle finding (for the duplicate number)", url: "https://cp-algorithms.com/others/tortoise_and_hare.html" }
     concepts:
     - Value x belongs at index x - 1; each swap puts at least one number in its final place.
     - After sorting, any index i that doesn't hold i + 1 points to a missing or duplicate value.
@@ -380,6 +466,15 @@ topics:
     difficulty: 2
     phase: 3
     requires: [arrays]
+    resources:
+      - { label: "Hash tables (Algorithms, 4th ed.)", url: "https://algs4.cs.princeton.edu/34hash/" }
+      - { label: "Mapping types — dict", url: "https://docs.python.org/3/library/stdtypes.html#mapping-types-dict" }
+      - { label: "Time complexity of Python operations", url: "https://wiki.python.org/moin/TimeComplexity" }
+    concepts:
+      - "A hash function maps a key to a bucket, giving O(1) average insert, lookup and delete."
+      - "Collisions are handled by chaining or open addressing; the worst case is O(n)."
+      - "The map resizes when the load factor gets too high, keeping operations O(1) amortized."
+      - "Keys must be immutable and hashable, and equal keys must have equal hashes."
 
   - id: linked-lists
     track: dsa
@@ -388,6 +483,9 @@ topics:
     difficulty: 2
     phase: 1
     requires: [arrays]
+    resources:
+      - { label: "Bags, queues and stacks with linked lists (Algorithms, 4th ed.)", url: "https://algs4.cs.princeton.edu/13stacks/" }
+      - { label: "collections.deque", url: "https://docs.python.org/3/library/collections.html#collections.deque" }
     concepts:
       - "Each node stores a value and a pointer to the next node; the list is just a pointer to the head."
       - "Inserting or deleting next to a node you hold is O(1); finding the i-th node is O(n)."
@@ -400,6 +498,15 @@ topics:
     difficulty: 1
     phase: 3
     requires: [arrays]
+    resources:
+      - { label: "Bags, queues and stacks (Algorithms, 4th ed.)", url: "https://algs4.cs.princeton.edu/13stacks/" }
+      - { label: "Using lists as stacks and queues", url: "https://docs.python.org/3/tutorial/datastructures.html" }
+      - { label: "collections.deque", url: "https://docs.python.org/3/library/collections.html#collections.deque" }
+    concepts:
+      - "A stack is last in, first out; a queue is first in, first out. Both are O(1) per operation."
+      - "Stacks fit nested structure: brackets, undo, the call stack and depth-first search."
+      - "Queues fit arrival order and level-by-level processing such as breadth-first search."
+      - "In Python, use a list as a stack and collections.deque as a queue; list.pop(0) is O(n)."
 
   # ---------------- DSA problem-solving patterns (batch 2: linked lists, stacks and intervals) ----------------
   - id: fast-slow-pointers
@@ -412,6 +519,9 @@ topics:
     requires:
     - linked-lists
     - two-pointers
+    resources:
+      - { label: "Floyd's cycle finding algorithm", url: "https://cp-algorithms.com/others/tortoise_and_hare.html" }
+      - { label: "Finding a cycle in a graph", url: "https://cp-algorithms.com/graph/finding-cycle.html" }
     concepts:
     - Inside a loop the fast pointer gains one step per move, so it must catch the slow one.
     - When fast reaches the end, slow is exactly at the middle.
@@ -459,6 +569,9 @@ topics:
     visualizer: linked_list_reversal
     requires:
     - linked-lists
+    resources:
+      - { label: "Linked lists (Algorithms, 4th ed.)", url: "https://algs4.cs.princeton.edu/13stacks/" }
+      - { label: "collections.deque", url: "https://docs.python.org/3/library/collections.html#collections.deque" }
     concepts:
     - Always save curr.next before you overwrite it, or you lose the rest of the list.
     - 'Three pointers are enough: prev, curr and next.'
@@ -505,6 +618,9 @@ topics:
     visualizer: monotonic_stack
     requires:
     - stacks-queues
+    resources:
+      - { label: "Minimum stack and minimum queue", url: "https://cp-algorithms.com/data_structures/stack_queue_modification.html" }
+      - { label: "Stacks (Algorithms, 4th ed.)", url: "https://algs4.cs.princeton.edu/13stacks/" }
     concepts:
     - Store indices, not values, so you can compute distances and look values up.
     - Each element is pushed once and popped at most once, so the loop is O(n) overall.
@@ -551,6 +667,9 @@ topics:
     visualizer: merge_intervals
     requires:
     - arrays
+    resources:
+      - { label: "Sorting techniques in Python", url: "https://docs.python.org/3/howto/sorting.html" }
+      - { label: "heapq — heap queue", url: "https://docs.python.org/3/library/heapq.html" }
     concepts:
     - After sorting by start, an interval can only overlap the last merged one.
     - Two intervals [a, b] and [c, d] overlap when c <= b (with a <= c after sorting).
@@ -595,6 +714,14 @@ topics:
     difficulty: 2
     phase: 3
     requires: [recursion]
+    resources:
+      - { label: "Binary search trees (Algorithms, 4th ed.)", url: "https://algs4.cs.princeton.edu/32bst/" }
+      - { label: "Balanced search trees (Algorithms, 4th ed.)", url: "https://algs4.cs.princeton.edu/33balanced/" }
+    concepts:
+      - "A tree is a root plus subtrees, so most tree code is recursive."
+      - "In a binary search tree, left is smaller and right is larger; in-order traversal gives sorted order."
+      - "Operations take O(h); balanced trees keep h at O(log n), skewed trees degrade to O(n)."
+      - "Pre-order, in-order and post-order are depth-first; level order is breadth-first with a queue."
 
   - id: heaps
     track: dsa
@@ -603,6 +730,14 @@ topics:
     difficulty: 3
     phase: 3
     requires: [trees]
+    resources:
+      - { label: "heapq — heap queue", url: "https://docs.python.org/3/library/heapq.html" }
+      - { label: "Priority queues (Algorithms, 4th ed.)", url: "https://algs4.cs.princeton.edu/24pq/" }
+    concepts:
+      - "A heap keeps the smallest (or largest) item at the root, readable in O(1)."
+      - "Push and pop are O(log n); building a heap from a list is O(n)."
+      - "A heap is stored in an array: the children of i are at 2i + 1 and 2i + 2."
+      - "Python's heapq is a min-heap; store negated values for a max-heap."
 
   - id: graphs
     track: dsa
@@ -611,6 +746,16 @@ topics:
     difficulty: 3
     phase: 1
     requires: [stacks-queues, hash-maps]
+    resources:
+      - { label: "Undirected graphs (Algorithms, 4th ed.)", url: "https://algs4.cs.princeton.edu/41graph/" }
+      - { label: "Directed graphs (Algorithms, 4th ed.)", url: "https://algs4.cs.princeton.edu/42digraph/" }
+      - { label: "Depth-first search", url: "https://cp-algorithms.com/graph/depth-first-search.html" }
+    concepts:
+      - "A graph is nodes plus edges, which may be directed, weighted and cyclic."
+      - "Adjacency lists use O(V + E) memory and are the usual choice for sparse graphs."
+      - "Track visited nodes, because graphs can contain cycles."
+      - "Loop over all nodes to reach every component of a disconnected graph."
+      - "Pick the algorithm by the question: BFS, DFS, Dijkstra, topological sort or union-find."
 
   - id: bfs
     track: dsa
@@ -620,6 +765,14 @@ topics:
     phase: 1
     visualizer: bfs_grid
     requires: [graphs]
+    resources:
+      - { label: "Breadth-first search", url: "https://cp-algorithms.com/graph/breadth-first-search.html" }
+      - { label: "Undirected graphs (Algorithms, 4th ed.)", url: "https://algs4.cs.princeton.edu/41graph/" }
+    concepts:
+      - "BFS uses a queue to visit nodes in order of distance from the start."
+      - "In an unweighted graph, the first time BFS reaches a node is along a shortest path."
+      - "Mark nodes visited when you add them to the queue, not when you remove them."
+      - "Start from every source at once (multi-source BFS) to model things spreading in parallel."
 
   - id: dijkstra
     track: dsa
@@ -629,6 +782,15 @@ topics:
     phase: 1
     visualizer: dijkstra
     requires: [bfs, heaps]
+    resources:
+      - { label: "Dijkstra's algorithm", url: "https://cp-algorithms.com/graph/dijkstra.html" }
+      - { label: "Dijkstra on sparse graphs", url: "https://cp-algorithms.com/graph/dijkstra_sparse.html" }
+      - { label: "Shortest paths (Algorithms, 4th ed.)", url: "https://algs4.cs.princeton.edu/44sp/" }
+    concepts:
+      - "Dijkstra always finalises the unfinished node with the smallest known distance."
+      - "It needs non-negative edge weights; use Bellman-Ford when weights can be negative."
+      - "Relaxation updates a neighbour when going through the current node is cheaper."
+      - "With a binary heap and lazy deletion it runs in O((V + E) log V)."
 
   # ---------------- DSA problem-solving patterns (batch 3: trees, graphs and heaps) ----------------
   - id: tree-bfs
@@ -641,6 +803,9 @@ topics:
     requires:
     - trees
     - stacks-queues
+    resources:
+      - { label: "collections.deque", url: "https://docs.python.org/3/library/collections.html#collections.deque" }
+      - { label: "Breadth-first search", url: "https://cp-algorithms.com/graph/breadth-first-search.html" }
     concepts:
     - A queue (first in, first out) naturally visits nodes in level order.
     - Snapshot len(queue) at the start of each level to know where the level ends.
@@ -688,6 +853,9 @@ topics:
     requires:
     - trees
     - recursion
+    resources:
+      - { label: "Binary search trees (Algorithms, 4th ed.)", url: "https://algs4.cs.princeton.edu/32bst/" }
+      - { label: "Depth-first search", url: "https://cp-algorithms.com/graph/depth-first-search.html" }
     concepts:
     - The call stack remembers the current path; returning from a call is backtracking.
     - Top-down DFS passes information down (remaining sum); bottom-up DFS returns answers up (height).
@@ -737,6 +905,9 @@ topics:
     requires:
     - graphs
     - bfs
+    resources:
+      - { label: "Breadth-first search", url: "https://cp-algorithms.com/graph/breadth-first-search.html" }
+      - { label: "Connected components", url: "https://cp-algorithms.com/graph/search-for-connected-components.html" }
     concepts:
     - Each cell is a node with up to 4 neighbours; check bounds before every step.
     - Mark cells as visited when you add them to the queue, not when you pop them.
@@ -783,6 +954,10 @@ topics:
     requires:
     - graphs
     - bfs
+    resources:
+      - { label: "graphlib — topological sorting", url: "https://docs.python.org/3/library/graphlib.html" }
+      - { label: "Topological sorting", url: "https://cp-algorithms.com/graph/topological-sort.html" }
+      - { label: "Directed graphs (Algorithms, 4th ed.)", url: "https://algs4.cs.princeton.edu/42digraph/" }
     concepts:
     - In-degree is the number of prerequisites still unfinished for a task.
     - If some tasks never reach in-degree 0, the graph has a cycle and no valid order exists.
@@ -830,6 +1005,9 @@ topics:
     visualizer: union_find
     requires:
     - graphs
+    resources:
+      - { label: "Disjoint set union", url: "https://cp-algorithms.com/data_structures/disjoint_set_union.html" }
+      - { label: "Union-find (Algorithms, 4th ed.)", url: "https://algs4.cs.princeton.edu/15uf/" }
     concepts:
     - Each group is a tree; its root is the group's name.
     - Path compression in find() keeps the trees flat, making operations almost O(1).
@@ -877,6 +1055,9 @@ topics:
     visualizer: top_k_elements
     requires:
     - heaps
+    resources:
+      - { label: "heapq — heap queue", url: "https://docs.python.org/3/library/heapq.html" }
+      - { label: "K-th order statistic in O(n)", url: "https://cp-algorithms.com/sequences/k-th.html" }
     concepts:
     - 'For the k largest, use a min-heap of size k: its root is the weakest member of the top k.'
     - Python's heapq is a min-heap; push negatives to get a max-heap.
@@ -923,6 +1104,16 @@ topics:
     difficulty: 4
     phase: 3
     requires: [recursion, hash-maps]
+    resources:
+      - { label: "Introduction to dynamic programming", url: "https://cp-algorithms.com/dynamic_programming/intro-to-dp.html" }
+      - { label: "Knapsack problem", url: "https://cp-algorithms.com/dynamic_programming/knapsack.html" }
+      - { label: "Longest increasing subsequence", url: "https://cp-algorithms.com/sequences/longest_increasing_subsequence.html" }
+    concepts:
+      - "DP applies when a problem has overlapping subproblems and an optimal substructure."
+      - "Define the state in words first; the recurrence and base cases follow from it."
+      - "Top-down adds a cache to recursion; bottom-up fills a table in dependency order."
+      - "Time is usually the number of states times the work per state."
+      - "Use DP when greedy local choices don't lead to the best overall answer."
 
   # ---------------- DSA problem-solving patterns (batch 4: recursion) ----------------
   - id: backtracking
@@ -935,6 +1126,9 @@ topics:
     requires:
     - recursion
     - trees
+    resources:
+      - { label: "Generating all combinations", url: "https://cp-algorithms.com/combinatorics/generating_combinations.html" }
+      - { label: "itertools.combinations", url: "https://docs.python.org/3/library/itertools.html#itertools.combinations" }
     concepts:
     - 'Choose, explore, un-choose: the undo step is what makes it backtracking.'
     - The calls form a decision tree; each root-to-leaf path is one candidate answer.
@@ -987,6 +1181,9 @@ topics:
     visualizer: dp_grid
     requires:
     - dynamic-programming
+    resources:
+      - { label: "Introduction to dynamic programming", url: "https://cp-algorithms.com/dynamic_programming/intro-to-dp.html" }
+      - { label: "difflib — comparing sequences", url: "https://docs.python.org/3/library/difflib.html" }
     concepts:
     - Define dp[i][j] in words first; the recurrence and base cases follow from that.
     - Fill the table in an order where every cell's inputs are already computed.
@@ -1032,6 +1229,16 @@ topics:
     summary: Types, control flow, functions, comprehensions and the standard library.
     difficulty: 1
     phase: 3
+    resources:
+      - { label: "The Python tutorial", url: "https://docs.python.org/3/tutorial/" }
+      - { label: "Built-in types", url: "https://docs.python.org/3/library/stdtypes.html" }
+      - { label: "PEP 8 — style guide", url: "https://peps.python.org/pep-0008/" }
+    concepts:
+      - "Variables are names pointing to objects; assignment never copies."
+      - "Lists, dicts and sets are mutable; numbers, strings and tuples are not, so only they can be dict keys."
+      - "Prefer idioms like for-in loops, enumerate, zip and comprehensions over index loops."
+      - "Never use a mutable default argument; default to None and create the object inside."
+      - "Learn the standard library (collections, itertools, pathlib, json) before reaching for packages."
 
   - id: python-advanced
     track: languages
@@ -1040,6 +1247,17 @@ topics:
     difficulty: 3
     phase: 3
     requires: [python-basics]
+    resources:
+      - { label: "Functional programming HOWTO (iterators and generators)", url: "https://docs.python.org/3/howto/functional.html" }
+      - { label: "contextlib — context managers", url: "https://docs.python.org/3/library/contextlib.html" }
+      - { label: "typing — type hints", url: "https://docs.python.org/3/library/typing.html" }
+      - { label: "Data model (special methods)", url: "https://docs.python.org/3/reference/datamodel.html" }
+    concepts:
+      - "Generators yield values lazily, so they can process huge or infinite data in constant memory."
+      - "A decorator is a function that takes a function and returns a wrapped one; use functools.wraps."
+      - "Context managers guarantee cleanup through __enter__ and __exit__, even when errors happen."
+      - "Type hints are checked by tools like mypy, not by Python at run time."
+      - "async/await helps code that waits on I/O; it does not speed up CPU-heavy work."
 
   - id: typescript-basics
     track: languages
@@ -1047,6 +1265,17 @@ topics:
     summary: JavaScript with types; interfaces, generics and how the compiler helps you.
     difficulty: 2
     phase: 3
+    resources:
+      - { label: "The TypeScript handbook", url: "https://www.typescriptlang.org/docs/handbook/intro.html" }
+      - { label: "Narrowing", url: "https://www.typescriptlang.org/docs/handbook/2/narrowing.html" }
+      - { label: "Generics", url: "https://www.typescriptlang.org/docs/handbook/2/generics.html" }
+      - { label: "Utility types", url: "https://www.typescriptlang.org/docs/handbook/utility-types.html" }
+    concepts:
+      - "TypeScript checks types at compile time and erases them, so runtime data still needs validation."
+      - "Types are structural; any object with the right shape fits."
+      - "Narrowing with typeof, in and discriminated unions lets the compiler know the exact type."
+      - "Prefer unknown over any, and turn on strict mode to catch null and undefined bugs."
+      - "Generics keep types connected, e.g. a function that returns the same type it receives."
 
   - id: concurrency
     track: languages
@@ -1055,6 +1284,17 @@ topics:
     difficulty: 4
     phase: 3
     requires: [python-advanced]
+    resources:
+      - { label: "concurrent.futures — thread and process pools", url: "https://docs.python.org/3/library/concurrent.futures.html" }
+      - { label: "asyncio — coroutines and tasks", url: "https://docs.python.org/3/library/asyncio-task.html" }
+      - { label: "threading — locks and threads", url: "https://docs.python.org/3/library/threading.html" }
+      - { label: "Free-threaded Python (no GIL)", url: "https://docs.python.org/3/howto/free-threading-python.html" }
+    concepts:
+      - "Concurrency overlaps waiting; parallelism runs work at the same moment on different cores."
+      - "Use threads or async for I/O-bound work and processes for CPU-bound work in CPython."
+      - "The GIL lets only one thread run Python bytecode at a time in standard CPython."
+      - "Shared mutable state between threads needs locks; otherwise updates can be lost."
+      - "One blocking call inside async code stalls every task on that event loop."
 
   # ---------------- Languages: SQL ----------------
   - id: sql-basics
@@ -1150,6 +1390,13 @@ topics:
       - { label: Django at a glance, url: "https://docs.djangoproject.com/en/stable/intro/overview/" }
       - { label: "Tutorial, part 1", url: "https://docs.djangoproject.com/en/stable/intro/tutorial01/" }
       - { label: Settings, url: "https://docs.djangoproject.com/en/stable/topics/settings/" }
+      - { label: "Middleware", url: "https://docs.djangoproject.com/en/stable/topics/http/middleware/" }
+    concepts:
+      - "A project holds settings and root URLs; apps are focused packages with their own models, views and URLs."
+      - "A request flows through middleware, the URL resolver, a view, and back through middleware."
+      - "Django's MTV is MVC with different names: models for data, views for logic, templates for HTML."
+      - "Keep secrets and per-environment values in environment variables, never in committed settings."
+      - "Every app must be listed in INSTALLED_APPS for its models and migrations to be found."
 
   - id: django-urls-views
     track: frameworks
@@ -1162,6 +1409,12 @@ topics:
       - { label: URL dispatcher, url: "https://docs.djangoproject.com/en/stable/topics/http/urls/" }
       - { label: Writing views, url: "https://docs.djangoproject.com/en/stable/topics/http/views/" }
       - { label: Class-based views, url: "https://docs.djangoproject.com/en/stable/topics/class-based-views/" }
+    concepts:
+      - "A view is any callable that takes an HttpRequest and returns an HttpResponse."
+      - "Name every URL and build links with reverse() or the url tag, never hard-coded paths."
+      - "Function views are explicit; class-based generic views remove boilerplate for standard pages."
+      - "State-changing actions use POST, followed by a redirect (POST/Redirect/GET)."
+      - "Override get_queryset() or get_context_data() instead of rewriting get()."
 
   - id: django-models-orm
     track: frameworks
@@ -1174,6 +1427,13 @@ topics:
       - { label: Models, url: "https://docs.djangoproject.com/en/stable/topics/db/models/" }
       - { label: Making queries, url: "https://docs.djangoproject.com/en/stable/topics/db/queries/" }
       - { label: QuerySet API reference, url: "https://docs.djangoproject.com/en/stable/ref/models/querysets/" }
+      - { label: Database access optimization, url: "https://docs.djangoproject.com/en/stable/topics/db/optimization/" }
+    concepts:
+      - A model is a class for one table; each field is a column and each instance is a row.
+      - QuerySets are lazy and run SQL only when evaluated (looping, list(), len(), bool).
+      - "select_related joins foreign keys in one query; prefetch_related loads the many side in a second query."
+      - Accessing a relation inside a loop causes N+1 queries; measure query counts to catch it.
+      - "Use F() expressions or select_for_update() to avoid lost updates under concurrency."
 
   - id: django-migrations
     track: frameworks
@@ -1184,6 +1444,13 @@ topics:
     requires: [django-models-orm]
     resources:
       - { label: Migrations, url: "https://docs.djangoproject.com/en/stable/topics/migrations/" }
+      - { label: "Writing migrations", url: "https://docs.djangoproject.com/en/stable/howto/writing-migrations/" }
+    concepts:
+      - "Migrations are versioned schema changes generated from model changes and committed to git."
+      - "Django tracks applied migrations in the django_migrations table and runs the rest in dependency order."
+      - "Data migrations must use apps.get_model, not direct model imports."
+      - "Change big production tables in steps: add nullable, backfill in batches, then enforce."
+      - "Check the SQL with sqlmigrate and run makemigrations --check in CI."
 
   - id: django-templates
     track: frameworks
@@ -1194,6 +1461,12 @@ topics:
     requires: [django-urls-views]
     resources:
       - { label: Templates, url: "https://docs.djangoproject.com/en/stable/topics/templates/" }
+      - { label: "The template language", url: "https://docs.djangoproject.com/en/stable/ref/templates/language/" }
+    concepts:
+      - "Variables are auto-escaped, which blocks XSS; only mark trusted HTML as safe."
+      - "Base templates define blocks; child templates extend them and override only what changes."
+      - "The template language is limited on purpose so logic stays in Python."
+      - "Following relations inside template loops is a common hidden source of N+1 queries."
 
   - id: django-forms
     track: frameworks
@@ -1205,6 +1478,14 @@ topics:
     resources:
       - { label: Working with forms, url: "https://docs.djangoproject.com/en/stable/topics/forms/" }
       - { label: Forms from models, url: "https://docs.djangoproject.com/en/stable/topics/forms/modelforms/" }
+      - { label: "Form and field validation", url: "https://docs.djangoproject.com/en/stable/ref/forms/validation/" }
+      - { label: "CSRF protection", url: "https://docs.djangoproject.com/en/stable/ref/csrf/" }
+    concepts:
+      - "Forms convert, validate and report errors: field checks, then clean_<field>(), then clean()."
+      - "ModelForms build fields from a model and save() it; always list fields explicitly."
+      - "save(commit=False) lets you set fields the user must not control before saving."
+      - "POST forms need the CSRF token; never disable CSRF to silence a 403."
+      - "Enforce critical rules with database constraints too, not only in forms."
 
   - id: django-admin
     track: frameworks
@@ -1216,6 +1497,13 @@ topics:
     resources:
       - { label: The Django admin site, url: "https://docs.djangoproject.com/en/stable/ref/contrib/admin/" }
       - { label: "Tutorial, part 7", url: "https://docs.djangoproject.com/en/stable/intro/tutorial07/" }
+      - { label: "Admin actions", url: "https://docs.djangoproject.com/en/stable/ref/contrib/admin/actions/" }
+    concepts:
+      - "Registering a model gives staff list, search, filter and edit pages with no extra code."
+      - "ModelAdmin options like list_display, list_filter and inlines customise the pages."
+      - "list_select_related and autocomplete_fields keep big admin pages fast."
+      - "Use groups and per-model permissions instead of making everyone a superuser."
+      - "The admin is for trusted internal users, not a public interface."
 
   - id: django-auth
     track: frameworks
@@ -1227,6 +1515,14 @@ topics:
     resources:
       - { label: User authentication, url: "https://docs.djangoproject.com/en/stable/topics/auth/" }
       - { label: Using the auth system, url: "https://docs.djangoproject.com/en/stable/topics/auth/default/" }
+      - { label: "Customizing authentication", url: "https://docs.djangoproject.com/en/stable/topics/auth/customizing/" }
+      - { label: "Password management", url: "https://docs.djangoproject.com/en/stable/topics/auth/passwords/" }
+    concepts:
+      - "Passwords are stored as slow, salted hashes; never store or log them in plain text."
+      - "A session cookie maps each request back to request.user."
+      - "Model permissions answer \"can edit books\"; ownership rules need your own checks or queryset filters."
+      - "Create a custom user model before the first migration of a new project."
+      - "Logout must be a POST, and production cookies must be marked secure."
 
   - id: django-query-optimization
     track: frameworks
@@ -1238,6 +1534,12 @@ topics:
     resources:
       - { label: Database access optimization, url: "https://docs.djangoproject.com/en/stable/topics/db/optimization/" }
       - { label: QuerySet API reference, url: "https://docs.djangoproject.com/en/stable/ref/models/querysets/" }
+    concepts:
+      - "Measure first with Debug Toolbar, query logs or an APM before changing code."
+      - "select_related joins foreign keys; prefetch_related batches reverse and many-to-many relations."
+      - "Let the database count and aggregate with count(), exists(), annotate() and aggregate()."
+      - "Use bulk_create, bulk_update and queryset.update() instead of saving in a loop."
+      - "Lock in fixes with assertNumQueries tests, and check indexes with explain()."
 
   - id: django-rest-framework
     track: frameworks
@@ -1250,6 +1552,13 @@ topics:
       - { label: DRF quickstart, url: "https://www.django-rest-framework.org/tutorial/quickstart/" }
       - { label: Serializers, url: "https://www.django-rest-framework.org/api-guide/serializers/" }
       - { label: ViewSets, url: "https://www.django-rest-framework.org/api-guide/viewsets/" }
+      - { label: "Permissions", url: "https://www.django-rest-framework.org/api-guide/permissions/" }
+    concepts:
+      - "Serializers turn models into JSON and validate incoming data, like forms for APIs."
+      - "ViewSets plus routers create standard CRUD endpoints; @action adds custom ones."
+      - "Authentication, permissions and throttling run before the view's handler."
+      - "Object permissions don't filter lists; restrict get_queryset() by user as well."
+      - "Set server-controlled fields with serializer.save(owner=request.user)."
 
   - id: django-testing
     track: frameworks
@@ -1261,6 +1570,13 @@ topics:
     resources:
       - { label: Testing in Django, url: "https://docs.djangoproject.com/en/stable/topics/testing/" }
       - { label: Testing tools, url: "https://docs.djangoproject.com/en/stable/topics/testing/tools/" }
+      - { label: "pytest-django", url: "https://pytest-django.readthedocs.io/en/latest/" }
+    concepts:
+      - "Each TestCase test runs in a transaction that is rolled back, keeping tests isolated."
+      - "The test client exercises URLs, middleware, views and the database without a server."
+      - "Test behaviour and permission boundaries, not private implementation details."
+      - "Mock only external services such as email, payments and third-party APIs."
+      - "Run tests on the same database engine as production."
 
   - id: django-async-tasks
     track: frameworks
@@ -1273,6 +1589,13 @@ topics:
       - { label: Cache framework, url: "https://docs.djangoproject.com/en/stable/topics/cache/" }
       - { label: Asynchronous support, url: "https://docs.djangoproject.com/en/stable/topics/async/" }
       - { label: Celery with Django, url: "https://docs.celeryq.dev/en/stable/django/first-steps-with-django.html" }
+      - { label: "Django's tasks framework", url: "https://docs.djangoproject.com/en/stable/topics/tasks/" }
+    concepts:
+      - "Move slow or unreliable work to background jobs and return immediately."
+      - "Pass IDs to tasks, make them idempotent, and enqueue with transaction.on_commit."
+      - "Cache-aside reads the cache, computes on a miss, and stores the result with a timeout."
+      - "Every cache needs an invalidation plan, and per-user data needs per-user keys."
+      - "Async views help with waiting on I/O, not with CPU-heavy work."
 
   - id: django-deployment
     track: frameworks
@@ -1285,6 +1608,13 @@ topics:
       - { label: How to deploy Django, url: "https://docs.djangoproject.com/en/stable/howto/deployment/" }
       - { label: Deployment checklist, url: "https://docs.djangoproject.com/en/stable/howto/deployment/checklist/" }
       - { label: Security in Django, url: "https://docs.djangoproject.com/en/stable/topics/security/" }
+      - { label: "Deploying static files", url: "https://docs.djangoproject.com/en/stable/howto/static-files/deployment/" }
+    concepts:
+      - "Run Gunicorn or Uvicorn workers behind HTTPS, never runserver."
+      - "Production needs DEBUG off, secrets from the environment, and correct ALLOWED_HOSTS."
+      - "collectstatic gathers static files; user uploads belong in object storage."
+      - "Run migrations once per release, and keep them compatible with the code still running."
+      - "python manage.py check --deploy lists missing security settings."
 
   # ---------------- AI ----------------
   - id: ml-basics
@@ -1293,6 +1623,16 @@ topics:
     summary: Training vs inference, loss functions, overfitting and evaluation.
     difficulty: 2
     phase: 5
+    resources:
+      - { label: "Machine Learning Crash Course (Google)", url: "https://developers.google.com/machine-learning/crash-course" }
+      - { label: "Cross-validation (scikit-learn)", url: "https://scikit-learn.org/stable/modules/cross_validation.html" }
+      - { label: "Model evaluation metrics (scikit-learn)", url: "https://scikit-learn.org/stable/modules/model_evaluation.html" }
+    concepts:
+      - "Training adjusts a model's parameters to reduce a loss; inference uses the trained model on new inputs."
+      - "Gradient descent repeatedly steps the parameters in the direction that lowers the loss."
+      - "Overfitting means memorising training data; check performance on data the model never saw."
+      - "Split data into training, validation and test sets, and split by time for time-based data."
+      - "On imbalanced data, accuracy misleads; use precision, recall or F1."
 
   - id: embeddings
     track: ai
@@ -1301,6 +1641,15 @@ topics:
     difficulty: 3
     phase: 5
     requires: [ml-basics]
+    resources:
+      - { label: "Embeddings (Claude docs)", url: "https://platform.claude.com/docs/en/build-with-claude/embeddings" }
+      - { label: "pgvector — vector search for PostgreSQL", url: "https://github.com/pgvector/pgvector" }
+    concepts:
+      - "An embedding is a vector that places similar meanings close together."
+      - "Cosine similarity compares directions; for normalised vectors it equals the dot product."
+      - "Chunk long documents so each vector represents one focused idea."
+      - "Only compare vectors produced by the same model."
+      - "Approximate nearest-neighbour indexes such as HNSW trade a little recall for big speed gains."
 
   - id: transformers
     track: ai
@@ -1309,6 +1658,15 @@ topics:
     difficulty: 4
     phase: 5
     requires: [embeddings]
+    resources:
+      - { label: "Attention Is All You Need (original paper)", url: "https://arxiv.org/abs/1706.03762" }
+      - { label: "How do Transformers work? (Hugging Face LLM course)", url: "https://huggingface.co/learn/llm-course/chapter1/4" }
+    concepts:
+      - "Text is split into tokens; limits and prices are counted in tokens."
+      - "Self-attention lets each token weigh every other token using queries, keys and values."
+      - "LLMs generate text by predicting the next token, one step at a time."
+      - "Attention cost grows with the square of the input length, which limits context windows."
+      - "Fluent output is not verified fact; models can hallucinate."
 
   - id: prompting
     track: ai
@@ -1317,6 +1675,15 @@ topics:
     difficulty: 2
     phase: 5
     requires: [ml-basics]
+    resources:
+      - { label: "Prompt engineering overview (Claude docs)", url: "https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/overview" }
+      - { label: "Prompt injection (OWASP Top 10 for LLMs)", url: "https://genai.owasp.org/llmrisk/llm01-prompt-injection/" }
+    concepts:
+      - "Be specific about the task, audience, constraints and what to do when information is missing."
+      - "A few varied examples often improve output more than extra instructions."
+      - "Ask for structured output and validate it before using it."
+      - "Keep untrusted text clearly separated from instructions to limit prompt injection."
+      - "Test prompt changes against a fixed evaluation set of real cases."
 
   - id: rag
     track: ai
@@ -1325,6 +1692,16 @@ topics:
     difficulty: 3
     phase: 5
     requires: [embeddings, prompting]
+    resources:
+      - { label: "Retrieval-Augmented Generation (original paper)", url: "https://arxiv.org/abs/2005.11401" }
+      - { label: "Contextual retrieval (Anthropic)", url: "https://www.anthropic.com/research/contextual-retrieval" }
+      - { label: "pgvector — vector search for PostgreSQL", url: "https://github.com/pgvector/pgvector" }
+    concepts:
+      - "RAG retrieves relevant passages and asks the model to answer only from them, with citations."
+      - "Most RAG quality problems come from chunking and retrieval, not from the model."
+      - "Hybrid search combines semantic vectors with keyword matching for exact terms."
+      - "Apply the user's permissions during retrieval, not after generation."
+      - "Evaluate retrieval and answer quality separately."
 
   - id: ai-agents
     track: ai
@@ -1333,6 +1710,16 @@ topics:
     difficulty: 4
     phase: 5
     requires: [prompting]
+    resources:
+      - { label: "Building effective agents (Anthropic)", url: "https://www.anthropic.com/research/building-effective-agents" }
+      - { label: "Tool use overview (Claude docs)", url: "https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview" }
+      - { label: "Model Context Protocol", url: "https://modelcontextprotocol.io/introduction" }
+    concepts:
+      - "An agent is a model calling tools in a loop until the task is done."
+      - "The model only requests tool calls; your code runs them and checks permissions."
+      - "Cap steps, time and cost, and require human approval for irreversible actions."
+      - "Use a fixed workflow when the steps are known; use an agent when they are not."
+      - "Log every step so agent behaviour can be debugged and evaluated."
 
   # ---------------- System design ----------------
   # Core concepts -> patterns -> distributed systems -> interview case studies.
@@ -1486,6 +1873,7 @@ topics:
       - "Distributed caches and Dynamo-style databases use it to place data."
     resources:
       - { label: "Dynamo paper (Amazon, PDF)", url: "https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf" }
+      - { label: "Dynamo-style data distribution (Apache Cassandra)", url: "https://cassandra.apache.org/doc/latest/cassandra/architecture/dynamo.html" }
 
   - id: sharding
     track: system-design
@@ -1621,6 +2009,7 @@ topics:
       - "Search indexes are usually updated asynchronously from the main database."
     resources:
       - { label: Full text search (PostgreSQL), url: "https://www.postgresql.org/docs/current/textsearch-intro.html" }
+      - { label: "Text analysis (Elasticsearch)", url: "https://www.elastic.co/docs/manage-data/data-store/text-analysis" }
 
   - id: blob-storage
     track: system-design
@@ -1686,6 +2075,7 @@ topics:
       - "Choose HTTP 301 or 302 redirects depending on whether you need to count clicks."
     resources:
       - { label: "Similar design: Pastebin (System Design Primer)", url: "https://github.com/donnemartin/system-design-primer/blob/master/solutions/system_design/pastebin/README.md" }
+      - { label: "Redirections in HTTP (MDN)", url: "https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Redirections" }
 
   - id: design-chat
     track: system-design
@@ -1717,3 +2107,4 @@ topics:
       - "Store each feed in a cache as a list of post IDs, and load the post details separately."
     resources:
       - { label: "Similar design: Twitter timeline (System Design Primer)", url: "https://github.com/donnemartin/system-design-primer/blob/master/solutions/system_design/twitter/README.md" }
+      - { label: "Redis lists", url: "https://redis.io/docs/latest/develop/data-types/lists/" }

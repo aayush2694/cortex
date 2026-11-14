@@ -49,3 +49,4 @@ class KnowledgeMapOut(BaseModel):
 class TopicDetailOut(TopicOut):
     requires: list[TopicOut]
     unlocks: list[TopicOut]
+    guide: str | None = None  # Markdown, from content/guides/<id>.md

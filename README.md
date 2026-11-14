@@ -13,6 +13,9 @@ an AI tutor knows what you've learned.
 
 - **Knowledge map:** 86 topics across 5 tracks (DSA, languages incl. SQL, Django, AI, system
   design), linked by prerequisites and shaded by your mastery
+- **Topic guides:** every topic has a written guide (about 1.5 pages) layered from a plain-words
+  explanation to code, common mistakes and interview questions, plus key ideas and 2–4 links to
+  official docs. Every runnable example in the guides is executed by the tests.
 - **DSA patterns:** 18 patterns, each with an animated walkthrough, a template and 95 LeetCode
   problems to tick off; plus 7 classic algorithms in the step-by-step visualizer
 - **Practice:** 50 coding problems (36 Python, 14 SQL) that run in your browser via Pyodide,

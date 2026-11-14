@@ -20,6 +20,7 @@ from app.modules.practice.router import router as practice_router
 from app.modules.progress.router import router as progress_router
 from app.modules.study.router import router as study_router
 from app.modules.topics.catalog import load_catalog
+from app.modules.topics.guides import get_guides
 from app.modules.topics.repository import TopicRepository
 from app.modules.topics.router import router as topics_router
 from app.modules.tutor.router import router as tutor_router
@@ -38,6 +39,7 @@ async def sync_topics() -> int:
     # Coding problems must point at real topics; fail fast at startup if not.
     validate_practice(get_practice(), {t.id for t in catalog.topics})
     get_skills(), get_questions()  # load (and validate) the job-search content now
+    get_guides()  # a broken guide stops startup
     return len(catalog.topics)
 
 

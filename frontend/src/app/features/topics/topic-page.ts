@@ -15,6 +15,7 @@ import { Status, TRACK_LABELS } from '../../core/api/models';
 import { LearningStore } from '../../core/learning-store';
 import { StatusDot } from '../../shared/status-dot';
 import { PatternWalkthrough } from './pattern-walkthrough';
+import { TopicGuide } from './topic-guide';
 import { TopicNotes } from './topic-notes';
 import { TopicPractice } from './topic-practice';
 
@@ -26,7 +27,7 @@ const STATUSES: { value: Status; label: string }[] = [
 
 @Component({
   selector: 'app-topic-page',
-  imports: [RouterLink, StatusDot, PatternWalkthrough, TopicNotes, TopicPractice],
+  imports: [RouterLink, StatusDot, PatternWalkthrough, TopicGuide, TopicNotes, TopicPractice],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page narrow">
@@ -57,10 +58,14 @@ const STATUSES: { value: Status; label: string }[] = [
           </div>
         </header>
 
+        @if (t.guide) {
+          <app-topic-guide [guide]="t.guide" />
+        }
+
         <app-pattern-walkthrough [topic]="t" />
 
         @if (t.concepts.length) {
-          <span class="group-label" [class.first]="!t.pattern">Key ideas</span>
+          <span class="group-label" [class.first]="!t.pattern && !t.guide">Key ideas</span>
           <ol class="list ideas">
             @for (c of t.concepts; track $index) {
               <li class="list-row idea">
@@ -101,7 +106,7 @@ const STATUSES: { value: Status; label: string }[] = [
         <app-topic-notes [topicId]="t.id" />
 
         @if (t.resources.length) {
-          <span class="group-label">Docs & references</span>
+          <span class="group-label">Read more</span>
           <div class="list">
             @for (r of t.resources; track r.url) {
               <a class="list-row" [href]="r.url" target="_blank" rel="noopener noreferrer">

@@ -1,0 +1,31 @@
+name: Links
+
+# Open every topic link once a week, so a link that stops working shows up as a failed run.
+on:
+  schedule:
+    - cron: "0 6 * * 1"   # Mondays 06:00 UTC
+  workflow_dispatch:      # or run it by hand from the Actions tab
+
+# Least privilege: the check only reads the code.
+permissions:
+  contents: read
+
+jobs:
+  links:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v5
+
+      # Same pinned commit as ci.yml (v6.8.0).
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e  # v6.8.0
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Check every topic link
+        run: uv run python -m scripts.check_links

@@ -56,6 +56,8 @@ export interface KnowledgeMap {
 export interface TopicDetail extends Topic {
   requires: Topic[];
   unlocks: Topic[];
+  /** Markdown guide, or null when the topic has none yet. */
+  guide: string | null;
 }
 
 export interface ProgressItem {
