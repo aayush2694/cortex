@@ -10,5 +10,8 @@
   },
   "vars": {
     "API_ORIGIN": "https://cortex-api-w5ew.onrender.com"
+  },
+  "triggers": {
+    "crons": ["*/10 * * * *"]
   }
 }

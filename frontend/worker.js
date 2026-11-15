@@ -10,4 +10,10 @@ export default {
     }
     return env.ASSETS.fetch(request);
   },
+
+  // Runs every 10 minutes (the cron in wrangler.jsonc). The free backend host sleeps after
+  // 15 idle minutes and takes about a minute to wake; this request keeps it awake.
+  async scheduled(controller, env, ctx) {
+    ctx.waitUntil(fetch(new URL('/health', env.API_ORIGIN)));
+  },
 };
