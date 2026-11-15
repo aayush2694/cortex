@@ -62,8 +62,13 @@ def get_settings() -> Settings:
 
 
 def validate_auth_settings(s: Settings) -> None:
-    """Refuse an unsafe jwt-mode configuration. Dev mode needs nothing."""
+    """Refuse an unsafe configuration: dev mode in production, or an incomplete jwt mode."""
     if s.auth_mode != "jwt":
+        if s.environment == "prod":
+            # Fail closed: dev mode serves one shared user to every visitor.
+            raise ValueError(
+                "AUTH_MODE=dev is not allowed when ENVIRONMENT=prod; set AUTH_MODE=jwt"
+            )
         return
     if not s.jwt_secret or len(s.jwt_secret.encode()) < 32:
         raise ValueError("JWT_SECRET must be set to at least 32 bytes when AUTH_MODE=jwt")

@@ -35,7 +35,11 @@ After sign-in, the sidebar footer shows the user's avatar or initials, name, and
 
 1. `GET /api/v1/auth/{provider}/start` creates an `oauth_states` row (random `state`, PKCE
    verifier where the provider supports PKCE, expires in 10 minutes) and redirects to the
-   provider's authorize URL.
+   provider's authorize URL. It also sets a random nonce in a `cortex_login` cookie (HttpOnly,
+   Secure except on http://localhost, SameSite=Lax, path `/api/v1/auth`, 10 minutes) and stores
+   its hash on the state; the callback and `POST /auth/token` require that cookie, so a callback
+   URL or login code made in another browser cannot sign this one in. `/start` also deletes
+   expired states and expired or used login codes.
 2. `GET /api/v1/auth/{provider}/callback` checks and consumes the state, exchanges the code for
    the provider's token using the client secret, reads the profile (provider user id, email,
    whether the email is verified, name, avatar), then finds or creates the user (rules in 2).
@@ -63,8 +67,8 @@ After sign-in, the sidebar footer shows the user's avatar or initials, name, and
   `email_verified`, `created_at`; unique on (`provider`, `provider_user_id`).
 - Linking: a new identity joins an existing user only when both emails are verified and equal.
   Otherwise it creates a new user. GitHub needs the `user:email` scope to read verified emails.
-- `oauth_states`: `state` (PK), `provider`, `code_verifier`, `expires_at`.
-- `login_codes`: `code_hash` (PK), `user_id`, `expires_at`, `used_at`.
+- `oauth_states`: `state` (PK), `provider`, `code_verifier`, `nonce_hash`, `expires_at`.
+- `login_codes`: `code_hash` (PK), `user_id`, `nonce_hash`, `expires_at`, `used_at`.
 - `refresh_tokens`: `id`, `user_id`, `family_id`, `token_hash` (unique), `expires_at`,
   `used_at`, `replaced_by_id`, `revoked_at`, `created_at`.
 - Tutor invites: setting `TUTOR_INVITED_EMAILS` (comma separated). Access requires a verified

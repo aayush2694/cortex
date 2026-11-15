@@ -1,12 +1,14 @@
 """Sign-in flow: OAuth state + PKCE, one-time login codes, tokens, rotation and linking."""
 
 import uuid
+from datetime import timedelta
 from urllib.parse import parse_qs, urlsplit
 
 import httpx
+import pytest
 from sqlalchemy import func, select
 
-from app.core.config import Settings
+from app.core.config import Settings, get_settings
 from app.core.db import get_sessionmaker
 from app.main import app
 from app.modules.auth.models import Identity, LoginCode, OAuthState, RefreshToken
@@ -19,32 +21,57 @@ AUTH = "/api/v1/auth"
 GITHUB = Profile("github", "gh-1", "a@x.com", True, "Ada GitHub", "https://img.test/a.png")
 
 
+NONCE_COOKIE = "cortex_login"
+
+
+def set_cookie(r: httpx.Response) -> dict[str, str]:
+    """The nonce cookie's Set-Cookie header as {attribute (lower case): value}."""
+    headers = [h for h in r.headers.get_list("set-cookie") if h.startswith(f"{NONCE_COOKIE}=")]
+    assert len(headers) == 1, r.headers.get_list("set-cookie")
+    parts = [p.strip() for p in headers[0].split(";")]
+    attrs = {"value": parts[0].partition("=")[2].strip('"')}
+    for part in parts[1:]:
+        key, _, value = part.partition("=")
+        attrs[key.lower()] = value
+    return attrs
+
+
+def nonce_header(nonce: str | None) -> dict[str, str]:
+    return {"Cookie": f"{NONCE_COOKIE}={nonce}"} if nonce is not None else {}
+
+
 async def start(client: httpx.AsyncClient, provider: str = "github") -> dict[str, str]:
+    """The provider authorize query, plus "nonce": the browser-binding cookie /start set."""
     r = await client.get(f"{AUTH}/{provider}/start")
     assert r.status_code == 302
     query = parse_qs(urlsplit(r.headers["location"]).query)
-    return {k: v[0] for k, v in query.items()}
+    return {k: v[0] for k, v in query.items()} | {"nonce": set_cookie(r)["value"]}
 
 
 async def callback(
-    client: httpx.AsyncClient, provider: str = "github", **params: str
+    client: httpx.AsyncClient, provider: str = "github", nonce: str | None = None, **params: str
 ) -> httpx.Response:
-    r = await client.get(f"{AUTH}/{provider}/callback", params=params)
+    r = await client.get(f"{AUTH}/{provider}/callback", params=params, headers=nonce_header(nonce))
     assert r.status_code == 302
     return r
 
 
-async def login_code(client: httpx.AsyncClient, provider: str = "github") -> str:
-    state = (await start(client, provider))["state"]
-    location = (await callback(client, provider, code="pcode", state=state)).headers["location"]
-    head, _, fragment = location.partition("#")
+async def token(client: httpx.AsyncClient, code: str, nonce: str | None) -> httpx.Response:
+    return await client.post(f"{AUTH}/token", json={"code": code}, headers=nonce_header(nonce))
+
+
+async def login_code(client: httpx.AsyncClient, provider: str = "github") -> tuple[str, str]:
+    """A one-time login code and the nonce of the browser that started the sign-in."""
+    started = await start(client, provider)
+    r = await callback(client, provider, started["nonce"], code="pcode", state=started["state"])
+    head, _, fragment = r.headers["location"].partition("#")
     assert head == "http://web.test/auth/done"
     assert fragment.startswith("code=")
-    return fragment.removeprefix("code=")
+    return fragment.removeprefix("code="), started["nonce"]
 
 
 async def sign_in(client: httpx.AsyncClient, provider: str = "github") -> dict[str, str]:
-    r = await client.post(f"{AUTH}/token", json={"code": await login_code(client, provider)})
+    r = await token(client, *await login_code(client, provider))
     assert r.status_code == 200, r.text
     return dict(r.json())
 
@@ -71,11 +98,15 @@ async def test_full_flow(
     assert query["state"]
     assert query["redirect_uri"] == "http://web.test/api/v1/auth/github/callback"
 
-    location = (await callback(client, code="pcode", state=query["state"])).headers["location"]
-    head, _, fragment = location.partition("#")
+    nonce = query["nonce"]
+    done = await callback(client, nonce=nonce, code="pcode", state=query["state"])
+    head, _, fragment = done.headers["location"].partition("#")
     assert head == "http://web.test/auth/done" and fragment.startswith("code=")
-    r = await client.post(f"{AUTH}/token", json={"code": fragment.removeprefix("code=")})
+    r = await token(client, fragment.removeprefix("code="), nonce)
     assert r.status_code == 200 and r.headers["cache-control"] == "no-store"
+    cleared = set_cookie(r)  # the nonce is spent: the cookie is cleared
+    assert cleared["value"] == "" and cleared["max-age"] == "0"
+    assert cleared["path"] == "/api/v1/auth"
     tokens = r.json()
     assert set(tokens) == {"access_token", "refresh_token", "expires_in"}
     assert tokens["expires_in"] == 900
@@ -121,15 +152,16 @@ async def test_unknown_provider_is_404(
 async def test_state_is_single_use_and_expires(
     client: httpx.AsyncClient, providers: dict[str, FakeProvider], clock: Clock
 ) -> None:
-    state = (await start(client))["state"]
-    first = await callback(client, code="c", state=state)
+    started = await start(client)
+    state, nonce = started["state"], started["nonce"]
+    first = await callback(client, nonce=nonce, code="c", state=state)
     assert first.headers["location"].startswith("http://web.test/auth/done#code=")
-    replay = await callback(client, code="c", state=state)
+    replay = await callback(client, nonce=nonce, code="c", state=state)
     assert replay.headers["location"] == "http://web.test/signin?error=expired"
 
-    old = (await start(client))["state"]
+    old = await start(client)
     clock.advance(10 * 60 + 1)
-    late = await callback(client, code="c", state=old)
+    late = await callback(client, nonce=old["nonce"], code="c", state=old["state"])
     assert late.headers["location"] == "http://web.test/signin?error=expired"
 
     unknown = await callback(client, code="c", state="made-up")
@@ -138,8 +170,8 @@ async def test_state_is_single_use_and_expires(
     assert missing.headers["location"] == "http://web.test/signin?error=expired"
 
     # A state issued for GitHub cannot finish a Google sign-in.
-    gh_state = (await start(client, "github"))["state"]
-    crossed = await callback(client, "google", code="c", state=gh_state)
+    gh = await start(client, "github")
+    crossed = await callback(client, "google", gh["nonce"], code="c", state=gh["state"])
     assert crossed.headers["location"] == "http://web.test/signin?error=expired"
 
     async with get_sessionmaker()() as session:
@@ -160,31 +192,30 @@ async def test_provider_failure_redirects(
     client: httpx.AsyncClient, providers: dict[str, FakeProvider]
 ) -> None:
     providers["github"].fail = True
-    state = (await start(client))["state"]
-    r = await callback(client, code="c", state=state)
+    started = await start(client)
+    r = await callback(client, nonce=started["nonce"], code="c", state=started["state"])
     assert r.headers["location"] == "http://web.test/signin?error=failed"
 
 
 async def test_login_code_single_use_and_60s(
     client: httpx.AsyncClient, providers: dict[str, FakeProvider], clock: Clock
 ) -> None:
-    code = await login_code(client)
-    assert (await client.post(f"{AUTH}/token", json={"code": code})).status_code == 200
-    again = await client.post(f"{AUTH}/token", json={"code": code})
+    code, nonce = await login_code(client)
+    async with get_sessionmaker()() as session:
+        hashes = (await session.scalars(select(LoginCode.code_hash))).all()
+        assert hashes == [hash_secret(code)]  # only the hash is stored
+    assert (await token(client, code, nonce)).status_code == 200
+    again = await token(client, code, nonce)
     assert again.status_code == 400
     assert again.json()["error"]["code"] == "login_expired"
 
-    late = await login_code(client)
+    late, late_nonce = await login_code(client)
     clock.advance(61)
-    r = await client.post(f"{AUTH}/token", json={"code": late})
+    r = await token(client, late, late_nonce)
     assert r.status_code == 400 and r.json()["error"]["code"] == "login_expired"
 
-    bogus = await client.post(f"{AUTH}/token", json={"code": "not-a-code"})
+    bogus = await token(client, "not-a-code", late_nonce)
     assert bogus.status_code == 400 and bogus.json()["error"]["code"] == "login_expired"
-
-    async with get_sessionmaker()() as session:
-        hashes = (await session.scalars(select(LoginCode.code_hash))).all()
-        assert hash_secret(code) in hashes and code not in hashes
 
 
 # ---------------------------------------------------------------- refresh tokens
@@ -328,20 +359,111 @@ async def test_redirects_only_to_frontend_url(
     query = parse_qs(urlsplit(r.headers["location"]).query)
     assert query["redirect_uri"] == ["http://web.test/api/v1/auth/github/callback"]
 
-    state = query["state"][0]
+    state, nonce = query["state"][0], set_cookie(r)["value"]
     for params in (
         {"code": "c", "state": state, "next": evil, "redirect_uri": evil},
         {"error": "access_denied", "next": evil},
         {"code": "c", "state": "bad", "return_to": evil},
     ):
-        location = (await callback(client, **params)).headers["location"]
+        location = (await callback(client, nonce=nonce, **params)).headers["location"]
         assert location.startswith("http://web.test/")
         assert "evil" not in location
 
     # No auth endpoint takes a redirect target at all.
-    allowed = {"provider", "code", "state", "error"}
+    allowed = {"provider", "code", "state", "error", NONCE_COOKIE}  # a cookie, not a target
     for path, ops in app.openapi()["paths"].items():
         if path.startswith(AUTH):
             for op in ops.values():
                 names = {p["name"] for p in op.get("parameters", [])}
                 assert names <= allowed, (path, names)
+
+
+# ---------------------------------------------------------------- browser binding (login CSRF)
+
+
+async def test_start_sets_a_browser_binding_cookie(
+    client: httpx.AsyncClient, providers: dict[str, FakeProvider]
+) -> None:
+    r = await client.get(f"{AUTH}/github/start")
+    cookie = set_cookie(r)
+    assert len(cookie["value"]) >= 43
+    assert "httponly" in cookie and "secure" in cookie
+    assert cookie["samesite"].lower() == "lax"
+    assert cookie["path"] == "/api/v1/auth"
+    assert cookie["max-age"] == "600"
+    state = parse_qs(urlsplit(r.headers["location"]).query)["state"][0]
+    async with get_sessionmaker()() as session:
+        pending = await session.get(OAuthState, state)
+        assert pending is not None and pending.nonce_hash == hash_secret(cookie["value"])
+
+
+async def test_cookie_is_not_secure_on_plain_http_localhost(
+    client: httpx.AsyncClient,
+    providers: dict[str, FakeProvider],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("FRONTEND_URL", "http://localhost:4200")
+    get_settings.cache_clear()
+    r = await client.get(f"{AUTH}/github/start")
+    assert "secure" not in set_cookie(r)
+
+
+@pytest.mark.parametrize("nonce", [None, "someone-elses-nonce"])
+async def test_callback_needs_the_cookie_of_the_browser_that_started(
+    client: httpx.AsyncClient, providers: dict[str, FakeProvider], nonce: str | None
+) -> None:
+    # An attacker starts a sign-in and sends the victim the callback URL.
+    started = await start(client)
+    r = await callback(client, nonce=nonce, code="c", state=started["state"])
+    assert r.headers["location"] == "http://web.test/signin?error=expired"
+    assert providers["github"].calls == []
+    async with get_sessionmaker()() as session:
+        assert await session.scalar(select(func.count()).select_from(LoginCode)) == 0
+
+
+async def test_login_code_is_bound_to_the_browser(
+    client: httpx.AsyncClient, providers: dict[str, FakeProvider]
+) -> None:
+    code, nonce = await login_code(client)
+    async with get_sessionmaker()() as session:
+        row = await session.get(LoginCode, hash_secret(code))
+        assert row is not None and row.nonce_hash == hash_secret(nonce)
+    # An attacker's own code opened in the victim's browser (another nonce, or none).
+    for other in (None, "someone-elses-nonce"):
+        r = await token(client, code, other)
+        assert r.status_code == 400 and r.json()["error"]["code"] == "login_expired"
+    assert (await token(client, code, nonce)).status_code == 200
+
+
+# ---------------------------------------------------------------- cleanup
+
+
+async def test_start_deletes_expired_states_and_spent_codes(
+    client: httpx.AsyncClient, providers: dict[str, FakeProvider], clock: Clock
+) -> None:
+    now, soon, past = clock(), clock() + timedelta(seconds=30), clock() - timedelta(seconds=1)
+    async with get_sessionmaker()() as session:
+        user = User(display_name="X")
+        session.add(user)
+        await session.flush()
+        state = {"provider": "github", "code_verifier": "v", "nonce_hash": "h"}
+        session.add_all(
+            [
+                OAuthState(state="old", expires_at=past, **state),
+                OAuthState(state="live", expires_at=soon, **state),
+                LoginCode(code_hash="expired", user_id=user.id, nonce_hash="h", expires_at=past),
+                LoginCode(
+                    code_hash="used", user_id=user.id, nonce_hash="h", expires_at=soon, used_at=now
+                ),
+                LoginCode(code_hash="live", user_id=user.id, nonce_hash="h", expires_at=soon),
+            ]
+        )
+        await session.commit()
+
+    new_state = (await start(client))["state"]
+
+    async with get_sessionmaker()() as session:
+        states = set((await session.scalars(select(OAuthState.state))).all())
+        assert states == {"live", new_state}
+        codes = set((await session.scalars(select(LoginCode.code_hash))).all())
+        assert codes == {"live"}

@@ -15,3 +15,11 @@ export const authGuard: CanActivateFn = async () => {
   if (auth.status() === 'offline') return true;
   return auth.mode() === 'dev' || auth.signedIn() ? true : router.createUrlTree(['/signin']);
 };
+
+/** Keeps a signed-in user (jwt mode) off /signin, so Back after signing in lands in the app. */
+export const signedOutGuard: CanActivateFn = async () => {
+  const auth = inject(Auth);
+  const router = inject(Router); // inject before any await
+  if (auth.mode() === null) await auth.init();
+  return auth.mode() === 'jwt' && auth.signedIn() ? router.createUrlTree(['/']) : true;
+};

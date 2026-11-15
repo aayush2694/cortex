@@ -30,16 +30,17 @@ export class AuthDone {
     const code = new URLSearchParams(location.hash.slice(1)).get('code');
     // Keep the code out of the address bar and history right away.
     history.replaceState(null, '', location.pathname + location.search);
+    // replaceUrl: Back must not return to this one-time page ("That sign-in link expired").
     if (!code) {
-      await this.router.navigateByUrl('/signin?error=expired');
+      await this.router.navigateByUrl('/signin?error=expired', { replaceUrl: true });
       return;
     }
     try {
       await this.auth.completeSignIn(code);
     } catch {
-      await this.router.navigateByUrl('/signin?error=expired');
+      await this.router.navigateByUrl('/signin?error=expired', { replaceUrl: true });
       return;
     }
-    await this.router.navigateByUrl('/');
+    await this.router.navigateByUrl('/', { replaceUrl: true });
   }
 }

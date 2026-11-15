@@ -166,6 +166,7 @@ def test_authorize_url(provider: GitHubProvider | GoogleProvider, base: str, sco
     assert q["redirect_uri"] == [REDIRECT]
     assert q["client_id"] == ["cid"]
     assert q["scope"] == [scope]
+    assert q["response_type"] == ["code"]  # Google rejects the request without it
 
 
 def test_configured_providers_only_with_id_and_secret() -> None:

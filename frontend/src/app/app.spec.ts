@@ -59,6 +59,47 @@ describe('App shell', () => {
     await vi.waitFor(() => expect(nav).toHaveBeenCalledWith('/signin'));
   });
 
+  it('shows a calm waking message after 3 s, then the app when the API answers', async () => {
+    vi.useFakeTimers();
+    try {
+      const { ctrl, el, fixture, auth } = await setup();
+      const probe = ctrl.expectOne('/api/v1/auth/providers');
+      await vi.advanceTimersByTimeAsync(2000);
+      fixture.detectChanges();
+      expect(el.textContent).not.toContain('Waking up the server');
+      await vi.advanceTimersByTimeAsync(1000);
+      fixture.detectChanges();
+      const waking = el.querySelector('[role="status"]');
+      expect(waking?.textContent).toContain('Waking up the server…');
+      expect(el.querySelector('[role="alert"]')).toBeNull();
+      expect(el.textContent).not.toContain("Can't reach Cortex");
+      probe.flush({ mode: 'dev', providers: [] });
+      await vi.advanceTimersByTimeAsync(0);
+      expect(auth.status()).toBe('ready');
+      fixture.detectChanges();
+      expect(el.textContent).not.toContain('Waking up the server');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('shows the waking message on the full-screen sign-in page too', async () => {
+    vi.useFakeTimers();
+    try {
+      const { ctrl, router, el, fixture } = await setup();
+      const probe = ctrl.expectOne('/api/v1/auth/providers');
+      void router.navigateByUrl('/signin');
+      await vi.advanceTimersByTimeAsync(3000);
+      fixture.detectChanges();
+      expect(el.querySelector('app-sidebar')).toBeNull();
+      expect(el.querySelector('[role="status"]')?.textContent).toContain('Waking up the server…');
+      probe.flush({ mode: 'dev', providers: [] });
+      await vi.advanceTimersByTimeAsync(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('never shows the offline screen in dev mode when the API answers', async () => {
     const { ctrl, router, el, settle } = await setup();
     ctrl.expectOne('/api/v1/auth/providers').flush({ mode: 'dev', providers: [] });

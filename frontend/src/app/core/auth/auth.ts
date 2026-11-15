@@ -16,8 +16,15 @@ export type AuthStatus = 'loading' | 'ready' | 'offline';
 
 export type RefreshResult = 'ok' | 'rejected' | 'unavailable';
 
-/** How long to wait for the API before treating it as unreachable (Render cold starts aside). */
-const API_TIMEOUT_MS = 8000;
+/**
+ * How long to wait for the API before treating it as unreachable. Render free-tier cold starts
+ * take 30-60 s; giving up sooner would show "Can't reach Cortex" to most first visitors, and a
+ * refresh abandoned early may still rotate on the server, leaving this tab with a used token.
+ */
+const API_TIMEOUT_MS = 60_000;
+
+/** After this long still loading, say the server is waking up rather than showing nothing. */
+const WAKING_AFTER_MS = 3000;
 
 const REFRESH_KEY = 'cortex.refresh';
 
@@ -53,7 +60,10 @@ export class Auth {
   readonly user = this.userSignal.asReadonly();
   readonly status = this.statusSignal.asReadonly();
   readonly providers = this.providersSignal.asReadonly();
+  private readonly wakingSignal = signal(false);
   readonly signedIn = computed(() => this.token() !== null);
+  /** True while init has been loading for over 3 s (a cold start); never an error. */
+  readonly waking = this.wakingSignal.asReadonly();
 
   accessToken(): string | null {
     return this.token();
@@ -61,8 +71,18 @@ export class Auth {
 
   /** Learn the auth mode; in jwt mode, restore the session from a stored refresh token. */
   init(): Promise<void> {
-    this.initPromise ??= this.load();
+    this.initPromise ??= this.loadWithWakingNotice();
     return this.initPromise;
+  }
+
+  private async loadWithWakingNotice(): Promise<void> {
+    const timer = setTimeout(() => this.wakingSignal.set(true), WAKING_AFTER_MS);
+    try {
+      await this.load();
+    } finally {
+      clearTimeout(timer);
+      this.wakingSignal.set(false);
+    }
   }
 
   private async load(): Promise<void> {
@@ -96,7 +116,10 @@ export class Auth {
   }
 
   async completeSignIn(code: string): Promise<void> {
-    const pair = await firstValueFrom(this.http.post<TokenPair>(`${API}/auth/token`, { code }));
+    // Same-origin credentials carry the HttpOnly nonce cookie that /start set on this browser.
+    const pair = await firstValueFrom(
+      this.http.post<TokenPair>(`${API}/auth/token`, { code }, { credentials: 'same-origin' }),
+    );
     this.store(pair);
     await this.loadMe();
   }

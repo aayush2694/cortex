@@ -123,6 +123,26 @@ def test_dev_mode_needs_nothing() -> None:
     validate_auth_settings(Settings(_env_file=None, auth_mode="dev"))
 
 
+def test_prod_refuses_dev_mode() -> None:
+    # An unset AUTH_MODE on the live API would serve one shared user to everyone.
+    with pytest.raises(ValueError, match="AUTH_MODE=dev.*ENVIRONMENT=prod"):
+        validate_auth_settings(Settings(_env_file=None, environment="prod", auth_mode="dev"))
+    with pytest.raises(ValueError, match="AUTH_MODE"):
+        validate_auth_settings(Settings(_env_file=None, environment="prod"))  # the default
+
+
+def test_prod_accepts_jwt_mode() -> None:
+    s = Settings(
+        _env_file=None,
+        environment="prod",
+        auth_mode="jwt",
+        jwt_secret="x" * 32,
+        github_client_id="id",
+        github_client_secret="sec",
+    )
+    validate_auth_settings(s)
+
+
 def test_jwt_mode_rejects_short_secret() -> None:
     s = Settings(
         _env_file=None,

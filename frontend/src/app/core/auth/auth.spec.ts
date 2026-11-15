@@ -51,6 +51,16 @@ describe('Auth', () => {
     await done;
   }
 
+  it('sends the sign-in nonce cookie with the login code (same-origin credentials)', async () => {
+    const done = auth.completeSignIn('code');
+    const token = await req('/api/v1/auth/token');
+    expect(token.request.credentials).toBe('same-origin');
+    expect(token.request.withCredentials).toBe(false);
+    token.flush(pair(1));
+    (await req('/api/v1/me')).flush(me);
+    await done;
+  });
+
   it('signs in with a login code and keeps only the refresh token in storage', async () => {
     await signedIn();
     expect(auth.signedIn()).toBe(true);

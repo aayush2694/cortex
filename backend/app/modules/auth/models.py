@@ -32,6 +32,8 @@ class OAuthState(Base):
     state: Mapped[str] = mapped_column(String(100), primary_key=True)
     provider: Mapped[str] = mapped_column(String(20))
     code_verifier: Mapped[str] = mapped_column(String(128))
+    # Hash of the nonce cookie set on the browser that started sign-in (binds the flow to it).
+    nonce_hash: Mapped[str] = mapped_column(String(64))
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 
@@ -42,6 +44,8 @@ class LoginCode(Base):
 
     code_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    # Copied from the OAuth state: only that browser's nonce cookie can redeem the code.
+    nonce_hash: Mapped[str] = mapped_column(String(64))
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 

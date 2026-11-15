@@ -1,11 +1,12 @@
 import { Routes } from '@angular/router';
 
-import { authGuard } from './core/auth/auth-guard';
+import { authGuard, signedOutGuard } from './core/auth/auth-guard';
 
 // Every page is lazy-loaded: the browser only downloads a page's code when you visit it.
 export const routes: Routes = [
   {
     path: 'signin',
+    canActivate: [signedOutGuard],
     title: 'Sign in · Cortex',
     loadComponent: () => import('./features/auth/sign-in').then((m) => m.SignIn),
   },

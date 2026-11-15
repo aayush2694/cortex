@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
@@ -11,21 +12,31 @@ import { Topbar } from './layout/topbar';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, Sidebar, Topbar, CommandPalette],
+  imports: [RouterOutlet, NgTemplateOutlet, Sidebar, Topbar, CommandPalette],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '(document:keydown)': 'onKey($event)',
   },
   template: `
+    <ng-template #wakingNotice>
+      <div class="notice" role="status">
+        <p>Waking up the server…</p>
+      </div>
+    </ng-template>
     @if (bare()) {
+      @if (auth.waking()) {
+        <ng-container [ngTemplateOutlet]="wakingNotice" />
+      }
       <router-outlet />
     } @else {
       <app-sidebar [open]="navOpen()" (navigate)="navOpen.set(false)" />
       <div class="main">
         <app-topbar (openSearch)="paletteOpen.set(true)" (toggleNav)="navOpen.update((v) => !v)" />
         <main>
-          @if (auth.status() === 'offline') {
-            <div class="offline" role="alert">
+          @if (auth.waking()) {
+            <ng-container [ngTemplateOutlet]="wakingNotice" />
+          } @else if (auth.status() === 'offline') {
+            <div class="notice" role="alert">
               <p>Can't reach Cortex right now.</p>
               <button type="button" class="btn primary" (click)="retry()">Try again</button>
             </div>
@@ -53,7 +64,7 @@ import { Topbar } from './layout/topbar';
     main {
       flex: 1;
     }
-    .offline {
+    .notice {
       min-height: 60vh;
       display: flex;
       flex-direction: column;
@@ -61,8 +72,15 @@ import { Topbar } from './layout/topbar';
       justify-content: center;
       gap: 12px;
     }
-    .offline p {
+    .notice p {
       margin: 0;
+    }
+    :host > .notice {
+      flex: 1;
+      min-height: 100vh;
+    }
+    [role='status'] p {
+      color: var(--text-2);
     }
   `,
 })

@@ -47,6 +47,7 @@ def _authorize_url(
 ) -> str:
     query = urlencode(
         {
+            "response_type": "code",  # required by Google; GitHub accepts it
             "client_id": client_id,
             "redirect_uri": redirect_uri,
             "scope": scope,

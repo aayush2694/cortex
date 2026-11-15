@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import delete, func, select, update
+from sqlalchemy import delete, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.auth.models import Identity, LoginCode, OAuthState, RefreshToken
@@ -17,6 +17,13 @@ class AuthRepository:
         """Delete and return the state in one statement, so it can be used only once."""
         return await self.session.scalar(
             delete(OAuthState).where(OAuthState.state == state).returning(OAuthState)
+        )
+
+    async def delete_expired(self, now: datetime) -> None:
+        """Remove expired OAuth states and expired or used login codes."""
+        await self.session.execute(delete(OAuthState).where(OAuthState.expires_at < now))
+        await self.session.execute(
+            delete(LoginCode).where(or_(LoginCode.expires_at < now, LoginCode.used_at.is_not(None)))
         )
 
     # ------------------------------------------------------------ identities
@@ -46,12 +53,15 @@ class AuthRepository:
 
     # ------------------------------------------------------------ login codes
 
-    async def use_login_code(self, code_hash: str, now: datetime) -> uuid.UUID | None:
-        """Mark an unused, unexpired code used and return its user, atomically."""
+    async def use_login_code(
+        self, code_hash: str, nonce_hash: str, now: datetime
+    ) -> uuid.UUID | None:
+        """Mark an unused, unexpired code of this browser used and return its user, atomically."""
         return await self.session.scalar(
             update(LoginCode)
             .where(
                 LoginCode.code_hash == code_hash,
+                LoginCode.nonce_hash == nonce_hash,
                 LoginCode.used_at.is_(None),
                 LoginCode.expires_at > now,
             )

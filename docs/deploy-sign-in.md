@@ -9,6 +9,7 @@ Do these in order. Never paste secret values into git or chat.
    - For local testing, make a second app with `http://localhost:4200` and
      `http://localhost:4200/api/v1/auth/github/callback`.
 2. **Render environment variables** (API service):
+   - `ENVIRONMENT=prod`: the API then refuses to start unless `AUTH_MODE=jwt`
    - `AUTH_MODE=jwt`
    - `JWT_SECRET`: run `python -c "import secrets; print(secrets.token_urlsafe(48))"`
    - `FRONTEND_URL`: the Cloudflare site, no trailing slash
@@ -18,7 +19,8 @@ Do these in order. Never paste secret values into git or chat.
      `<site URL>/api/v1/auth/google/callback`)
 3. **Migrate the database.** Run `alembic upgrade head` from `backend/`, either as Render's
    pre-deploy command or once in the Render shell. The API refuses to start in jwt mode without
-   `JWT_SECRET` (at least 32 bytes), `FRONTEND_URL` and one full provider.
+   `JWT_SECRET` (at least 32 bytes), `FRONTEND_URL` and one full provider, and with
+   `ENVIRONMENT=prod` it refuses `AUTH_MODE=dev`.
 4. **Old data is not migrated.** The shared "dev user" data is left behind; the live site
    starts empty.
 5. **Deploy the frontend:** `cd frontend && npx ng build && npx wrangler deploy`.
@@ -31,5 +33,9 @@ Do these in order. Never paste secret values into git or chat.
 - Uvicorn's access log prints the OAuth callback query (provider code and state). It is single
   use and useless without the client secret and PKCE verifier, but consider `--no-access-log`
   in the Render start command.
-- Render free-tier cold starts can exceed the frontend's 8-second timeout, so the first visit
-  may show "Can't reach Cortex" with a Try again button.
+- Render free-tier cold starts take about 30-60 seconds. After 3 seconds the app shows
+  "Waking up the server…"; it waits up to 60 seconds before showing "Can't reach Cortex" with a
+  Try again button.
+- Sign-in sets a short-lived `cortex_login` cookie (HttpOnly, path `/api/v1/auth`) that ties the
+  sign-in to the browser that started it. This needs the site and API on one origin, which the
+  Cloudflare Worker's `/api/*` forwarding provides.

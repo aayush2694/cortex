@@ -1,8 +1,10 @@
 """Sign-in: OAuth start and callback, one-time login codes, token pairs, rotation, linking."""
 
+import hmac
 import uuid
 from collections.abc import Callable
 from datetime import datetime, timedelta
+from urllib.parse import urlsplit
 
 import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -29,6 +31,20 @@ LOGIN_CODE_TTL = timedelta(seconds=60)
 REFRESH_GRACE = timedelta(seconds=10)
 DEFAULT_NAME = "Cortex user"
 MAX_STATE_LENGTH = 100
+# A random nonce in an HttpOnly cookie ties the sign-in to the browser that started it, so a
+# callback URL or login code made by someone else cannot sign this browser in (login CSRF).
+NONCE_COOKIE = "cortex_login"
+NONCE_COOKIE_PATH = "/api/v1/auth"
+
+
+def nonce_cookie_secure(frontend_url: str) -> bool:
+    """Secure everywhere except plain-http localhost, where local development runs."""
+    parts = urlsplit(frontend_url)
+    return not (parts.scheme == "http" and parts.hostname == "localhost")
+
+
+def _same_secret(value: str | None, expected_hash: str) -> bool:
+    return value is not None and hmac.compare_digest(hash_secret(value), expected_hash)
 
 
 class LoginExpired(AppError):
@@ -79,20 +95,25 @@ class AuthService:
 
     # ------------------------------------------------------------ oauth
 
-    def start(self, provider: str, providers: dict[str, OAuthProvider]) -> str:
+    async def start(self, provider: str, providers: dict[str, OAuthProvider]) -> tuple[str, str]:
+        """The provider's authorize URL and the nonce to set as this browser's cookie."""
         oauth = providers.get(provider)
         if oauth is None:
             raise ProviderNotAvailable("This sign-in method is not available")
-        state, verifier = new_secret(), new_secret()
+        now = self.clock()
+        await self.repo.delete_expired(now)  # anonymous calls must not pile up rows
+        state, verifier, nonce = new_secret(), new_secret(), new_secret()
         self.session.add(
             OAuthState(
                 state=state,
                 provider=provider,
                 code_verifier=verifier,
-                expires_at=self.clock() + STATE_TTL,
+                nonce_hash=hash_secret(nonce),
+                expires_at=now + STATE_TTL,
             )
         )
-        return oauth.authorize_url(state, pkce_challenge(verifier), self.redirect_uri(provider))
+        url = oauth.authorize_url(state, pkce_challenge(verifier), self.redirect_uri(provider))
+        return url, nonce
 
     async def callback(
         self,
@@ -100,6 +121,7 @@ class AuthService:
         code: str | None,
         state: str | None,
         error: str | None,
+        nonce: str | None,
         providers: dict[str, OAuthProvider],
         client: httpx.AsyncClient,
     ) -> str:
@@ -114,6 +136,7 @@ class AuthService:
             or not code
             or pending.provider != provider
             or pending.expires_at <= self.clock()
+            or not _same_secret(nonce, pending.nonce_hash)
         ):
             return self._signin_error("expired")
         oauth = providers.get(provider)
@@ -131,6 +154,7 @@ class AuthService:
             LoginCode(
                 code_hash=hash_secret(login_code),
                 user_id=user.id,
+                nonce_hash=pending.nonce_hash,
                 expires_at=self.clock() + LOGIN_CODE_TTL,
             )
         )
@@ -179,8 +203,13 @@ class AuthService:
 
     # ------------------------------------------------------------ tokens
 
-    async def exchange_code(self, code: str) -> TokenPair:
-        user_id = await self.repo.use_login_code(hash_secret(code), self.clock())
+    async def exchange_code(self, code: str, nonce: str | None) -> TokenPair:
+        """Swap a login code for tokens; only the browser that started sign-in may do it."""
+        user_id = None
+        if nonce is not None:
+            user_id = await self.repo.use_login_code(
+                hash_secret(code), hash_secret(nonce), self.clock()
+            )
         if user_id is None:
             raise LoginExpired("Sign-in expired. Please sign in again.")
         pair, _ = self._issue(user_id, uuid.uuid4())
