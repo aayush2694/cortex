@@ -98,4 +98,15 @@ describe('Settings delete account', () => {
     await vi.waitFor(() => expect(navigate).toHaveBeenCalledWith('/signin'));
     expect(deleteAccount).toHaveBeenCalled();
   });
+
+  it.each(['Delete', ' delete ', 'DELETE'])('accepts %j as the confirmation', async (typed) => {
+    const { fixture, el } = await setup('jwt');
+    const input = el.querySelector('input.confirm') as HTMLInputElement;
+    input.value = typed;
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(button(el)!.disabled).toBe(false);
+    expect(input.getAttribute('autocapitalize')).toBe('off');
+    expect(input.getAttribute('spellcheck')).toBe('false');
+  });
 });

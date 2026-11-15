@@ -39,6 +39,8 @@ const ERRORS: Record<string, string> = {
   `,
   styles: `
     :host {
+      flex: 1;
+      min-width: 0;
       min-height: 100vh;
       display: grid;
       place-items: center;

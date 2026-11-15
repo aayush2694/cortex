@@ -87,3 +87,38 @@ describe('authGuard when the API is unreachable', () => {
     expect(auth.mode()).toBe('dev');
   });
 });
+
+describe('Auth timeouts', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.useFakeTimers();
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
+    });
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it('goes offline when /auth/providers never answers', async () => {
+    const ctrl = TestBed.inject(HttpTestingController);
+    const auth = TestBed.inject(Auth);
+    const done = auth.init();
+    ctrl.expectOne('/api/v1/auth/providers');
+    await vi.advanceTimersByTimeAsync(8000);
+    await done;
+    expect(auth.status()).toBe('offline');
+  });
+
+  it('goes offline, keeping the token, when /auth/refresh never answers', async () => {
+    localStorage.setItem('cortex.refresh', 'r1');
+    const ctrl = TestBed.inject(HttpTestingController);
+    const auth = TestBed.inject(Auth);
+    const done = auth.init();
+    ctrl.expectOne('/api/v1/auth/providers').flush({ mode: 'jwt', providers: [] });
+    await vi.advanceTimersByTimeAsync(0);
+    ctrl.expectOne('/api/v1/auth/refresh');
+    await vi.advanceTimersByTimeAsync(8000);
+    await done;
+    expect(auth.status()).toBe('offline');
+    expect(localStorage.getItem('cortex.refresh')).toBe('r1');
+  });
+});

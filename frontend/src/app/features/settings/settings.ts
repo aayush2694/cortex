@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 
 import { Router } from '@angular/router';
 
@@ -92,6 +92,9 @@ const SHORTCUTS: { keys: string[]; action: string }[] = [
               class="confirm"
               type="text"
               autocomplete="off"
+              autocapitalize="off"
+              autocorrect="off"
+              spellcheck="false"
               aria-label="Type delete to confirm"
               [value]="confirm()"
               (input)="confirm.set($any($event.target).value)"
@@ -99,7 +102,7 @@ const SHORTCUTS: { keys: string[]; action: string }[] = [
             <button
               type="button"
               class="btn primary"
-              [disabled]="confirm() !== 'delete' || deleting()"
+              [disabled]="!confirmed() || deleting()"
               (click)="deleteAccount()"
             >
               Delete my account
@@ -258,6 +261,7 @@ export class Settings {
   protected readonly auth = inject(Auth);
   private readonly router = inject(Router);
   protected readonly confirm = signal('');
+  protected readonly confirmed = computed(() => this.confirm().trim().toLowerCase() === 'delete');
   protected readonly deleting = signal(false);
   protected readonly deleteError = signal('');
   protected readonly appearances = APPEARANCES;

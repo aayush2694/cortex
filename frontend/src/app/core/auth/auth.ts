@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, InjectionToken, computed, inject, signal } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, timeout } from 'rxjs';
 
 import { API } from '../api/api';
 import { Me } from '../api/models';
@@ -15,6 +15,9 @@ interface TokenPair {
 export type AuthStatus = 'loading' | 'ready' | 'offline';
 
 export type RefreshResult = 'ok' | 'rejected' | 'unavailable';
+
+/** How long to wait for the API before treating it as unreachable (Render cold starts aside). */
+const API_TIMEOUT_MS = 8000;
 
 const REFRESH_KEY = 'cortex.refresh';
 
@@ -65,7 +68,9 @@ export class Auth {
   private async load(): Promise<void> {
     try {
       const res = await firstValueFrom(
-        this.http.get<{ mode: 'dev' | 'jwt'; providers: string[] }>(`${API}/auth/providers`),
+        this.http
+          .get<{ mode: 'dev' | 'jwt'; providers: string[] }>(`${API}/auth/providers`)
+          .pipe(timeout(API_TIMEOUT_MS)),
       );
       this.modeSignal.set(res.mode);
       this.providersSignal.set(res.providers);
@@ -111,7 +116,9 @@ export class Auth {
     if (!refreshToken) return 'rejected';
     try {
       const pair = await firstValueFrom(
-        this.http.post<TokenPair>(`${API}/auth/refresh`, { refresh_token: refreshToken }),
+        this.http
+          .post<TokenPair>(`${API}/auth/refresh`, { refresh_token: refreshToken })
+          .pipe(timeout(API_TIMEOUT_MS)),
       );
       this.store(pair);
       return 'ok';

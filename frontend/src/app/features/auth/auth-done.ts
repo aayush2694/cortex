@@ -10,6 +10,8 @@ import { Auth } from '../../core/auth/auth';
   template: `<p class="muted">Signing you in…</p>`,
   styles: `
     :host {
+      flex: 1;
+      min-width: 0;
       min-height: 100vh;
       display: grid;
       place-items: center;
