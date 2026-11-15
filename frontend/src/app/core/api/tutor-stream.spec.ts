@@ -42,3 +42,15 @@ describe('streamTutorReply errors before the stream starts', () => {
     });
   });
 });
+
+describe('streamTutorReply fetch function', () => {
+  it('sends the request through the function it is given', async () => {
+    let url = '';
+    const fetchFn = async (u: string) => {
+      url = u;
+      return new Response(JSON.stringify({ error: { code: 'x', message: 'm' } }), { status: 400 });
+    };
+    await first(streamTutorReply('s1', 'hi', undefined, fetchFn));
+    expect(url).toBe('/api/v1/tutor/sessions/s1/messages');
+  });
+});

@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 
 import { Api } from '../../core/api/api';
+import { saveBlob } from '../../core/api/save-file';
 import { APPEARANCES, ThemeService } from '../../core/theme/theme';
 import { PlanSettings } from './plan-settings';
 
@@ -64,13 +65,13 @@ const SHORTCUTS: { keys: string[]; action: string }[] = [
 
       <span class="group-label">Your data</span>
       <div class="list">
-        <a class="list-row plain" [href]="exportUrl" download>
+        <button type="button" class="list-row plain" (click)="download()">
           <span class="row-main">
             <span>Download my data</span>
             <span class="faint">Progress, practice, flashcards, notes, job search and tutor chats as JSON</span>
           </span>
           <i class="ti ti-download chev" aria-hidden="true"></i>
-        </a>
+        </button>
       </div>
 
       <span class="group-label">About</span>
@@ -93,6 +94,10 @@ const SHORTCUTS: { keys: string[]; action: string }[] = [
     }
     .group-label {
       margin-top: 24px;
+    }
+    button.list-row {
+      width: 100%;
+      text-align: left;
     }
     .list-row.plain::after {
       left: 16px;
@@ -189,7 +194,11 @@ const SHORTCUTS: { keys: string[]; action: string }[] = [
 })
 export class Settings {
   protected readonly theme = inject(ThemeService);
-  protected readonly exportUrl = inject(Api).exportUrl();
+  private readonly api = inject(Api);
   protected readonly appearances = APPEARANCES;
   protected readonly shortcuts = SHORTCUTS;
+
+  protected async download(): Promise<void> {
+    saveBlob(await this.api.downloadExport(), 'cortex-data.json');
+  }
 }

@@ -171,9 +171,9 @@ export class Api {
     );
   }
 
-  /** Everything you've saved, as a JSON file download. */
-  exportUrl(): string {
-    return `${API}/me/export`;
+  /** Everything you've saved, as a JSON file. Goes through HttpClient so it carries the token. */
+  downloadExport(): Promise<Blob> {
+    return firstValueFrom(this.http.get(`${API}/me/export`, { responseType: 'blob' }));
   }
 
   saveNote(topicId: string, body: string) {

@@ -14,8 +14,9 @@ export async function* streamTutorReply(
   sessionId: string,
   text: string,
   signal?: AbortSignal,
+  fetchFn: (input: string, init: RequestInit) => Promise<Response> = (u, i) => fetch(u, i),
 ): AsyncGenerator<TutorEvent> {
-  const res = await fetch(`${API}/tutor/sessions/${sessionId}/messages`, {
+  const res = await fetchFn(`${API}/tutor/sessions/${sessionId}/messages`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
     body: JSON.stringify({ text }),
