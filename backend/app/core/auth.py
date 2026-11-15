@@ -1,7 +1,7 @@
 """Who is making the request.
 
-Phase 1 runs in "dev" mode: everyone is the same local user, no login needed.
-Phase 2 adds "entra" mode, which validates Microsoft Entra ID tokens.
+"dev" mode: everyone is the same local user, no login needed.
+"jwt" mode: requests carry a signed access token issued by the sign-in flow.
 """
 
 from typing import Annotated
