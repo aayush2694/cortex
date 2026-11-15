@@ -13,6 +13,7 @@ from app.core.config import get_settings
 from app.core.db import dispose_engine, get_sessionmaker
 from app.core.errors import register_error_handlers
 from app.core.logging import RequestContextMiddleware, setup_logging
+from app.modules.auth.router import router as auth_router
 from app.modules.jobs.content import get_questions, get_skills
 from app.modules.jobs.router import router as jobs_router
 from app.modules.practice.catalog import get_practice, validate_practice
@@ -84,6 +85,7 @@ def create_app() -> FastAPI:
     async def me(user: CurrentUser) -> dict[str, str]:
         return {"id": str(user.id), "display_name": user.display_name}
 
+    api.include_router(auth_router)
     api.include_router(topics_router)
     api.include_router(progress_router)
     api.include_router(practice_router)

@@ -1,14 +1,19 @@
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Iterator
+from datetime import UTC, datetime, timedelta
 from typing import Any
+from urllib.parse import urlencode
 
 import httpx
 import pytest
 from sqlalchemy import text
 
 from app.clients.llm import LLMEvent, get_llm
+from app.core.config import Settings, get_settings
 from app.core.db import get_engine
 from app.main import app, sync_topics
 from app.models import Base
+from app.modules.auth.providers import Profile, ProviderError
+from app.modules.auth.router import get_clock, get_providers
 
 
 class FakeLLM:
@@ -65,3 +70,76 @@ async def client() -> AsyncIterator[httpx.AsyncClient]:
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as c:
         yield c
+
+
+class FakeProvider:
+    """Stands in for GitHub or Google. Set `.profile` (or `.fail`) before the callback."""
+
+    def __init__(self, name: str) -> None:
+        self.name = name
+        self.profile = Profile(name, "1", None, False, "Test Person", None)
+        self.fail = False
+        self.calls: list[dict[str, str]] = []
+
+    def authorize_url(self, state: str, challenge: str, redirect_uri: str) -> str:
+        query = urlencode(
+            {"state": state, "code_challenge": challenge, "redirect_uri": redirect_uri}
+        )
+        return f"https://{self.name}.provider.test/authorize?{query}"
+
+    async def fetch_profile(
+        self, code: str, verifier: str, redirect_uri: str, client: httpx.AsyncClient
+    ) -> Profile:
+        self.calls.append({"code": code, "verifier": verifier, "redirect_uri": redirect_uri})
+        if self.fail:
+            raise ProviderError()
+        return self.profile
+
+
+class Clock:
+    """A clock the test moves by hand."""
+
+    def __init__(self) -> None:
+        self.now = datetime(2026, 11, 15, 12, 0, tzinfo=UTC)
+
+    def __call__(self) -> datetime:
+        return self.now
+
+    def advance(self, seconds: float) -> None:
+        self.now += timedelta(seconds=seconds)
+
+
+TEST_JWT_SECRET = "test-only-secret-0123456789abcdef"  # 33 bytes, not a real secret
+
+
+@pytest.fixture
+def auth_settings(monkeypatch: pytest.MonkeyPatch) -> Iterator[Settings]:
+    """jwt mode with GitHub configured; restores dev mode and clears overrides afterwards."""
+    for name, value in {
+        "AUTH_MODE": "jwt",
+        "JWT_SECRET": TEST_JWT_SECRET,
+        "FRONTEND_URL": "http://web.test",
+        "GITHUB_CLIENT_ID": "test-github-id",
+        "GITHUB_CLIENT_SECRET": "test-github-secret",
+        "GOOGLE_CLIENT_ID": "",
+        "GOOGLE_CLIENT_SECRET": "",
+    }.items():
+        monkeypatch.setenv(name, value)
+    get_settings.cache_clear()
+    yield get_settings()
+    get_settings.cache_clear()
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def clock(auth_settings: Settings) -> Clock:
+    c = Clock()
+    app.dependency_overrides[get_clock] = lambda: c
+    return c
+
+
+@pytest.fixture
+def providers(auth_settings: Settings) -> dict[str, FakeProvider]:
+    fakes = {"github": FakeProvider("github"), "google": FakeProvider("google")}
+    app.dependency_overrides[get_providers] = lambda: fakes
+    return fakes
