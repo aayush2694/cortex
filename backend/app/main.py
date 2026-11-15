@@ -8,8 +8,7 @@ from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 
-from app.core.auth import CurrentUser
-from app.core.config import get_settings
+from app.core.config import get_settings, validate_auth_settings
 from app.core.db import dispose_engine, get_sessionmaker
 from app.core.errors import register_error_handlers
 from app.core.logging import RequestContextMiddleware, setup_logging
@@ -26,6 +25,7 @@ from app.modules.topics.repository import TopicRepository
 from app.modules.topics.router import router as topics_router
 from app.modules.tutor.router import router as tutor_router
 from app.modules.users.export import router as export_router
+from app.modules.users.router import router as me_router
 from app.modules.visualizer.router import router as visualizer_router
 
 log = logging.getLogger(__name__)
@@ -46,6 +46,7 @@ async def sync_topics() -> int:
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    validate_auth_settings(get_settings())  # a misconfigured jwt deploy must not start
     count = await sync_topics()
     log.info("Loaded %d topics from the catalogue", count)
     yield
@@ -63,7 +64,7 @@ def create_app() -> FastAPI:
     )
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.cors_origins,
+        allow_origins=list(dict.fromkeys([*settings.cors_origins, settings.frontend_url])),
         allow_methods=["*"],
         allow_headers=["*"],
         expose_headers=["x-request-id"],
@@ -81,10 +82,7 @@ def create_app() -> FastAPI:
 
     api = APIRouter(prefix="/api/v1")
 
-    @api.get("/me", tags=["meta"], summary="The current user")
-    async def me(user: CurrentUser) -> dict[str, str]:
-        return {"id": str(user.id), "display_name": user.display_name}
-
+    api.include_router(me_router)
     api.include_router(auth_router)
     api.include_router(topics_router)
     api.include_router(progress_router)

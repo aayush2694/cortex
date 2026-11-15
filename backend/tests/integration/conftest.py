@@ -1,4 +1,4 @@
-from collections.abc import AsyncIterator, Iterator
+from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from urllib.parse import urlencode
@@ -9,11 +9,14 @@ from sqlalchemy import text
 
 from app.clients.llm import LLMEvent, get_llm
 from app.core.config import Settings, get_settings
-from app.core.db import get_engine
+from app.core.db import get_engine, get_sessionmaker
 from app.main import app, sync_topics
 from app.models import Base
+from app.modules.auth.models import Identity
 from app.modules.auth.providers import Profile, ProviderError
 from app.modules.auth.router import get_clock, get_providers
+from app.modules.auth.tokens import create_access_token
+from app.modules.users.models import User
 
 
 class FakeLLM:
@@ -109,12 +112,13 @@ class Clock:
         self.now += timedelta(seconds=seconds)
 
 
+INVITED_EMAIL = "invited@x.com"
 TEST_JWT_SECRET = "test-only-secret-0123456789abcdef"  # 33 bytes, not a real secret
 
 
 @pytest.fixture
 def auth_settings(monkeypatch: pytest.MonkeyPatch) -> Iterator[Settings]:
-    """jwt mode with GitHub configured; restores dev mode and clears overrides afterwards."""
+    """jwt mode with GitHub configured; restores dev mode afterwards."""
     for name, value in {
         "AUTH_MODE": "jwt",
         "JWT_SECRET": TEST_JWT_SECRET,
@@ -123,23 +127,55 @@ def auth_settings(monkeypatch: pytest.MonkeyPatch) -> Iterator[Settings]:
         "GITHUB_CLIENT_SECRET": "test-github-secret",
         "GOOGLE_CLIENT_ID": "",
         "GOOGLE_CLIENT_SECRET": "",
+        "TUTOR_INVITED_EMAILS": INVITED_EMAIL.upper(),
     }.items():
         monkeypatch.setenv(name, value)
     get_settings.cache_clear()
     yield get_settings()
     get_settings.cache_clear()
-    app.dependency_overrides.clear()
 
 
 @pytest.fixture
-def clock(auth_settings: Settings) -> Clock:
+def clock(auth_settings: Settings) -> Iterator[Clock]:
     c = Clock()
     app.dependency_overrides[get_clock] = lambda: c
-    return c
+    yield c
+    app.dependency_overrides.pop(get_clock, None)
 
 
 @pytest.fixture
-def providers(auth_settings: Settings) -> dict[str, FakeProvider]:
+def providers(auth_settings: Settings) -> Iterator[dict[str, FakeProvider]]:
     fakes = {"github": FakeProvider("github"), "google": FakeProvider("google")}
     app.dependency_overrides[get_providers] = lambda: fakes
-    return fakes
+    yield fakes
+    app.dependency_overrides.pop(get_providers, None)
+
+
+SignedIn = Callable[..., Awaitable[dict[str, str]]]
+
+
+@pytest.fixture
+def signed_in(clock: Clock) -> SignedIn:
+    """Create a user (with one identity) and return their bearer headers."""
+
+    async def make(
+        email: str | None = "a@x.com", verified: bool = True, name: str = "Test Person"
+    ) -> dict[str, str]:
+        async with get_sessionmaker()() as db:
+            user = User(display_name=name, email=email)
+            db.add(user)
+            await db.flush()
+            db.add(
+                Identity(
+                    user_id=user.id,
+                    provider="github",
+                    provider_user_id=str(user.id),
+                    email=email,
+                    email_verified=verified,
+                )
+            )
+            await db.commit()
+            token = create_access_token(user.id, TEST_JWT_SECRET, clock())
+        return {"Authorization": f"Bearer {token}"}
+
+    return make

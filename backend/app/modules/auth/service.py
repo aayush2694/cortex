@@ -46,6 +46,17 @@ class ProviderNotAvailable(AppError):
     code = "provider_not_available"
 
 
+def tutor_allowed(user: User, verified_emails: set[str], settings: Settings) -> bool:
+    """May this user chat with the AI tutor? Dev mode: always. jwt mode: invite-only.
+
+    `verified_emails` come from the user's identities (not `user.email`, which may be stale).
+    """
+    if settings.auth_mode == "dev":
+        return True
+    invited = set(settings.tutor_invited_emails)
+    return any(email.lower() in invited for email in verified_emails)
+
+
 class AuthService:
     def __init__(
         self, session: AsyncSession, settings: Settings, clock: Callable[[], datetime]

@@ -10,7 +10,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.clients.llm import LLMClient
 from app.core.config import get_settings
 from app.core.db import get_sessionmaker
-from app.core.errors import NotFound, TooManyRequests
+from app.core.errors import AppError, NotFound, TooManyRequests
+from app.modules.auth.repository import AuthRepository
+from app.modules.auth.service import tutor_allowed
 from app.modules.progress.service import ProgressService
 from app.modules.topics.service import TopicService
 from app.modules.tutor.models import ChatMessage, ChatSession
@@ -45,12 +47,23 @@ def sse(event: str, data: dict[str, Any]) -> str:
     return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
 
 
+class TutorNotInvited(AppError):
+    status_code = 403
+    code = "tutor_not_invited"
+
+
 class TutorService:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
         self.repo = TutorRepository(session)
         self.topics = TopicService(session)
         self.progress = ProgressService(session)
+
+    async def _check_invited(self, user: User) -> None:
+        settings = get_settings()
+        emails = await AuthRepository(self.session).verified_emails(user.id)
+        if not tutor_allowed(user, emails, settings):
+            raise TutorNotInvited("The AI tutor is invite-only for now.")
 
     async def _check_daily_limit(self, user: User) -> None:
         """Refuse before anything is saved or sent once today's (UTC) allowance is used."""
@@ -83,6 +96,7 @@ class TutorService:
         self, user: User, session_id: uuid.UUID, text: str
     ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
         """Save the user's message and build the system prompt + messages for the model."""
+        await self._check_invited(user)
         chat = await self._owned(user, session_id)
         await self._check_daily_limit(user)
         await self.repo.add_message(chat, "user", [{"type": "text", "text": text}])

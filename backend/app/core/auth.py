@@ -4,9 +4,11 @@
 "jwt" mode: requests carry a signed access token issued by the sign-in flow.
 """
 
+from collections.abc import Callable
+from datetime import UTC, datetime
 from typing import Annotated
 
-from fastapi import Depends
+from fastapi import Depends, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,6 +16,7 @@ from app.core.config import get_settings
 from app.core.db import get_session
 from app.core.errors import AppError
 from app.modules.auth.models import Identity
+from app.modules.auth.tokens import TokenInvalid, decode_access_token
 from app.modules.users.models import User
 
 DEV_USER_NAME = "Dev User"
@@ -38,10 +41,38 @@ async def get_dev_user(session: AsyncSession) -> User:
     return user
 
 
-async def current_user(session: Annotated[AsyncSession, Depends(get_session)]) -> User:
-    if get_settings().auth_mode == "dev":
+class NotSignedIn(AppError):
+    status_code = 401
+    code = "not_signed_in"
+
+
+def get_clock() -> Callable[[], datetime]:
+    return lambda: datetime.now(UTC)
+
+
+def _bearer_token(request: Request) -> str:
+    scheme, _, token = request.headers.get("authorization", "").partition(" ")
+    token = token.strip()
+    if scheme.lower() != "bearer" or not token:
+        raise NotSignedIn("Sign in to continue")
+    return token
+
+
+async def current_user(
+    request: Request,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    clock: Annotated[Callable[[], datetime], Depends(get_clock)],
+) -> User:
+    settings = get_settings()
+    if settings.auth_mode == "dev":
         return await get_dev_user(session)
-    raise AuthNotConfigured("Entra ID sign-in arrives in Phase 2")
+    if not settings.jwt_secret:
+        raise AuthNotConfigured("Sign-in is not configured")
+    user_id = decode_access_token(_bearer_token(request), settings.jwt_secret, clock())
+    user = await session.get(User, user_id)
+    if user is None:  # a valid token for an account that has since been deleted
+        raise TokenInvalid("Access token is not valid")
+    return user
 
 
 CurrentUser = Annotated[User, Depends(current_user)]

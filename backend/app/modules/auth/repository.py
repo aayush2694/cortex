@@ -28,6 +28,14 @@ class AuthRepository:
             )
         )
 
+    async def verified_emails(self, user_id: uuid.UUID) -> set[str]:
+        rows = await self.session.scalars(
+            select(Identity.email).where(
+                Identity.user_id == user_id, Identity.email_verified, Identity.email.is_not(None)
+            )
+        )
+        return {email for email in rows if email}
+
     async def verified_identity_by_email(self, email: str) -> Identity | None:
         return await self.session.scalar(
             select(Identity)

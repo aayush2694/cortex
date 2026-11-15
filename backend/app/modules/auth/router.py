@@ -1,12 +1,12 @@
 from collections.abc import AsyncIterator, Callable
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import Annotated
 
 import httpx
 from fastapi import APIRouter, Depends, Response
 from fastapi.responses import RedirectResponse
 
-from app.core.auth import DbSession
+from app.core.auth import DbSession, get_clock
 from app.core.config import get_settings
 from app.modules.auth.providers import OAuthProvider, configured_providers
 from app.modules.auth.schemas import ProvidersOut, RefreshIn, TokenIn, TokenPair
@@ -24,10 +24,6 @@ def get_providers() -> dict[str, OAuthProvider]:
 async def get_http_client() -> AsyncIterator[httpx.AsyncClient]:
     async with httpx.AsyncClient(timeout=10) as client:
         yield client
-
-
-def get_clock() -> Callable[[], datetime]:
-    return lambda: datetime.now(UTC)
 
 
 Providers = Annotated[dict[str, OAuthProvider], Depends(get_providers)]
