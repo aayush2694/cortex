@@ -1,6 +1,7 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 
+import { Auth } from '../core/auth/auth';
 import { NAV_SECTIONS } from './nav';
 
 @Component({
@@ -30,6 +31,17 @@ import { NAV_SECTIONS } from './nav';
         }
       }
     </nav>
+    @if (auth.mode() === 'jwt' && auth.user(); as user) {
+      <div class="account">
+        @if (user.avatar_url) {
+          <img [src]="user.avatar_url" alt="" width="24" height="24" referrerpolicy="no-referrer" />
+        } @else {
+          <span class="initials" aria-hidden="true">{{ initials() }}</span>
+        }
+        <span class="who">{{ user.display_name || user.email }}</span>
+        <button type="button" class="btn ghost" (click)="signOut()">Sign out</button>
+      </div>
+    }
   `,
   styles: `
     :host {
@@ -100,6 +112,39 @@ import { NAV_SECTIONS } from './nav';
         }
       }
     }
+    .account {
+      margin-top: auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 6px 0;
+      border-top: 0.5px solid var(--separator);
+      img,
+      .initials {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .initials {
+        display: grid;
+        place-items: center;
+        background: var(--raised);
+        font-size: 12px;
+        font-weight: 600;
+      }
+      .who {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 13px;
+      }
+      .btn {
+        padding: 0 10px;
+      }
+    }
     @media (max-width: 900px) {
       :host {
         position: fixed;
@@ -118,4 +163,17 @@ export class Sidebar {
   readonly open = input(false);
   readonly navigate = output();
   protected readonly sections = NAV_SECTIONS;
+  protected readonly auth = inject(Auth);
+  private readonly router = inject(Router);
+  protected readonly initials = computed(() => {
+    const u = this.auth.user();
+    const name = (u?.display_name || u?.email || '?').trim();
+    const parts = name.split(/\s+/);
+    return ((parts[0][0] ?? '?') + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
+  });
+
+  protected async signOut(): Promise<void> {
+    await this.auth.signOut();
+    await this.router.navigateByUrl('/signin');
+  }
 }

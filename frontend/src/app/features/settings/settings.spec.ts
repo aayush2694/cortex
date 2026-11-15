@@ -1,6 +1,9 @@
 import { TestBed } from '@angular/core/testing';
 
+import { provideRouter, Router } from '@angular/router';
+
 import { Api } from '../../core/api/api';
+import { Auth } from '../../core/auth/auth';
 import { Settings } from './settings';
 
 describe('Settings export', () => {
@@ -51,5 +54,48 @@ describe('Settings export', () => {
     });
     expect(create).not.toHaveBeenCalled();
     expect(button.disabled).toBe(false);
+  });
+});
+
+describe('Settings delete account', () => {
+  const setup = async (mode: 'dev' | 'jwt') => {
+    const deleteAccount = vi.fn(async () => undefined);
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        { provide: Api, useValue: { plan: () => ({ value: () => undefined }) } },
+        { provide: Auth, useValue: { mode: () => mode, deleteAccount } },
+      ],
+    });
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+    const fixture = TestBed.createComponent(Settings);
+    await fixture.whenStable();
+    return { fixture, el: fixture.nativeElement as HTMLElement, deleteAccount, navigate };
+  };
+  const button = (el: HTMLElement) =>
+    [...el.querySelectorAll('button')].find((b) => b.textContent?.includes('Delete my account')) as
+      | HTMLButtonElement
+      | undefined;
+
+  it('is hidden in dev mode', async () => {
+    const { el } = await setup('dev');
+    expect(button(el)).toBeUndefined();
+  });
+
+  it('enables the button only when you type delete, then deletes and goes to /signin', async () => {
+    const { fixture, el, deleteAccount, navigate } = await setup('jwt');
+    const input = el.querySelector('input.confirm') as HTMLInputElement;
+    expect(button(el)!.disabled).toBe(true);
+    input.value = 'delet';
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(button(el)!.disabled).toBe(true);
+    input.value = 'delete';
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(button(el)!.disabled).toBe(false);
+    button(el)!.click();
+    await vi.waitFor(() => expect(navigate).toHaveBeenCalledWith('/signin'));
+    expect(deleteAccount).toHaveBeenCalled();
   });
 });

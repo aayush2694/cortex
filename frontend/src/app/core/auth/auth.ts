@@ -11,6 +11,9 @@ interface TokenPair {
   expires_in: number;
 }
 
+/** 'offline': the API could not be reached, so we do not know if you are signed in. */
+export type AuthStatus = 'loading' | 'ready' | 'offline';
+
 export type RefreshResult = 'ok' | 'rejected' | 'unavailable';
 
 const REFRESH_KEY = 'cortex.refresh';
@@ -37,12 +40,16 @@ export class Auth {
 
   private readonly modeSignal = signal<'dev' | 'jwt' | null>(null);
   private readonly userSignal = signal<Me | null>(null);
+  private readonly statusSignal = signal<AuthStatus>('loading');
+  private readonly providersSignal = signal<string[]>([]);
   private readonly token = signal<string | null>(null);
   private inflightRefresh: Promise<RefreshResult> | null = null;
   private initPromise: Promise<void> | null = null;
 
   readonly mode = this.modeSignal.asReadonly();
   readonly user = this.userSignal.asReadonly();
+  readonly status = this.statusSignal.asReadonly();
+  readonly providers = this.providersSignal.asReadonly();
   readonly signedIn = computed(() => this.token() !== null);
 
   accessToken(): string | null {
@@ -61,13 +68,22 @@ export class Auth {
         this.http.get<{ mode: 'dev' | 'jwt'; providers: string[] }>(`${API}/auth/providers`),
       );
       this.modeSignal.set(res.mode);
+      this.providersSignal.set(res.providers);
     } catch {
       this.initPromise = null; // API unreachable: allow a later retry
+      this.statusSignal.set('offline');
       return;
     }
     if (this.modeSignal() === 'jwt' && this.readRefresh()) {
-      if ((await this.refresh()) === 'ok') await this.loadMe();
+      const result = await this.refresh();
+      if (result === 'ok') await this.loadMe();
+      if (result === 'unavailable') {
+        this.initPromise = null;
+        this.statusSignal.set('offline');
+        return;
+      }
     }
+    this.statusSignal.set('ready');
   }
 
   signIn(provider: 'github' | 'google'): void {
