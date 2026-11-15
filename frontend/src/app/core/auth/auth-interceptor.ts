@@ -26,8 +26,10 @@ export const authInterceptor: HttpInterceptorFn = (req, next: HttpHandlerFn) => 
       const code = errorCode(err);
       if (code === 'token_expired') {
         return from(auth.refresh()).pipe(
-          switchMap((ok) => {
-            if (ok) return next(withToken(req, auth.accessToken()));
+          switchMap((result) => {
+            if (result === 'ok') return next(withToken(req, auth.accessToken()));
+            // Unavailable (offline, 5xx): keep the session and fail just this request.
+            if (result === 'unavailable') return throwError(() => err);
             return from(leave()).pipe(switchMap(() => throwError(() => err)));
           }),
         );

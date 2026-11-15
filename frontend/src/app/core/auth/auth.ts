@@ -11,6 +11,8 @@ interface TokenPair {
   expires_in: number;
 }
 
+export type RefreshResult = 'ok' | 'rejected' | 'unavailable';
+
 const REFRESH_KEY = 'cortex.refresh';
 
 /** Leaves the app for the provider's sign-in page. A token so tests can replace it. */
@@ -36,7 +38,7 @@ export class Auth {
   private readonly modeSignal = signal<'dev' | 'jwt' | null>(null);
   private readonly userSignal = signal<Me | null>(null);
   private readonly token = signal<string | null>(null);
-  private inflightRefresh: Promise<boolean> | null = null;
+  private inflightRefresh: Promise<RefreshResult> | null = null;
   private initPromise: Promise<void> | null = null;
 
   readonly mode = this.modeSignal.asReadonly();
@@ -64,7 +66,7 @@ export class Auth {
       return;
     }
     if (this.modeSignal() === 'jwt' && this.readRefresh()) {
-      if (await this.refresh()) await this.loadMe();
+      if ((await this.refresh()) === 'ok') await this.loadMe();
     }
   }
 
@@ -78,25 +80,32 @@ export class Auth {
     await this.loadMe();
   }
 
-  /** Swap the refresh token for a new pair. Concurrent callers share one request. */
-  refresh(): Promise<boolean> {
+  /**
+   * Swap the refresh token for a new pair. Concurrent callers share one request.
+   * 'rejected' means the token is no good (sign out); 'unavailable' means the server could not
+   * be reached or failed (keep the session and try again later).
+   */
+  refresh(): Promise<RefreshResult> {
     this.inflightRefresh ??= this.doRefresh().finally(() => (this.inflightRefresh = null));
     return this.inflightRefresh;
   }
 
-  private async doRefresh(): Promise<boolean> {
+  private async doRefresh(): Promise<RefreshResult> {
     const refreshToken = this.readRefresh(); // read now: another tab may have rotated it
-    if (!refreshToken) return false;
+    if (!refreshToken) return 'rejected';
     try {
       const pair = await firstValueFrom(
         this.http.post<TokenPair>(`${API}/auth/refresh`, { refresh_token: refreshToken }),
       );
       this.store(pair);
-      return true;
+      return 'ok';
     } catch (err) {
       const status = (err as { status?: number })?.status;
-      if (status === 400 || status === 401) this.clear(); // rejected for good
-      return false;
+      if (status === 400 || status === 401) {
+        this.clear();
+        return 'rejected';
+      }
+      return 'unavailable';
     }
   }
 
@@ -132,8 +141,9 @@ export class Auth {
       .then((b) => b?.error?.code as string | undefined)
       .catch(() => undefined);
     if (code !== 'token_expired') return res;
-    if (await this.refresh()) return send();
-    await this.signOut();
+    const result = await this.refresh();
+    if (result === 'ok') return send();
+    if (result === 'rejected') await this.signOut();
     return res;
   }
 

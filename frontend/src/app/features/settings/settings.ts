@@ -1,6 +1,6 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 
-import { Api } from '../../core/api/api';
+import { Api, errorMessage } from '../../core/api/api';
 import { saveBlob } from '../../core/api/save-file';
 import { APPEARANCES, ThemeService } from '../../core/theme/theme';
 import { PlanSettings } from './plan-settings';
@@ -65,7 +65,7 @@ const SHORTCUTS: { keys: string[]; action: string }[] = [
 
       <span class="group-label">Your data</span>
       <div class="list">
-        <button type="button" class="list-row plain" (click)="download()">
+        <button type="button" class="list-row plain" [disabled]="downloading()" (click)="download()">
           <span class="row-main">
             <span>Download my data</span>
             <span class="faint">Progress, practice, flashcards, notes, job search and tutor chats as JSON</span>
@@ -73,6 +73,9 @@ const SHORTCUTS: { keys: string[]; action: string }[] = [
           <i class="ti ti-download chev" aria-hidden="true"></i>
         </button>
       </div>
+      @if (downloadError()) {
+        <p class="faint" role="alert">{{ downloadError() }}</p>
+      }
 
       <span class="group-label">About</span>
       <div class="list">
@@ -195,10 +198,20 @@ const SHORTCUTS: { keys: string[]; action: string }[] = [
 export class Settings {
   protected readonly theme = inject(ThemeService);
   private readonly api = inject(Api);
+  protected readonly downloading = signal(false);
+  protected readonly downloadError = signal('');
   protected readonly appearances = APPEARANCES;
   protected readonly shortcuts = SHORTCUTS;
 
   protected async download(): Promise<void> {
-    saveBlob(await this.api.downloadExport(), 'cortex-data.json');
+    this.downloading.set(true);
+    this.downloadError.set('');
+    try {
+      saveBlob(await this.api.downloadExport(), 'cortex-data.json');
+    } catch (err) {
+      this.downloadError.set(errorMessage(err, "Couldn't download your data. Try again."));
+    } finally {
+      this.downloading.set(false);
+    }
   }
 }

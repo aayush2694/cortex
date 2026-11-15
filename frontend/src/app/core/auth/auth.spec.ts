@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
-import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { HttpTestingController, TestRequest, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -118,6 +118,40 @@ describe('Auth', () => {
     expect(auth.signedIn()).toBe(false);
     expect(navigate).toHaveBeenCalledWith(['/signin']);
     ctrl.verify();
+  });
+
+  describe.each([
+    ['503', (r: TestRequest) =>
+      r.flush(null, { status: 503, statusText: 'Unavailable' })],
+    ['a network error', (r: TestRequest) =>
+      r.error(new ProgressEvent('error'))],
+  ])('when the refresh is unavailable (%s)', (_name, fail) => {
+    it('keeps the session and fails only the interceptor request', async () => {
+      await signedIn();
+      const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+      const failed = firstValueFrom(http.get('/api/v1/topics')).catch((e) => e);
+      (await req('/api/v1/topics')).flush(expired, { status: 401, statusText: 'Unauthorized' });
+      fail(await req('/api/v1/auth/refresh'));
+      const err = await failed;
+      expect(err.status).toBe(401);
+      expect(localStorage.getItem('cortex.refresh')).toBe('refresh-1');
+      expect(navigate).not.toHaveBeenCalled();
+      ctrl.expectNone('/api/v1/auth/logout');
+      ctrl.verify();
+    });
+
+    it('keeps the session and returns the original response from fetchWithAuth', async () => {
+      await signedIn();
+      vi.stubGlobal('fetch', async () => new Response(JSON.stringify(expired), { status: 401 }));
+      const p = auth.fetchWithAuth('/api/v1/tutor/x', {});
+      fail(await req('/api/v1/auth/refresh'));
+      const res = await p;
+      vi.unstubAllGlobals();
+      expect(res.status).toBe(401);
+      expect(localStorage.getItem('cortex.refresh')).toBe('refresh-1');
+      ctrl.expectNone('/api/v1/auth/logout');
+      ctrl.verify();
+    });
   });
 
   it('a token_invalid answer signs out and goes to /signin', async () => {
