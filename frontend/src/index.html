@@ -2,6 +2,7 @@
 <html lang="en" data-theme="dark">
 <head>
   <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://cdn.jsdelivr.net/pyodide/; worker-src 'self'; connect-src 'self' https://cdn.jsdelivr.net/pyodide/; img-src 'self' data: https://avatars.githubusercontent.com https://lh3.googleusercontent.com; style-src 'self' 'unsafe-inline'; font-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'">
   <title>Cortex</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -10,14 +11,7 @@
   <link rel="icon" href="favicon.ico" sizes="32x32">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <script>
-    // Apply the saved appearance before Angular boots, so the page never flashes the wrong mode.
-    try {
-      var a = localStorage.getItem('cortex.appearance') || 'auto';
-      if (a === 'auto') a = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-      document.documentElement.dataset.theme = a;
-    } catch (e) {}
-  </script>
+  <script src="theme-init.js"></script>
 </head>
 <body>
   <app-root></app-root>

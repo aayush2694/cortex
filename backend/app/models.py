@@ -1,6 +1,7 @@
 """Import every table model so SQLAlchemy (and Alembic) know about all of them."""
 
 from app.core.db import Base
+from app.modules.auth.models import Identity, LoginCode, OAuthState, RefreshToken
 from app.modules.jobs.models import Application, JobProfile, QuestionNote
 from app.modules.practice.models import Submission
 from app.modules.progress.models import ActivityEvent, Progress, SolvedProblem
@@ -17,11 +18,15 @@ __all__ = [
     "ChatMessage",
     "ChatSession",
     "Flashcard",
+    "Identity",
     "JobProfile",
+    "LoginCode",
     "Note",
+    "OAuthState",
     "PrepPlan",
     "QuestionNote",
     "Progress",
+    "RefreshToken",
     "SolvedProblem",
     "Submission",
     "Topic",

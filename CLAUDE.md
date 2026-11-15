@@ -10,7 +10,7 @@ algorithm and pattern walkthroughs, coding practice that runs in the browser, st
 (flashcards, notes, a daily plan), career tools (job board, interview questions, resume match,
 offers), an AI tutor, and small developer tools.
 
-It runs locally today. Sign-in and the Azure deployment are not built yet.
+It runs locally today. Sign-in is built (not yet live); the Azure deployment is not built yet.
 
 ## How it's built
 
@@ -35,8 +35,12 @@ It runs locally today. Sign-in and the Azure deployment are not built yet.
 - **AI tutor:** `backend/app/clients/llm.py` is the only code that calls Claude (streaming,
   `claude-opus-5-5`, adaptive thinking, server-side refusal fallback). Each user message is one
   paid call, capped per day.
-- **Auth:** `AUTH_MODE=dev` means one local user and no login. Every user-owned table has
-  `user_id` and every query filters by it.
+- **Auth:** `AUTH_MODE=dev` means one local user and no login; `AUTH_MODE=jwt` means GitHub/Google
+  sign-in. The API issues a 15-minute access JWT (kept in memory) and a 30-day refresh token
+  (localStorage `cortex.refresh`), rotated on every use with reuse detection. Routes get the
+  user from `current_user` in `app/core/auth.py`. Auth code is `app/modules/auth/` and
+  `frontend/src/app/core/auth/`. Every user-owned table has `user_id` and every query filters
+  by it. Deploy steps: `docs/deploy-sign-in.md`.
 
 ## Folder map
 
@@ -56,6 +60,7 @@ backend/
       jobs/            applications board, question bank, resume matcher
       tutor/           chat sessions, prompts, SSE streaming, daily limit
       users/           user model, data export
+      auth/            OAuth sign-in, tokens, refresh rotation, account deletion
   content/             topics.yaml, practice.yaml, interview_questions.yaml, skills.yaml
   content/guides/      one Markdown guide per topic (86)
   scripts/             check_links.py (opens every topic link; CI runs it weekly)
@@ -69,6 +74,7 @@ frontend/
     app.routes.ts      every page is a lazy route
     core/api/          api.ts (all HTTP), models.ts (all API types), tutor-stream.ts
     core/              learning-store.ts, practice/python-runner.ts, theme/
+    core/auth/         sign-in state, tokens, guards, interceptor
     layout/            sidebar, topbar, nav.ts (the nav list), command palette
     shared/            small reusable pieces
     features/<page>/   one folder per page
@@ -270,8 +276,9 @@ Tests:
 
 ## Open work (as of 2026-11-15)
 
-- **Sign-in:** spec written (`docs/superpowers/specs/2026-11-14-sign-in-design.md`), not yet
-  approved or built. GitHub and Google, anyone can sign up, the AI tutor is invite-only, the API
-  issues its own access and refresh tokens, and the live site starts with empty data.
+- **Sign-in:** built on branch `feature/sign-in` (spec:
+  `docs/superpowers/specs/2026-11-14-sign-in-design.md`). Waiting for his GitHub OAuth App and
+  the Render settings; follow `docs/deploy-sign-in.md`, then merge. GitHub and Google, anyone
+  can sign up, the AI tutor is invite-only, and the live site starts with empty data.
 - **Azure deployment:** waiting for his Azure account.
 - **Design cleanup:** a type scale, fewer corner radii and breakpoints, a shorter sidebar.

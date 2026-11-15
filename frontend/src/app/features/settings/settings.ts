@@ -1,6 +1,10 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 
-import { Api } from '../../core/api/api';
+import { Router } from '@angular/router';
+
+import { Api, errorMessage } from '../../core/api/api';
+import { Auth } from '../../core/auth/auth';
+import { saveBlob } from '../../core/api/save-file';
 import { APPEARANCES, ThemeService } from '../../core/theme/theme';
 import { PlanSettings } from './plan-settings';
 
@@ -64,14 +68,51 @@ const SHORTCUTS: { keys: string[]; action: string }[] = [
 
       <span class="group-label">Your data</span>
       <div class="list">
-        <a class="list-row plain" [href]="exportUrl" download>
+        <button type="button" class="list-row plain" [disabled]="downloading()" (click)="download()">
           <span class="row-main">
             <span>Download my data</span>
             <span class="faint">Progress, practice, flashcards, notes, job search and tutor chats as JSON</span>
           </span>
           <i class="ti ti-download chev" aria-hidden="true"></i>
-        </a>
+        </button>
       </div>
+      @if (downloadError()) {
+        <p class="faint" role="alert">{{ downloadError() }}</p>
+      }
+
+      @if (auth.mode() === 'jwt') {
+        <span class="group-label">Delete account</span>
+        <div class="card danger">
+          <p>
+            This permanently deletes your account and everything in it. Type
+            <strong>delete</strong> to confirm.
+          </p>
+          <div class="row">
+            <input
+              class="confirm"
+              type="text"
+              autocomplete="off"
+              autocapitalize="off"
+              autocorrect="off"
+              spellcheck="false"
+              aria-label="Type delete to confirm"
+              [value]="confirm()"
+              (input)="confirm.set($any($event.target).value)"
+            />
+            <button
+              type="button"
+              class="btn primary"
+              [disabled]="!confirmed() || deleting()"
+              (click)="deleteAccount()"
+            >
+              Delete my account
+            </button>
+          </div>
+          @if (deleteError()) {
+            <p class="faint" role="alert">{{ deleteError() }}</p>
+          }
+        </div>
+      }
 
       <span class="group-label">About</span>
       <div class="list">
@@ -93,6 +134,10 @@ const SHORTCUTS: { keys: string[]; action: string }[] = [
     }
     .group-label {
       margin-top: 24px;
+    }
+    button.list-row {
+      width: 100%;
+      text-align: left;
     }
     .list-row.plain::after {
       left: 16px;
@@ -176,6 +221,27 @@ const SHORTCUTS: { keys: string[]; action: string }[] = [
         width: 60%;
       }
     }
+    .danger {
+      border: 1px solid var(--border-strong);
+      p {
+        margin: 0 0 12px;
+      }
+    }
+    .row {
+      display: flex;
+      gap: 8px;
+    }
+    .confirm {
+      flex: 1;
+      min-width: 0;
+      height: 32px;
+      padding: 0 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border-strong);
+      background: var(--bg);
+      color: var(--text);
+      font: 13.5px var(--font);
+    }
     .keys {
       display: inline-flex;
       gap: 4px;
@@ -189,7 +255,40 @@ const SHORTCUTS: { keys: string[]; action: string }[] = [
 })
 export class Settings {
   protected readonly theme = inject(ThemeService);
-  protected readonly exportUrl = inject(Api).exportUrl();
+  private readonly api = inject(Api);
+  protected readonly downloading = signal(false);
+  protected readonly downloadError = signal('');
+  protected readonly auth = inject(Auth);
+  private readonly router = inject(Router);
+  protected readonly confirm = signal('');
+  protected readonly confirmed = computed(() => this.confirm().trim().toLowerCase() === 'delete');
+  protected readonly deleting = signal(false);
+  protected readonly deleteError = signal('');
   protected readonly appearances = APPEARANCES;
   protected readonly shortcuts = SHORTCUTS;
+
+  protected async download(): Promise<void> {
+    this.downloading.set(true);
+    this.downloadError.set('');
+    try {
+      saveBlob(await this.api.downloadExport(), 'cortex-data.json');
+    } catch (err) {
+      this.downloadError.set(errorMessage(err, "Couldn't download your data. Try again."));
+    } finally {
+      this.downloading.set(false);
+    }
+  }
+
+  protected async deleteAccount(): Promise<void> {
+    this.deleting.set(true);
+    this.deleteError.set('');
+    try {
+      await this.auth.deleteAccount();
+      await this.router.navigateByUrl('/signin');
+    } catch (err) {
+      this.deleteError.set(errorMessage(err, "Couldn't delete your account. Try again."));
+    } finally {
+      this.deleting.set(false);
+    }
+  }
 }

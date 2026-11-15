@@ -15,6 +15,7 @@ import {
 import { RouterLink } from '@angular/router';
 
 import { Api, errorMessage } from '../../core/api/api';
+import { Auth } from '../../core/auth/auth';
 import { streamTutorReply } from '../../core/api/tutor-stream';
 import { LearningStore } from '../../core/learning-store';
 import { MarkdownPipe } from './markdown';
@@ -49,6 +50,7 @@ export class Tutor {
   readonly ask = input<string>();
 
   private readonly api = inject(Api);
+  private readonly auth = inject(Auth);
   private readonly location = inject(Location);
   private readonly store = inject(LearningStore);
   private readonly scroller = viewChild<ElementRef<HTMLElement>>('scroller');
@@ -187,7 +189,7 @@ export class Tutor {
 
       this.abort = new AbortController();
       let reply = '';
-      for await (const event of streamTutorReply(id, message, this.abort.signal)) {
+      for await (const event of streamTutorReply(id, message, this.abort.signal, (u, i) => this.auth.fetchWithAuth(u, i))) {
         if (event.type === 'delta') {
           reply += event.text;
           patch({ text: reply });

@@ -27,6 +27,8 @@ an AI tutor knows what you've learned.
 - **AI tutor:** streaming chat that knows the topic and your progress, hints first, with a
   daily message limit
 - **Developer tools:** JSON, regex, JWT, Base64/URL, timestamps and hashes, all in the browser
+- **Sign-in:** GitHub or Google; each user's data is private, the AI tutor is invite-only, and you
+  can delete your account (setup: `docs/deploy-sign-in.md`)
 - Monochrome Light / Dark / Auto design · ⌘K search everywhere · download all your data
 
 ## Repo layout

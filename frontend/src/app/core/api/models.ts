@@ -328,3 +328,11 @@ export interface QuestionBank {
   categories: { id: string; label: string }[];
   items: InterviewQuestion[];
 }
+
+export interface Me {
+  id: string;
+  display_name: string | null;
+  email: string | null;
+  avatar_url: string | null;
+  tutor_access: boolean;
+}
