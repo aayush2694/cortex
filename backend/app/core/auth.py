@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import get_settings
 from app.core.db import get_session
 from app.core.errors import AppError
+from app.modules.auth.models import Identity
 from app.modules.users.models import User
 
 DEV_USER_NAME = "Dev User"
@@ -25,7 +26,10 @@ class AuthNotConfigured(AppError):
 
 async def get_dev_user(session: AsyncSession) -> User:
     user = await session.scalar(
-        select(User).where(User.external_id.is_(None)).order_by(User.created_at).limit(1)
+        select(User)
+        .where(~select(Identity.id).where(Identity.user_id == User.id).exists())
+        .order_by(User.created_at)
+        .limit(1)
     )
     if user is None:
         user = User(display_name=DEV_USER_NAME)

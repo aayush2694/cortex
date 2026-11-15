@@ -45,7 +45,8 @@ async def clean_user_data() -> AsyncIterator[None]:
             text(
                 "TRUNCATE users, progress, activity_events, solved_problems, chat_sessions, "
                 "chat_messages, submissions, flashcards, card_reviews, notes, prep_plans, "
-                "applications, job_profiles, question_notes "
+                "applications, job_profiles, question_notes, identities, oauth_states, "
+                "login_codes, refresh_tokens "
                 "RESTART IDENTITY CASCADE"
             )
         )

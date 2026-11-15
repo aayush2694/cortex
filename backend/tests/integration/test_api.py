@@ -5,8 +5,11 @@ import httpx
 import pytest
 
 from app.clients.llm import LLMEvent
+from app.core.db import get_sessionmaker
+from app.modules.auth.models import Identity
 from app.modules.topics import service as topic_service
 from app.modules.topics.guides import parse_guide
+from app.modules.users.models import User
 from tests.integration.conftest import FakeLLM
 
 API = "/api/v1"
@@ -33,6 +36,18 @@ async def test_me_creates_dev_user_once(client: httpx.AsyncClient) -> None:
     a = (await client.get(f"{API}/me")).json()
     b = (await client.get(f"{API}/me")).json()
     assert a["display_name"] == "Dev User" and a["id"] == b["id"]
+
+
+async def test_dev_user_is_the_user_without_identity(client: httpx.AsyncClient) -> None:
+    async with get_sessionmaker()() as session:
+        signed_in = User(display_name="Signed In")
+        session.add(signed_in)
+        await session.flush()
+        session.add(Identity(user_id=signed_in.id, provider="github", provider_user_id="1"))
+        await session.commit()
+        signed_in_id = str(signed_in.id)
+    me = (await client.get(f"{API}/me")).json()
+    assert me["id"] != signed_in_id
 
 
 async def test_unknown_route_uses_error_shape(client: httpx.AsyncClient) -> None:
