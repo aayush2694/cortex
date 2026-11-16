@@ -65,13 +65,16 @@ async def current_user(
 ) -> User:
     settings = get_settings()
     if settings.auth_mode == "dev":
-        return await get_dev_user(session)
+        dev_user = await get_dev_user(session)
+        request.state.user_id = dev_user.id  # for the request log
+        return dev_user
     if not settings.jwt_secret:
         raise AuthNotConfigured("Sign-in is not configured")
     user_id = decode_access_token(_bearer_token(request), settings.jwt_secret, clock())
     user = await session.get(User, user_id)
     if user is None:  # a valid token for an account that has since been deleted
         raise TokenInvalid("Access token is not valid")
+    request.state.user_id = user.id  # for the request log
     return user
 
 

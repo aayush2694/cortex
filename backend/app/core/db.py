@@ -41,7 +41,10 @@ def get_engine() -> AsyncEngine:
     if _engine is None:
         settings = get_settings()
         _engine = create_async_engine(
-            settings.database_url, echo=settings.db_echo, pool_pre_ping=True
+            settings.database_url,
+            echo=settings.db_echo,
+            pool_pre_ping=True,
+            hide_parameters=True,  # error messages and logs never show statement values
         )
     return _engine
 

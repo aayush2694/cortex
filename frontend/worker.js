@@ -6,7 +6,24 @@ export default {
     const url = new URL(request.url);
     if (url.pathname.startsWith('/api/')) {
       const target = new URL(url.pathname + url.search, env.API_ORIGIN);
-      return fetch(new Request(target, request));
+      const forwarded = new Request(target, request);
+      // Tell the API who the visitor is. CF-Connecting-IP is set by Cloudflare, so it replaces
+      // anything the browser sent. Without it, send no address at all.
+      const ip = request.headers.get('CF-Connecting-IP');
+      if (ip) {
+        forwarded.headers.set('X-Client-IP', ip);
+      } else {
+        forwarded.headers.delete('X-Client-IP');
+      }
+      // The API trusts X-Client-IP only with this secret (PROXY_SHARED_SECRET, recommended).
+      // Never pass on a value the browser sent.
+      forwarded.headers.delete('X-Proxy-Secret');
+      if (env.PROXY_SHARED_SECRET) {
+        forwarded.headers.set('X-Proxy-Secret', env.PROXY_SHARED_SECRET);
+      }
+      // Hand any redirect back to the browser instead of following it here, so the secret
+      // header is never sent to another host.
+      return fetch(forwarded, { redirect: 'manual' });
     }
     return env.ASSETS.fetch(request);
   },

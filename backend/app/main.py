@@ -4,7 +4,7 @@ import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from fastapi import APIRouter, FastAPI
+from fastapi import APIRouter, Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 
@@ -12,6 +12,7 @@ from app.core.config import get_settings, validate_auth_settings
 from app.core.db import dispose_engine, get_sessionmaker
 from app.core.errors import register_error_handlers
 from app.core.logging import RequestContextMiddleware, setup_logging
+from app.core.rate_limit import rate_limit
 from app.modules.auth.router import router as auth_router
 from app.modules.jobs.content import get_questions, get_skills
 from app.modules.jobs.router import router as jobs_router
@@ -46,7 +47,13 @@ async def sync_topics() -> int:
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-    validate_auth_settings(get_settings())  # a misconfigured jwt deploy must not start
+    settings = get_settings()
+    validate_auth_settings(settings)  # a misconfigured jwt deploy must not start
+    if not settings.proxy_shared_secret:
+        log.warning(
+            "PROXY_SHARED_SECRET is not set: per-IP rate limits are off until it is "
+            "(signed-in users are still limited)"
+        )
     count = await sync_topics()
     log.info("Loaded %d topics from the catalogue", count)
     yield
@@ -80,7 +87,8 @@ def create_app() -> FastAPI:
     async def health() -> dict[str, str]:
         return {"status": "ok"}
 
-    api = APIRouter(prefix="/api/v1")
+    # Every API route is rate limited; /health and / are not.
+    api = APIRouter(prefix="/api/v1", dependencies=[Depends(rate_limit)])
 
     api.include_router(me_router)
     api.include_router(auth_router)

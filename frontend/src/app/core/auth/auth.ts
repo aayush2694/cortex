@@ -26,6 +26,11 @@ const API_TIMEOUT_MS = 60_000;
 /** After this long still loading, say the server is waking up rather than showing nothing. */
 const WAKING_AFTER_MS = 3000;
 
+/** A 429 means the API is busy, not down: wait this long (or its Retry-After) and try again. */
+const BUSY_DEFAULT_WAIT_S = 5;
+const BUSY_MAX_WAIT_S = 30;
+const BUSY_MAX_RETRIES = 3;
+
 const REFRESH_KEY = 'cortex.refresh';
 
 /** Leaves the app for the provider's sign-in page. A token so tests can replace it. */
@@ -37,6 +42,21 @@ export const NAVIGATE_TO = new InjectionToken<(url: string) => void>('NAVIGATE_T
 /** The error code in the API's `{"error": {"code"}}` body, from an HttpErrorResponse. */
 export function errorCode(err: unknown): string | undefined {
   return (err as { error?: { error?: { code?: string } } })?.error?.error?.code;
+}
+
+/** Run `call`; on a 429 wait for Retry-After (default 5 s, at most 30 s) and retry up to 3 times. */
+async function retryWhenBusy<T>(call: () => Promise<T>): Promise<T> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await call();
+    } catch (err) {
+      if ((err as { status?: number })?.status !== 429 || attempt >= BUSY_MAX_RETRIES) throw err;
+      const header = (err as { headers?: { get(name: string): string | null } }).headers?.get('Retry-After');
+      const seconds = Number(header);
+      const wait = header && Number.isFinite(seconds) && seconds >= 0 ? seconds : BUSY_DEFAULT_WAIT_S;
+      await new Promise((resolve) => setTimeout(resolve, Math.min(wait, BUSY_MAX_WAIT_S) * 1000));
+    }
+  }
 }
 
 /**
@@ -87,10 +107,12 @@ export class Auth {
 
   private async load(): Promise<void> {
     try {
-      const res = await firstValueFrom(
-        this.http
-          .get<{ mode: 'dev' | 'jwt'; providers: string[] }>(`${API}/auth/providers`)
-          .pipe(timeout(API_TIMEOUT_MS)),
+      const res = await retryWhenBusy(() =>
+        firstValueFrom(
+          this.http
+            .get<{ mode: 'dev' | 'jwt'; providers: string[] }>(`${API}/auth/providers`)
+            .pipe(timeout(API_TIMEOUT_MS)),
+        ),
       );
       this.modeSignal.set(res.mode);
       this.providersSignal.set(res.providers);
@@ -138,10 +160,12 @@ export class Auth {
     const refreshToken = this.readRefresh(); // read now: another tab may have rotated it
     if (!refreshToken) return 'rejected';
     try {
-      const pair = await firstValueFrom(
-        this.http
-          .post<TokenPair>(`${API}/auth/refresh`, { refresh_token: refreshToken })
-          .pipe(timeout(API_TIMEOUT_MS)),
+      const pair = await retryWhenBusy(() =>
+        firstValueFrom(
+          this.http
+            .post<TokenPair>(`${API}/auth/refresh`, { refresh_token: refreshToken })
+            .pipe(timeout(API_TIMEOUT_MS)),
+        ),
       );
       this.store(pair);
       return 'ok';

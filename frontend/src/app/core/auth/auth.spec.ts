@@ -88,6 +88,71 @@ describe('Auth', () => {
     expect(auth.signedIn()).toBe(true);
   });
 
+  describe('when the API answers 429 (busy, not offline)', () => {
+    const busy = (retryAfter?: string) => ({
+      status: 429,
+      statusText: 'Too Many Requests',
+      headers: retryAfter ? { 'Retry-After': retryAfter } : ({} as Record<string, string>),
+    });
+    const tick = (ms: number) => vi.advanceTimersByTimeAsync(ms);
+
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+
+    it('waits for Retry-After, retries the providers call, then carries on', async () => {
+      const done = auth.init();
+      await tick(0);
+      ctrl.expectOne('/api/v1/auth/providers').flush(null, busy('2'));
+      await tick(1999);
+      ctrl.expectNone('/api/v1/auth/providers');
+      await tick(1);
+      ctrl.expectOne('/api/v1/auth/providers').flush({ mode: 'dev', providers: [] });
+      await done;
+      expect(auth.status()).toBe('ready');
+    });
+
+    it('waits 5 s when Retry-After is absent and caps it at 30 s', async () => {
+      const done = auth.init();
+      await tick(0);
+      ctrl.expectOne('/api/v1/auth/providers').flush(null, busy());
+      await tick(4999);
+      ctrl.expectNone('/api/v1/auth/providers');
+      await tick(1);
+      ctrl.expectOne('/api/v1/auth/providers').flush(null, busy('3600'));
+      await tick(29_999);
+      ctrl.expectNone('/api/v1/auth/providers');
+      await tick(1);
+      ctrl.expectOne('/api/v1/auth/providers').flush({ mode: 'dev', providers: [] });
+      await done;
+      expect(auth.status()).toBe('ready');
+    });
+
+    it('goes offline only after 3 retries still get 429', async () => {
+      const done = auth.init();
+      await tick(0);
+      for (let i = 0; i < 4; i++) {
+        ctrl.expectOne('/api/v1/auth/providers').flush(null, busy('1'));
+        await tick(1000);
+      }
+      await done;
+      ctrl.expectNone('/api/v1/auth/providers');
+      expect(auth.status()).toBe('offline');
+    });
+
+    it('treats a 429 on refresh as unavailable and keeps the refresh token', async () => {
+      localStorage.setItem('cortex.refresh', 'refresh-0');
+      const result = auth.refresh();
+      await tick(0);
+      for (let i = 0; i < 4; i++) {
+        ctrl.expectOne('/api/v1/auth/refresh').flush(null, busy('1'));
+        await tick(1000);
+      }
+      expect(await result).toBe('unavailable');
+      expect(localStorage.getItem('cortex.refresh')).toBe('refresh-0');
+      ctrl.verify();
+    });
+  });
+
   it('signIn goes to the provider start URL', () => {
     auth.signIn('github');
     expect(navigated).toEqual(['/api/v1/auth/github/start']);

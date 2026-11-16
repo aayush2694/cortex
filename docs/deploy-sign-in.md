@@ -28,6 +28,22 @@ Do these in order. Never paste secret values into git or chat.
    it. Open a private window, sign in as someone else (or not at all) and confirm the note is
    not visible.
 
+## Rate limits and the proxy secret (recommended)
+
+The API limits requests per minute (120 general, 20 sign-in per IP, 10 tutor messages per user).
+**Per-IP limits stay off without the proxy secret.** Every visitor through the Worker reaches the
+API from the same address, so one shared bucket would let a single client lock everyone out;
+instead, without the secret, anonymous requests and all sign-in routes are not limited at all
+(signed-in users are still limited elsewhere), and the API logs a warning at startup. To turn
+per-IP limits on, set one random value in both places:
+
+- Render: `PROXY_SHARED_SECRET` (e.g. `python -c "import secrets; print(secrets.token_urlsafe(32))"`)
+- Cloudflare: `cd frontend && npx wrangler secret put PROXY_SHARED_SECRET`
+
+With the secret set, the API keys requests from the Worker by the visitor's address and
+requests that skip the Worker by the address Render saw. Without it, the API ignores the
+Worker's `X-Client-IP` header.
+
 ## Notes
 
 - Uvicorn's access log prints the OAuth callback query (provider code and state). It is single
