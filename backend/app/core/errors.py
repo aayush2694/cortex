@@ -4,7 +4,6 @@ Every error response looks like:
     {"error": {"code": "topic_not_found", "message": "...", "request_id": "..."}}
 """
 
-import logging
 from typing import Any
 
 from fastapi import FastAPI, Request
@@ -12,14 +11,13 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.core.logging import request_id_var
-
-log = logging.getLogger(__name__)
+from app.core.request_context import request_id_var
 
 
 class AppError(Exception):
     status_code = 400
     code = "bad_request"
+    headers: dict[str, str] | None = None  # extra response headers, e.g. Retry-After
 
     def __init__(self, message: str, code: str | None = None, details: Any = None) -> None:
         super().__init__(message)
@@ -54,6 +52,9 @@ class AIUnavailable(AppError):
     code = "ai_unavailable"
 
 
+INTERNAL_ERROR_MESSAGE = "Something went wrong on our side"
+
+
 def error_body(code: str, message: str, details: Any = None) -> dict[str, Any]:
     body: dict[str, Any] = {"code": code, "message": message, "request_id": request_id_var.get()}
     if details is not None:
@@ -65,7 +66,9 @@ def register_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppError)
     async def handle_app_error(_: Request, exc: AppError) -> JSONResponse:
         return JSONResponse(
-            error_body(exc.code, exc.message, exc.details), status_code=exc.status_code
+            error_body(exc.code, exc.message, exc.details),
+            status_code=exc.status_code,
+            headers=exc.headers,
         )
 
     @app.exception_handler(RequestValidationError)
@@ -80,9 +83,6 @@ def register_error_handlers(app: FastAPI) -> None:
         code = "not_found" if exc.status_code == 404 else "http_error"
         return JSONResponse(error_body(code, str(exc.detail)), status_code=exc.status_code)
 
-    @app.exception_handler(Exception)
-    async def handle_unexpected(_: Request, exc: Exception) -> JSONResponse:
-        log.exception("Unhandled error")
-        return JSONResponse(
-            error_body("internal_error", "Something went wrong on our side"), status_code=500
-        )
+    # Unexpected exceptions have no handler here: Starlette would run one only outside every
+    # middleware, and RequestContextMiddleware (core/logging.py) already turns each crash into
+    # one logged 500 with this envelope.

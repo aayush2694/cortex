@@ -3,11 +3,19 @@
 [![CI](https://github.com/aayush2694/cortex/actions/workflows/ci.yml/badge.svg)](https://github.com/aayush2694/cortex/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/aayush2694/cortex/actions/workflows/codeql.yml/badge.svg)](https://github.com/aayush2694/cortex/actions/workflows/codeql.yml)
 
+**Live: https://cortex.aayush3783.workers.dev**
+
 An interactive learning platform for switching jobs in tech: DSA, programming languages,
 frameworks (Django), AI and system design. Every concept is something you can play with, and
 an AI tutor knows what you've learned.
 
 **Stack:** Angular 22 · Python FastAPI · PostgreSQL 18 · Claude API · (Azure, Phase 2)
+
+| Knowledge map | Topic guide |
+| --- | --- |
+| ![Knowledge map](docs/screenshots/topic-map.png) | ![Topic guide](docs/screenshots/topic-guide.png) |
+| **Practice, run in the browser** | **Sign-in** |
+| ![Practice question](docs/screenshots/practice.png) | ![Sign-in page](docs/screenshots/sign-in.png) |
 
 ## What's in it
 
@@ -54,6 +62,12 @@ cd ../frontend && npm install && npx ng serve   # app on :4200
   tests and a production build on every push and pull request.
 - **CodeQL** scans the Python and TypeScript code for security issues every week.
 - **Dependabot** opens grouped pull requests for dependency updates every Monday.
+- **End-to-end tests** (Playwright, Chromium) walk the real app against a throwaway database:
+  open a topic, solve a practice problem, check progress, and the sign-in redirect
+  (`cd frontend && npm run e2e`; first run `createdb cortex_e2e` and migrate it with
+  `DATABASE_URL=postgresql+asyncpg://localhost:5432/cortex_e2e uv run alembic upgrade head`).
+- **Rate limiting:** the API throttles each user or IP per minute, with a stricter limit on
+  sign-in and the AI tutor, and answers `429` with `Retry-After`.
 - **Pre-commit hooks** run ruff, secret scanning (gitleaks) and file checks before each commit:
 
 ```bash

@@ -10,6 +10,7 @@ from sqlalchemy import text
 from app.clients.llm import LLMEvent, get_llm
 from app.core.config import Settings, get_settings
 from app.core.db import get_engine, get_sessionmaker
+from app.core.rate_limit import limiter
 from app.main import app, sync_topics
 from app.models import Base
 from app.modules.auth.models import Identity
@@ -43,6 +44,11 @@ async def database() -> AsyncIterator[None]:
     await sync_topics()
     yield
     await engine.dispose()
+
+
+@pytest.fixture(autouse=True)
+def fresh_rate_limits() -> None:
+    limiter.reset()  # each test starts with empty request counts
 
 
 @pytest.fixture(autouse=True)

@@ -43,6 +43,14 @@ class Settings(BaseSettings):
     # Messages each user may send the tutor per day (UTC); each one is a paid Claude call.
     tutor_daily_limit: int = Field(default=30, ge=1)
 
+    # Requests per minute. Keyed by user id when signed in, otherwise by client IP.
+    rate_limit_default_per_minute: int = Field(default=120, ge=1)
+    rate_limit_auth_per_minute: int = Field(default=20, ge=1)  # /api/v1/auth/*, per IP
+    rate_limit_tutor_per_minute: int = Field(default=10, ge=1)  # tutor messages, per user
+    # Shared with the Cloudflare Worker. When a request carries it in X-Proxy-Secret, the
+    # Worker's X-Client-IP header is trusted as the client address. Optional.
+    proxy_shared_secret: str | None = None
+
     content_dir: str = "content"
 
     @field_validator("tutor_invited_emails", mode="before")

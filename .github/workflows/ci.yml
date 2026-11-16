@@ -98,3 +98,76 @@ jobs:
 
       - name: Build
         run: npx ng build
+
+  # Drives the real app in Chromium: the API and the Angular dev server start on throwaway
+  # ports, against their own database. Needs no secrets and never calls GitHub or Claude.
+  e2e:
+    runs-on: ubuntu-latest
+
+    # A separate database, so nothing here can touch the other jobs' data.
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: cortex_e2e       # created automatically
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      # playwright.config.ts reads this to point both APIs at the e2e database, and e2e/global-setup.ts
+      # uses it with psql (preinstalled on ubuntu-latest) to empty the user-data tables before the run.
+      E2E_DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/cortex_e2e
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v6.8.0; installs uv and Python
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26                 # match your `node -v` major version
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: uv sync --locked
+
+      - name: Create the e2e tables
+        working-directory: backend
+        env:
+          DATABASE_URL: ${{ env.E2E_DATABASE_URL }}
+        run: uv run alembic upgrade head
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install Chromium
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: End-to-end tests
+        working-directory: frontend
+        run: npm run e2e
+
+      # Keep the HTML report (and traces) only when something failed.
+      - name: Upload the Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/
+          retention-days: 7
