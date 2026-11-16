@@ -6,7 +6,8 @@ processed. Queues **decouple** services, **level load** (absorb spikes and let c
 make slow or unreliable work asynchronous. Most deliver **at least once**, so consumers must be
 **idempotent**. Failing messages go to a **dead-letter queue** after a few retries. Classic queues
 (RabbitMQ, SQS) delete messages once processed; **logs** (Kafka, Kinesis) keep them for replay by many
-consumers.
+consumers. **Task queues** add scheduling and priorities on top, and **back pressure** keeps a queue
+from growing without limit when work arrives faster than it can be done.
 
 ## The idea
 
@@ -32,6 +33,21 @@ message IDs or using unique constraints).
 
 **Ordering**: most queues don't guarantee global order. Kafka guarantees order within a **partition**, so
 messages with the same key (for example the same order ID) go to the same partition and stay in order.
+
+**Task queues** are queues built for jobs rather than events: "send this email", "resize this image",
+"generate the monthly report at 02:00". Libraries such as Celery, RQ and Sidekiq sit on a broker and add
+what jobs need: **delayed and scheduled** jobs (run in 10 minutes, or every night), **priorities** (a
+password-reset email jumps ahead of a bulk newsletter), automatic **retries with backoff**, time limits,
+and a record of each job's result. Separate queues per kind of work stop slow jobs from starving fast
+ones.
+
+**Back pressure** is how a system pushes back on producers when they outrun consumers for longer than
+a short spike. Without it, an unbounded queue just grows: memory or disk fills, messages wait for hours, and by the time they are
+processed they may be useless. Healthy systems push back instead. Bound the queue's size; when it is
+full, **reject** new work quickly (an API returns `429 Too Many Requests` or `503` with `Retry-After`),
+**slow producers down**, or **shed** low-priority work. Alert on queue depth and on the age of the oldest
+message, and scale consumers up when the backlog grows. Failing fast is kinder than accepting work you
+can't finish.
 
 ## How it works
 

@@ -1905,6 +1905,7 @@ topics:
       - "Most queues deliver at least once, so consumers must be idempotent and safe to run twice."
       - "Dead-letter queues hold messages that keep failing, so one bad message does not block the rest."
       - "Logs like Kafka keep messages so they can be replayed; classic queues delete them once consumed."
+      - "Back pressure: bound the queue and reject or slow new work when it is full, instead of letting it grow forever."
     resources:
       - { label: Queue-based load leveling, url: "https://learn.microsoft.com/en-us/azure/architecture/patterns/queue-based-load-leveling" }
       - { label: Introduction to Kafka, url: "https://kafka.apache.org/intro" }
@@ -2108,3 +2109,76 @@ topics:
     resources:
       - { label: "Similar design: Twitter timeline (System Design Primer)", url: "https://github.com/donnemartin/system-design-primer/blob/master/solutions/system_design/twitter/README.md" }
       - { label: "Redis lists", url: "https://redis.io/docs/latest/develop/data-types/lists/" }
+
+  - id: reverse-proxies
+    track: system-design
+    title: "Reverse Proxies & API Gateways"
+    summary: A server in front of your app that handles TLS, caching, compression and routing, so the app does not have to.
+    difficulty: 2
+    phase: 3
+    requires: [load-balancing, networking-basics]
+    concepts:
+      - "A reverse proxy sits in front of your servers; clients only ever talk to the proxy."
+      - "It can terminate TLS, compress and cache responses, serve static files and hide internal servers."
+      - "An API gateway is a reverse proxy for APIs that adds authentication, rate limits and routing to services."
+      - "A load balancer spreads traffic over many servers; a reverse proxy is useful even with one server."
+      - "The proxy is in every request's path, so run it redundantly and keep it fast."
+    resources:
+      - { label: "Reverse proxy (System Design Primer)", url: "https://github.com/donnemartin/system-design-primer#reverse-proxy-web-server" }
+      - { label: "Nginx proxy module", url: "https://nginx.org/en/docs/http/ngx_http_proxy_module.html" }
+      - { label: "Proxy servers and tunneling (MDN)", url: "https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Proxy_servers_and_tunneling" }
+
+  - id: service-discovery
+    track: system-design
+    title: Service Discovery
+    summary: How services find each other's current addresses when instances come and go all the time.
+    difficulty: 3
+    phase: 3
+    requires: [microservices, load-balancing]
+    concepts:
+      - "Instances start, stop and move, so services look each other up by name instead of fixed addresses."
+      - "A registry (Consul, etcd, Kubernetes) keeps the list of healthy instances for each service."
+      - "Health checks remove failing instances from the registry automatically."
+      - "Client-side discovery picks an instance in the caller; server-side discovery routes through a load balancer."
+      - "DNS-based discovery is simple but cached answers can point at instances that are already gone."
+    resources:
+      - { label: "Service discovery (System Design Primer)", url: "https://github.com/donnemartin/system-design-primer#service-discovery" }
+      - { label: "Kubernetes Services", url: "https://kubernetes.io/docs/concepts/services-networking/service/" }
+      - { label: "Consul service discovery", url: "https://developer.hashicorp.com/consul/docs/concepts/service-discovery" }
+
+  - id: back-of-envelope
+    track: system-design
+    title: Back-of-the-Envelope Estimation
+    summary: Quick, rough maths for traffic, storage and latency that shows whether a design can work.
+    difficulty: 2
+    phase: 3
+    requires: [sd-fundamentals]
+    concepts:
+      - "Estimates aim for the right order of magnitude, not exact numbers; round freely and say your assumptions."
+      - "A day has about 86,400 seconds, so 1 million requests a day is roughly 12 per second on average."
+      - "Peak traffic is often 2–10 times the average; size for the peak."
+      - "Memory is about 1,000 times faster than an SSD read, and a round trip across continents takes ~150 ms."
+      - "Powers of two: 2^10 ≈ a thousand (KB), 2^20 ≈ a million (MB), 2^30 ≈ a billion (GB)."
+    resources:
+      - { label: "Latency numbers every programmer should know (System Design Primer)", url: "https://github.com/donnemartin/system-design-primer#latency-numbers-every-programmer-should-know" }
+      - { label: "Powers of two table (System Design Primer)", url: "https://github.com/donnemartin/system-design-primer#powers-of-two-table" }
+      - { label: "Non-abstract large system design (Google SRE)", url: "https://sre.google/workbook/non-abstract-design/" }
+
+  - id: web-security
+    track: system-design
+    title: Web Security Basics
+    summary: The common ways web apps get attacked, and the defences every backend should have.
+    difficulty: 3
+    phase: 3
+    requires: [api-design, networking-basics]
+    concepts:
+      - "Authentication proves who you are; authorisation decides what you may do. Check both on every request."
+      - "Never build SQL or shell commands by joining strings with user input; use parameters."
+      - "Escape output to stop XSS, and protect cookie-based forms with CSRF tokens and SameSite cookies."
+      - "Check object ownership on the server; changing an ID in the URL must not reveal someone else's data."
+      - "Keep secrets in environment variables or a vault, never in code, logs or URLs."
+    resources:
+      - { label: "OWASP Top 10", url: "https://owasp.org/Top10/" }
+      - { label: "OWASP Cheat Sheet Series", url: "https://cheatsheetseries.owasp.org/" }
+      - { label: "Web security (MDN)", url: "https://developer.mozilla.org/en-US/docs/Web/Security" }
+      - { label: "Security (System Design Primer)", url: "https://github.com/donnemartin/system-design-primer#security" }

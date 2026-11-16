@@ -32,9 +32,9 @@ automated failover and careful deploys.
 but with a ceiling and a single point of failure. **Horizontal** scaling adds more machines: no hard
 ceiling, but servers must be stateless and data must be shared, replicated or split.
 
-**Back-of-the-envelope estimates** turn vague requirements into numbers. 10 million daily users each
-making 20 requests is 200 million requests a day, about 2,300 per second on average, maybe 5–10 times that
-at peak. Those numbers tell you whether one database is enough.
+**Back-of-the-envelope estimates** turn vague requirements into numbers, such as requests per second
+and storage per year, that tell you whether one database is enough. The Back-of-the-Envelope Estimation
+topic covers the method, the latency numbers and worked examples.
 
 ## How it works
 

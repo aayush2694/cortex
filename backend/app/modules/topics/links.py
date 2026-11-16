@@ -34,6 +34,10 @@ ALLOWED_HOSTS: frozenset[str] = frozenset(
         "cassandra.apache.org",
         "elastic.co",
         "redis.io",
+        "nginx.org",
+        "kubernetes.io",
+        "developer.hashicorp.com",
+        "owasp.org",  # also covers cheatsheetseries.owasp.org
         "aws.amazon.com",
         "opentelemetry.io",
         "jepsen.io",
