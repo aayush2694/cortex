@@ -62,7 +62,7 @@ backend/
       users/           user model, data export
       auth/            OAuth sign-in, tokens, refresh rotation, account deletion
   content/             topics.yaml, practice.yaml, interview_questions.yaml, skills.yaml
-  content/guides/      one Markdown guide per topic (86)
+  content/guides/      one Markdown guide per topic (90)
   scripts/             check_links.py (opens every topic link; CI runs it weekly)
   alembic/versions/    migrations (auto-generated, not linted)
   tests/unit/          pure logic, no I/O

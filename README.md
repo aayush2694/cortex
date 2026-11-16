@@ -11,7 +11,7 @@ an AI tutor knows what you've learned.
 
 ## What's in it
 
-- **Knowledge map:** 86 topics across 5 tracks (DSA, languages incl. SQL, Django, AI, system
+- **Knowledge map:** 90 topics across 5 tracks (DSA, languages incl. SQL, Django, AI, system
   design), linked by prerequisites and shaded by your mastery
 - **Topic guides:** every topic has a written guide (about 1.5 pages) layered from a plain-words
   explanation to code, common mistakes and interview questions, plus key ideas and 2–4 links to
