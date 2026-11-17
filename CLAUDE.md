@@ -292,7 +292,7 @@ Tests:
   `GOOGLE_CLIENT_SECRET` on Render (steps in `docs/deploy-sign-in.md`).
 - **`PROXY_SHARED_SECRET`** is not set yet, so per-IP rate limits are off; only he sets secrets.
 - **Render start command** should get `--no-access-log` so uvicorn stops logging query strings
-  (including the one-time sign-in code).
+  (including the OAuth `code` and `state` on the callback).
 - **Live database:** Render's free PostgreSQL expires 30 days after creation and has no
   backups; moving to a free plan that does not expire (Neon suggested) is pending his decision.
 - **Cloudflare "Workers Builds" check** fails on branches other than `main`; the cause is in
