@@ -6,6 +6,7 @@ FastAPI + PostgreSQL. Design: [`../docs/system-design/02-backend-architecture.md
 
 ```bash
 brew services start postgresql@18   # database (once per boot)
+createdb cortex && createdb cortex_test   # once
 cp .env.example .env                # then fill in your values
 uv sync                             # install dependencies
 uv run alembic upgrade head         # create/update tables
@@ -18,8 +19,8 @@ Add `ANTHROPIC_API_KEY=...` to `.env` to turn on the AI tutor.
 
 ```bash
 uv run pytest            # tests (uses the cortex_test database)
-uv run ruff check .      # lint
-uv run ruff format .     # format
+uv run ruff check app tests    # lint (not ".": alembic/ is auto-generated)
+uv run ruff format app tests   # format
 uv run mypy app          # type check
 ```
 
@@ -29,9 +30,10 @@ uv run mypy app          # type check
 app/
   core/        config, database, errors, logging, auth
   clients/     llm.py — the only code that calls Claude
-  modules/     topics · progress · visualizer · tutor
+  modules/     topics · progress · visualizer · practice · study · jobs · tutor · users · auth
                (each: router → service → repository → models)
-content/       topics.yaml — the knowledge map
+content/       topics.yaml (the knowledge map), practice.yaml, interview_questions.yaml,
+               skills.yaml, guides/ (one Markdown guide per topic)
 alembic/       database migrations
 tests/         unit/ (no I/O) · integration/ (real DB, fake AI)
 ```

@@ -18,15 +18,16 @@ src/app/
   core/       api (typed client + streaming tutor), theme service, learning store
   layout/     sidebar, top bar, theme picker, ⌘K command palette
   shared/     small reusable pieces
-  features/   dashboard · knowledge-map · topics · visualizer · tutor · roadmap
-src/styles.scss   design tokens + the 5 themes
+  features/   one folder per page (dashboard, knowledge-map, topics, patterns, visualizer,
+              practice, review, tutor, jobs, tools, cheatsheet, roadmap, settings, auth)
+src/styles.scss   design tokens + the light and dark themes
 ```
 
 ## Themes
 
-Every colour is a CSS variable. Themes live in `src/styles.scss` as `[data-theme='…']` blocks
-(Midnight, Graphite, Ocean, Ember, Daylight). To add one: copy a block, change the values, and
-add it to `THEMES` in `core/theme/theme.ts`.
+Every colour is a CSS variable. `src/styles.scss` defines a `[data-theme='light']` and a
+`[data-theme='dark']` block; `core/theme/theme.ts` offers Light, Dark and Auto (follows the
+system setting).
 
 ## Shortcuts
 
