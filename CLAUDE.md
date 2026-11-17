@@ -10,7 +10,11 @@ algorithm and pattern walkthroughs, coding practice that runs in the browser, st
 (flashcards, notes, a daily plan), career tools (job board, interview questions, resume match,
 offers), an AI tutor, and small developer tools.
 
-It runs locally today. Sign-in is built (not yet live); the Azure deployment is not built yet.
+Cortex is live at https://cortex.aayush3783.workers.dev. A Cloudflare Worker
+(`frontend/worker.js`) serves the Angular build and forwards `/api/*` to the FastAPI API on
+Render, which deploys from `main`; the Worker's cron pings `/health` every 10 minutes to keep
+the free API awake. GitHub sign-in is live; Google is built and appears once its credentials
+are set on Render.
 
 ## How it's built
 
@@ -41,6 +45,13 @@ It runs locally today. Sign-in is built (not yet live); the Azure deployment is 
   user from `current_user` in `app/core/auth.py`. Auth code is `app/modules/auth/` and
   `frontend/src/app/core/auth/`. Every user-owned table has `user_id` and every query filters
   by it. Deploy steps: `docs/deploy-sign-in.md`.
+- **Rate limiting:** `app/core/rate_limit.py`, fixed one-minute windows in memory (one
+  instance), per user; per-IP limits only when `PROXY_SHARED_SECRET` is set in both Render and
+  the Worker. Errors are logged once with the request id; logs never contain tokens, cookies,
+  emails, bodies, query strings or SQL parameters (`hide_parameters=True`).
+- **End-to-end tests:** Playwright in `frontend/e2e/` (`cd frontend && npm run e2e`), against
+  the separate `cortex_e2e` database, which the global setup empties before each run; never
+  point them at `cortex`.
 
 ## Folder map
 
@@ -232,7 +243,7 @@ Tests:
 14. **Forgetting a registration** when adding a table or page (see Coding rules). Symptoms:
     Alembic sees no change, tests leak data between cases, or the page 404s.
 15. **Stale docs treated as truth.** `docs/system-design` describes the target; "As built"
-    notes and the code win. `backend/README.md` still says `ruff check .`; trust this file.
+    notes and the code win.
 16. **Claude API from memory.** `claude-opus-5-5` cannot disable thinking and rejects
     `budget_tokens`; `max_tokens` includes thinking, so do not lower it to save money. Never
     quote prices or model details from memory. Model choice is Aayush's decision.
@@ -263,6 +274,7 @@ Tests:
 - [ ] Backend: `pytest` with coverage, `ruff check app tests`, `ruff format --check app tests`,
       `mypy app`, and `alembic check` all pass, run fresh after your last edit.
 - [ ] Frontend: `ng test --watch=false` passes and `ng build` shows no errors or warnings.
+- [ ] User journeys changed? `npm run e2e` passes.
 - [ ] `uvx pre-commit run --all-files` exits 0.
 - [ ] A model changed? There is a migration, and it was applied.
 - [ ] UI changed? You used it in the browser in dark and light mode and at phone width, or you
@@ -274,11 +286,18 @@ Tests:
 - [ ] Nothing is committed or pushed unless he asked. If he did, CI and CodeQL passed.
 - [ ] Your report states what changed, how you checked it, and what you did not verify.
 
-## Open work (as of 2026-11-15)
+## Open work (as of 2026-11-17)
 
-- **Sign-in:** built on branch `feature/sign-in` (spec:
-  `docs/superpowers/specs/2026-11-14-sign-in-design.md`). Waiting for his GitHub OAuth App and
-  the Render settings; follow `docs/deploy-sign-in.md`, then merge. GitHub and Google, anyone
-  can sign up, the AI tutor is invite-only, and the live site starts with empty data.
-- **Azure deployment:** waiting for his Azure account.
+- **Google sign-in:** code is live; waiting for Aayush to add `GOOGLE_CLIENT_ID` and
+  `GOOGLE_CLIENT_SECRET` on Render (steps in `docs/deploy-sign-in.md`).
+- **`PROXY_SHARED_SECRET`** is not set yet, so per-IP rate limits are off; only he sets secrets.
+- **Render start command** should get `--no-access-log` so uvicorn stops logging query strings
+  (including the one-time sign-in code).
+- **Live database:** Render's free PostgreSQL expires 30 days after creation and has no
+  backups; moving to a free plan that does not expire (Neon suggested) is pending his decision.
+- **Cloudflare "Workers Builds" check** fails on branches other than `main`; the cause is in
+  the Cloudflare dashboard and not yet investigated.
+- **LinkedIn sign-in:** parked by him.
+- **Azure:** the original plan; the site now runs on Cloudflare and Render. Ask him before any
+  Azure work.
 - **Design cleanup:** a type scale, fewer corner radii and breakpoints, a shorter sidebar.
