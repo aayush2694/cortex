@@ -72,6 +72,8 @@ export default defineConfig({
           },
         ]
       : []),
+    // Only with DEMO=1 (npm run e2e:demo): records the README demo video.
+    ...(process.env['DEMO'] ? [{ name: 'demo', testMatch: 'demo.spec.ts', use: devices['Desktop Chrome'] }] : []),
   ],
   webServer: [
     api(DEV.api, { AUTH_MODE: 'dev', CORS_ORIGINS: `["http://localhost:${DEV.web}"]` }),

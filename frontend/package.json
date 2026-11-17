@@ -8,7 +8,8 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "e2e": "playwright test",
-    "e2e:screenshots": "SCREENSHOTS=1 playwright test --project=screenshots"
+    "e2e:screenshots": "SCREENSHOTS=1 playwright test --project=screenshots",
+    "e2e:demo": "DEMO=1 playwright test --project=demo && node e2e/make-demo-gif.mjs"
   },
   "private": true,
   "packageManager": "npm@11.20.0",

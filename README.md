@@ -8,11 +8,43 @@ Django, AI and system design, with practice code that runs in your browser and a
 
 **Live: [cortex.aayush3783.workers.dev](https://cortex.aayush3783.workers.dev)** (sign in with GitHub)
 
-| Knowledge map | Topic guide |
+![Demo: the knowledge map, opening the Two Pointers topic and scrolling its guide, then opening the "Pair with target sum" problem, typing a Python solution and running it in the browser, where all 3 examples pass](docs/screenshots/demo.gif)
+
+## Full stack at a glance
+
+| Layer | What it uses |
 | --- | --- |
-| ![Knowledge map](docs/screenshots/topic-map.png) | ![Topic guide](docs/screenshots/topic-guide.png) |
-| **Practice, run in the browser** | **Sign-in** |
-| ![Practice question](docs/screenshots/practice.png) | ![Sign-in page](docs/screenshots/sign-in.png) |
+| **Frontend** | Angular 22 (zoneless, standalone components, signals), TypeScript, CodeMirror 6, Pyodide running Python in a Web Worker |
+| **Backend** | FastAPI on Python 3.13, a modular monolith of 9 modules, 54 REST operations with OpenAPI docs, SSE streaming, OAuth and JWTs |
+| **Data** | PostgreSQL 18 through async SQLAlchemy 2 and asyncpg, 20 tables, Alembic migrations; content as YAML and Markdown in git |
+| **Infrastructure** | Cloudflare Worker serves the app and proxies `/api` to the API on Render; GitHub Actions CI, CodeQL, Dependabot |
+| **Tests** | 472 backend (pytest, coverage gate 90%), 130 frontend unit (Vitest), 3 end-to-end (Playwright) |
+
+<details>
+<summary><b>Screenshots (9 pages)</b></summary>
+<br>
+<table>
+<tr>
+<td width="50%"><a href="docs/screenshots/dashboard.png"><img src="docs/screenshots/dashboard.png" alt="Dashboard"></a><br>Dashboard: today's plan, activity streak and mastery by track</td>
+<td width="50%"><a href="docs/screenshots/topic-map.png"><img src="docs/screenshots/topic-map.png" alt="Knowledge map"></a><br>Knowledge map: 90 topics linked by prerequisites, shaded by progress</td>
+</tr>
+<tr>
+<td width="50%"><a href="docs/screenshots/topic-guide.png"><img src="docs/screenshots/topic-guide.png" alt="Topic guide"></a><br>Topic guide: a written guide for every topic</td>
+<td width="50%"><a href="docs/screenshots/pattern-walkthrough.png"><img src="docs/screenshots/pattern-walkthrough.png" alt="Pattern walkthrough"></a><br>Pattern walkthrough: sliding window, step by step, with its template</td>
+</tr>
+<tr>
+<td width="50%"><a href="docs/screenshots/visualizer.png"><img src="docs/screenshots/visualizer.png" alt="Visualizer"></a><br>Visualizer: Dijkstra mid-run, with the code line and the priority queue</td>
+<td width="50%"><a href="docs/screenshots/practice.png"><img src="docs/screenshots/practice.png" alt="Practice"></a><br>Practice: Python runs in the browser and is judged against the examples</td>
+</tr>
+<tr>
+<td width="50%"><a href="docs/screenshots/flashcards.png"><img src="docs/screenshots/flashcards.png" alt="Flashcards"></a><br>Flashcards: spaced-repetition review with the next interval on each grade</td>
+<td width="50%"><a href="docs/screenshots/job-board.png"><img src="docs/screenshots/job-board.png" alt="Job tracker"></a><br>Job tracker: applications on a drag-and-drop board</td>
+</tr>
+<tr>
+<td width="50%"><a href="docs/screenshots/sign-in.png"><img src="docs/screenshots/sign-in.png" alt="Sign-in"></a><br>Sign-in with GitHub</td>
+</tr>
+</table>
+</details>
 
 ## What it does
 
@@ -59,6 +91,10 @@ The backend is a modular monolith. Each module in `backend/app/modules/` (`topic
 `router → service → repository → models`, with `schemas.py` for request and response shapes.
 Pure logic lives in I/O-free files (`engine.py`, `matcher.py`, `harness.py`, `catalog.py`) that
 unit tests cover directly. `app/clients/llm.py` is the only code that calls Claude.
+
+<a href="docs/screenshots/api-docs.png"><img src="docs/screenshots/api-docs.png" alt="Swagger UI listing the Cortex API endpoints" width="720"></a>
+
+The API documents itself: FastAPI serves interactive OpenAPI docs at `/docs` (shown from a local run).
 
 ## Engineering highlights
 
@@ -135,6 +171,7 @@ npm install && npx ng serve                     # http://localhost:4200, proxies
 
 Add `ANTHROPIC_API_KEY` to `backend/.env` to turn on the AI tutor. Tests:
 `cd backend && uv run pytest --cov` and `cd frontend && npx ng test --watch=false`.
+The README images are recorded by `npm run e2e:screenshots` and `npm run e2e:demo` in `frontend/`.
 
 ## Project structure
 
